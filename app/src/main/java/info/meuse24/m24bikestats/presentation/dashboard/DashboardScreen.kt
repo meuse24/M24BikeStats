@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -543,6 +546,8 @@ private fun BikeOverviewCard(
 
 @Composable
 private fun DetailSectionCard(section: DetailSectionUiModel) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -557,6 +562,32 @@ private fun DetailSectionCard(section: DetailSectionUiModel) {
             Spacer(modifier = Modifier.height(10.dp))
             section.rows.forEach { (label, value) ->
                 DetailRow(label = label, value = value)
+            }
+            if (section.actions.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    section.actions.forEach { action ->
+                        OutlinedButton(
+                            onClick = {
+                                when (action.type) {
+                                    DetailSectionActionType.SHARE -> {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, action.payload)
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Track teilen"))
+                                    }
+                                    DetailSectionActionType.MAP -> {
+                                        val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(action.payload))
+                                        context.startActivity(mapIntent)
+                                    }
+                                }
+                            }
+                        ) {
+                            Text(action.label)
+                        }
+                    }
+                }
             }
         }
     }

@@ -56,4 +56,16 @@ data class BikeDetailUiModel(
 data class DetailSectionUiModel(
     val title: String,
     val rows: List<Pair<String, String>>,
+    val actions: List<DetailSectionActionUiModel> = emptyList(),
 )
+
+data class DetailSectionActionUiModel(
+    val label: String,
+    val type: DetailSectionActionType,
+    val payload: String,
+)
+
+enum class DetailSectionActionType {
+    SHARE,
+    MAP,
+}
