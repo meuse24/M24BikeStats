@@ -265,6 +265,16 @@ class DashboardViewModel(
                 distanceMeters = point.distanceMeters,
             )
         }
+        val profilePoints = detail.points.mapNotNull { point ->
+            val distanceMeters = point.distanceMeters ?: return@mapNotNull null
+            ActivityProfilePointUiModel(
+                distanceMeters = distanceMeters,
+                altitudeMeters = point.altitudeMeters?.takeIf { it >= 0.0 && !it.isNaN() },
+                speedKmh = point.speedKmh?.takeIf { it >= 0.0 && !it.isNaN() },
+                cadenceRpm = point.cadenceRpm?.takeIf { it >= 0.0 && !it.isNaN() },
+                riderPowerWatts = point.riderPowerWatts?.takeIf { it >= 0.0 && !it.isNaN() },
+            )
+        }
 
         return ActivityDetailUiModel(
             id = activity.id,
@@ -366,6 +376,7 @@ class DashboardViewModel(
                 )
             }.filter { it.rows.isNotEmpty() },
             trackPoints = trackPoints,
+            profilePoints = profilePoints,
         )
     }
 

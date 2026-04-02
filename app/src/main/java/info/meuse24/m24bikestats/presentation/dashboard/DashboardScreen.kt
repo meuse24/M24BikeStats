@@ -289,11 +289,56 @@ fun TrackScreen(
                         HeroCard(
                             eyebrow = "Trackansicht",
                             title = activity.title,
-                            subtitle = "${activity.trackPoints.size} GPS-Punkte als vollständiger Verlauf",
+                            subtitle = "${activity.trackPoints.size} GPS-Punkte und ${activity.profilePoints.size} Profilpunkte",
                         )
                     }
                     item {
                         TrackCanvasCard(trackPoints = activity.trackPoints)
+                    }
+                    if (activity.profilePoints.hasMetric { it.altitudeMeters }) {
+                        item {
+                            ProfileChartCard(
+                                title = "Höhenprofil",
+                                subtitle = activity.profilePoints.metricSummary(
+                                    selector = { it.altitudeMeters },
+                                    unit = "m",
+                                ),
+                                points = activity.profilePoints,
+                                selector = { it.altitudeMeters },
+                                color = MaterialTheme.colorScheme.tertiary,
+                                valueFormatter = { "${it.toInt()} m" },
+                            )
+                        }
+                    }
+                    if (activity.profilePoints.hasMetric { it.riderPowerWatts }) {
+                        item {
+                            ProfileChartCard(
+                                title = "Leistungsverlauf",
+                                subtitle = activity.profilePoints.metricSummary(
+                                    selector = { it.riderPowerWatts },
+                                    unit = "W",
+                                ),
+                                points = activity.profilePoints,
+                                selector = { it.riderPowerWatts },
+                                color = MaterialTheme.colorScheme.primary,
+                                valueFormatter = { "${it.toInt()} W" },
+                            )
+                        }
+                    }
+                    if (activity.profilePoints.hasMetric { it.speedKmh }) {
+                        item {
+                            ProfileChartCard(
+                                title = "Geschwindigkeitsverlauf",
+                                subtitle = activity.profilePoints.metricSummary(
+                                    selector = { it.speedKmh },
+                                    unit = "km/h",
+                                ),
+                                points = activity.profilePoints,
+                                selector = { it.speedKmh },
+                                color = MaterialTheme.colorScheme.secondary,
+                                valueFormatter = { String.format("%.1f km/h", it) },
+                            )
+                        }
                     }
                     item {
                         DetailSectionCard(
@@ -779,6 +824,127 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
 }
 
 @Composable
+private fun ProfileChartCard(
+    title: String,
+    subtitle: String,
+    points: List<ActivityProfilePointUiModel>,
+    selector: (ActivityProfilePointUiModel) -> Double?,
+    color: androidx.compose.ui.graphics.Color,
+    valueFormatter: (Double) -> String,
+) {
+    val chartPoints = remember(points) {
+        points.mapNotNull { point ->
+            val value = selector(point) ?: return@mapNotNull null
+            if (value.isNaN()) return@mapNotNull null
+            point.distanceMeters to value
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                if (chartPoints.size < 2) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("Zu wenige Datenpunkte für dieses Profil")
+                    }
+                } else {
+                    val axisColor = MaterialTheme.colorScheme.outlineVariant
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp, vertical = 16.dp)
+                    ) {
+                        val leftPadding = 10f
+                        val topPadding = 8f
+                        val bottomPadding = 20f
+                        val drawableWidth = size.width - leftPadding
+                        val drawableHeight = size.height - topPadding - bottomPadding
+
+                        val minDistance = chartPoints.minOf { it.first }
+                        val maxDistance = chartPoints.maxOf { it.first }
+                        val minValue = chartPoints.minOf { it.second }
+                        val maxValue = chartPoints.maxOf { it.second }
+
+                        val distanceSpan = (maxDistance - minDistance).takeIf { it > 0.0 } ?: 1.0
+                        val valueSpan = (maxValue - minValue).takeIf { it > 0.0 } ?: 1.0
+
+                        drawLine(
+                            color = axisColor,
+                            start = Offset(leftPadding, size.height - bottomPadding),
+                            end = Offset(size.width, size.height - bottomPadding),
+                            strokeWidth = 2f,
+                        )
+                        drawLine(
+                            color = axisColor,
+                            start = Offset(leftPadding, topPadding),
+                            end = Offset(leftPadding, size.height - bottomPadding),
+                            strokeWidth = 2f,
+                        )
+
+                        val path = Path()
+                        chartPoints.forEachIndexed { index, (distance, value) ->
+                            val x = leftPadding + (((distance - minDistance) / distanceSpan) * drawableWidth).toFloat()
+                            val y = topPadding + (drawableHeight - (((value - minValue) / valueSpan) * drawableHeight)).toFloat()
+                            if (index == 0) {
+                                path.moveTo(x, y)
+                            } else {
+                                path.lineTo(x, y)
+                            }
+                        }
+
+                        drawPath(
+                            path = path,
+                            color = color,
+                            style = Stroke(width = 5f, cap = StrokeCap.Round),
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MetricPill(
+                    label = "Start",
+                    value = valueFormatter(chartPoints.firstOrNull()?.second ?: 0.0),
+                )
+                MetricPill(
+                    label = "Max",
+                    value = valueFormatter(chartPoints.maxOfOrNull { it.second } ?: 0.0),
+                )
+                MetricPill(
+                    label = "Ende",
+                    value = valueFormatter(chartPoints.lastOrNull()?.second ?: 0.0),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun DetailRow(
     label: String,
     value: String,
@@ -893,4 +1059,19 @@ private fun OptionalRow(
             fontWeight = FontWeight.Medium,
         )
     }
+}
+
+private fun List<ActivityProfilePointUiModel>.hasMetric(
+    selector: (ActivityProfilePointUiModel) -> Double?,
+): Boolean = any { point -> selector(point) != null }
+
+private fun List<ActivityProfilePointUiModel>.metricSummary(
+    selector: (ActivityProfilePointUiModel) -> Double?,
+    unit: String,
+): String {
+    val values = mapNotNull { selector(it) }
+    if (values.isEmpty()) return "Keine Messwerte"
+    val average = values.average()
+    val maximum = values.maxOrNull() ?: average
+    return "Ø ${String.format("%.1f", average)} $unit • max ${String.format("%.1f", maximum)} $unit"
 }

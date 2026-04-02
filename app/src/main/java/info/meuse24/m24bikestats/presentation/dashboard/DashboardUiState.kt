@@ -38,6 +38,7 @@ data class ActivityDetailUiModel(
     val summary: List<Pair<String, String>>,
     val sections: List<DetailSectionUiModel>,
     val trackPoints: List<ActivityTrackPointUiModel>,
+    val profilePoints: List<ActivityProfilePointUiModel>,
 )
 
 data class BikeCardUiModel(
@@ -76,4 +77,12 @@ data class ActivityTrackPointUiModel(
     val longitude: Double,
     val altitudeMeters: Double?,
     val distanceMeters: Double?,
+)
+
+data class ActivityProfilePointUiModel(
+    val distanceMeters: Double,
+    val altitudeMeters: Double?,
+    val speedKmh: Double?,
+    val cadenceRpm: Double?,
+    val riderPowerWatts: Double?,
 )

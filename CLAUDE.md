@@ -144,6 +144,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
 - Aktivitätsdetails können den vollständigen Track als GPX teilen
 - Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
+- Der Track-Screen zeigt zusätzlich Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 
