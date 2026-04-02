@@ -13,6 +13,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
 - Trackansicht mit vollständigem Verlauf auf Basis der bestätigten GPS-Punkte
 - Interaktive Kartenkachel-Ansicht mit MapLibre und OpenFreeMap
+- Track-Screen mit Umschalter zwischen Karte, Profilen und GPX-Vorschau
 - Höhen-, Leistungs- und Geschwindigkeitsprofil auf Basis der Bosch-Detailpunkte
 - GPX-Export über einen Metadaten-Dialog und das Android-Share-Sheet
 - API-Test-Tab: Einzelaufrufe und Batch-Test aller bekannten Endpunkte mit Roh-JSON
@@ -130,8 +131,9 @@ Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
 - zusätzliche Kennzahlen aus dem Detail-Track
 - vollständige Trackansicht als interne Karten-/Polyline-Darstellung
 - interaktive Kartenkacheln mit live gezeichneter Tracklinie
+- automatische Ausrichtung auf die Track-Bounds sowie getrennte Start-/Zielmarker
 - Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit entlang der Strecke
-- GPX-Datei und GPX-Rohtext über einen Export-Dialog mit Metadaten
+- GPX-Datei und GPX-Rohtext über einen Export-Dialog mit Metadaten und Vorschau
 
 ### Bike-Liste und Bike-Detail
 

@@ -73,6 +73,8 @@ import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
+import kotlin.math.tan
+import kotlin.math.PI
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -222,6 +224,7 @@ fun ActivityDetailScreen(
             }
             uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
                 val activity = uiState.selectedActivityDetail
+                var selectedTrackTab by rememberSaveable(activity.id) { mutableIntStateOf(0) }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -298,6 +301,7 @@ fun TrackScreen(
             }
             uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
                 val activity = uiState.selectedActivityDetail
+                var selectedTrackTab by rememberSaveable(activity.id) { mutableIntStateOf(0) }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -313,54 +317,71 @@ fun TrackScreen(
                         )
                     }
                     item {
-                        TrackMapCard(activity = activity)
+                        TrackModeSelector(
+                            selectedTabIndex = selectedTrackTab,
+                            onTabSelected = { selectedTrackTab = it },
+                        )
                     }
-                    item {
-                        TrackCanvasCard(trackPoints = activity.trackPoints)
-                    }
-                    if (activity.profilePoints.hasMetric { it.altitudeMeters }) {
-                        item {
-                            ProfileChartCard(
-                                title = "Höhenprofil",
-                                subtitle = activity.profilePoints.metricSummary(
-                                    selector = { it.altitudeMeters },
-                                    unit = "m",
-                                ),
-                                points = activity.profilePoints,
-                                selector = { it.altitudeMeters },
-                                color = MaterialTheme.colorScheme.tertiary,
-                                valueFormatter = { "${it.toInt()} m" },
-                            )
+                    when (selectedTrackTab) {
+                        0 -> {
+                            item {
+                                TrackMapCard(activity = activity)
+                            }
                         }
-                    }
-                    if (activity.profilePoints.hasMetric { it.riderPowerWatts }) {
-                        item {
-                            ProfileChartCard(
-                                title = "Leistungsverlauf",
-                                subtitle = activity.profilePoints.metricSummary(
-                                    selector = { it.riderPowerWatts },
-                                    unit = "W",
-                                ),
-                                points = activity.profilePoints,
-                                selector = { it.riderPowerWatts },
-                                color = MaterialTheme.colorScheme.primary,
-                                valueFormatter = { "${it.toInt()} W" },
-                            )
+                        1 -> {
+                            item {
+                                TrackCanvasCard(trackPoints = activity.trackPoints)
+                            }
+                            if (activity.profilePoints.hasMetric { it.altitudeMeters }) {
+                                item {
+                                    ProfileChartCard(
+                                        title = "Höhenprofil",
+                                        subtitle = activity.profilePoints.metricSummary(
+                                            selector = { it.altitudeMeters },
+                                            unit = "m",
+                                        ),
+                                        points = activity.profilePoints,
+                                        selector = { it.altitudeMeters },
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        valueFormatter = { "${it.toInt()} m" },
+                                    )
+                                }
+                            }
+                            if (activity.profilePoints.hasMetric { it.riderPowerWatts }) {
+                                item {
+                                    ProfileChartCard(
+                                        title = "Leistungsverlauf",
+                                        subtitle = activity.profilePoints.metricSummary(
+                                            selector = { it.riderPowerWatts },
+                                            unit = "W",
+                                        ),
+                                        points = activity.profilePoints,
+                                        selector = { it.riderPowerWatts },
+                                        color = MaterialTheme.colorScheme.primary,
+                                        valueFormatter = { "${it.toInt()} W" },
+                                    )
+                                }
+                            }
+                            if (activity.profilePoints.hasMetric { it.speedKmh }) {
+                                item {
+                                    ProfileChartCard(
+                                        title = "Geschwindigkeitsverlauf",
+                                        subtitle = activity.profilePoints.metricSummary(
+                                            selector = { it.speedKmh },
+                                            unit = "km/h",
+                                        ),
+                                        points = activity.profilePoints,
+                                        selector = { it.speedKmh },
+                                        color = MaterialTheme.colorScheme.secondary,
+                                        valueFormatter = { String.format("%.1f km/h", it) },
+                                    )
+                                }
+                            }
                         }
-                    }
-                    if (activity.profilePoints.hasMetric { it.speedKmh }) {
-                        item {
-                            ProfileChartCard(
-                                title = "Geschwindigkeitsverlauf",
-                                subtitle = activity.profilePoints.metricSummary(
-                                    selector = { it.speedKmh },
-                                    unit = "km/h",
-                                ),
-                                points = activity.profilePoints,
-                                selector = { it.speedKmh },
-                                color = MaterialTheme.colorScheme.secondary,
-                                valueFormatter = { String.format("%.1f km/h", it) },
-                            )
+                        else -> {
+                            item {
+                                GpxPreviewCard(activity = activity)
+                            }
                         }
                     }
                     item {
@@ -823,22 +844,96 @@ private fun TrackExportDialog(
 }
 
 @Composable
+private fun TrackModeSelector(
+    selectedTabIndex: Int,
+    onTabSelected: (Int) -> Unit,
+) {
+    val tabs = listOf("Karte", "Profile", "GPX")
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        ScrollableTabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = Color.Transparent,
+            edgePadding = 0.dp,
+        ) {
+            tabs.forEachIndexed { index, label ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { onTabSelected(index) },
+                    text = { Text(label) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GpxPreviewCard(activity: ActivityDetailUiModel) {
+    val gpxText = remember(activity.id, activity.trackPoints.size) { buildTrackGpx(activity) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "GPX-Vorschau",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = "Der Export enthält den vollständigen Track als GPX 1.1 mit Höhen- und Distanzpunkten.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 220.dp, max = 420.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(14.dp),
+                ) {
+                    item {
+                        Text(
+                            text = gpxText,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun TrackMapCard(activity: ActivityDetailUiModel) {
     if (activity.trackPoints.size < 2) return
 
-    val centerLatitude = remember(activity.trackPoints) { activity.trackPoints.map { it.latitude }.average() }
-    val centerLongitude = remember(activity.trackPoints) { activity.trackPoints.map { it.longitude }.average() }
+    val trackBounds = remember(activity.trackPoints) { calculateTrackBounds(activity.trackPoints) }
     val cameraState = rememberCameraState(
         firstPosition = CameraPosition(
-            target = Position(longitude = centerLongitude, latitude = centerLatitude),
-            zoom = estimateTrackZoom(activity.trackPoints),
+            target = Position(longitude = trackBounds.centerLongitude, latitude = trackBounds.centerLatitude),
+            zoom = estimateTrackZoom(trackBounds, viewportWidth = 360.0, viewportHeight = 320.0),
         )
     )
     val trackSourceData = remember(activity.id, activity.trackPoints.size) {
         GeoJsonData.JsonString(buildTrackGeoJson(activity))
     }
-    val endpointSourceData = remember(activity.id, activity.trackPoints.size) {
-        GeoJsonData.JsonString(buildTrackEndpointsGeoJson(activity))
+    val startPointData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildSingleTrackPointGeoJson(activity.trackPoints.first(), "start"))
+    }
+    val endPointData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildSingleTrackPointGeoJson(activity.trackPoints.last(), "end"))
     }
 
     Card(
@@ -868,7 +963,8 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                     cameraState = cameraState,
                 ) {
                     val trackSource = rememberGeoJsonSource(data = trackSourceData)
-                    val endpointSource = rememberGeoJsonSource(data = endpointSourceData)
+                    val startPointSource = rememberGeoJsonSource(data = startPointData)
+                    val endPointSource = rememberGeoJsonSource(data = endPointData)
                     LineLayer(
                         id = "activity-track",
                         source = trackSource,
@@ -876,8 +972,16 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                         width = const(5.dp),
                     )
                     CircleLayer(
-                        id = "activity-track-points",
-                        source = endpointSource,
+                        id = "activity-track-start",
+                        source = startPointSource,
+                        color = const(MaterialTheme.colorScheme.secondary),
+                        radius = const(7.dp),
+                        strokeColor = const(Color.White),
+                        strokeWidth = const(2.dp),
+                    )
+                    CircleLayer(
+                        id = "activity-track-end",
+                        source = endPointSource,
                         color = const(MaterialTheme.colorScheme.tertiary),
                         radius = const(6.dp),
                         strokeColor = const(Color.White),
@@ -885,8 +989,13 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                     )
                 }
             }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                MetricPill("Fit", "Auto auf Track-Bounds")
+                MetricPill("Start", "Sekundärfarbe")
+                MetricPill("Ziel", "Tertiärfarbe")
+            }
             Text(
-                text = "OpenFreeMap-Kacheln mit live gerendertem Bosch-Track und Start-/Zielmarkern.",
+                text = "OpenFreeMap-Kacheln mit live gerendertem Bosch-Track und getrennten Start-/Zielmarkern.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1031,29 +1140,56 @@ private fun List<ProjectedTrackPoint>.withSyntheticVerticalSpread(canvasHeight: 
     }
 }
 
-private fun estimateTrackZoom(trackPoints: List<ActivityTrackPointUiModel>): Double {
-    if (trackPoints.size < 2) return 13.0
-    val latSpan = (trackPoints.maxOf { it.latitude } - trackPoints.minOf { it.latitude }).coerceAtLeast(0.0005)
-    val lonSpan = (trackPoints.maxOf { it.longitude } - trackPoints.minOf { it.longitude }).coerceAtLeast(0.0005)
-    val span = maxOf(latSpan, lonSpan)
-    val rawZoom = 11.5 - ln(span) / ln(2.0)
-    return rawZoom.coerceIn(9.0, 16.5)
+private data class TrackBounds(
+    val minLatitude: Double,
+    val maxLatitude: Double,
+    val minLongitude: Double,
+    val maxLongitude: Double,
+    val centerLatitude: Double,
+    val centerLongitude: Double,
+)
+
+private fun calculateTrackBounds(trackPoints: List<ActivityTrackPointUiModel>): TrackBounds {
+    val minLatitude = trackPoints.minOf { it.latitude }
+    val maxLatitude = trackPoints.maxOf { it.latitude }
+    val minLongitude = trackPoints.minOf { it.longitude }
+    val maxLongitude = trackPoints.maxOf { it.longitude }
+    return TrackBounds(
+        minLatitude = minLatitude,
+        maxLatitude = maxLatitude,
+        minLongitude = minLongitude,
+        maxLongitude = maxLongitude,
+        centerLatitude = (minLatitude + maxLatitude) / 2.0,
+        centerLongitude = (minLongitude + maxLongitude) / 2.0,
+    )
 }
 
-private fun buildTrackEndpointsGeoJson(activity: ActivityDetailUiModel): String {
-    val start = activity.trackPoints.firstOrNull()
-    val end = activity.trackPoints.lastOrNull()
-    val featureJson = listOfNotNull(
-        start?.let {
-            """{"type":"Feature","properties":{"kind":"start"},"geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]}}"""
-        },
-        end?.let {
-            """{"type":"Feature","properties":{"kind":"end"},"geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]}}"""
-        },
-    ).joinToString(",")
-
-    return """{"type":"FeatureCollection","features":[$featureJson]}"""
+private fun estimateTrackZoom(
+    bounds: TrackBounds,
+    viewportWidth: Double,
+    viewportHeight: Double,
+): Double {
+    val usableWidth = (viewportWidth * 0.82).coerceAtLeast(1.0)
+    val usableHeight = (viewportHeight * 0.72).coerceAtLeast(1.0)
+    val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0003)
+    val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
+    val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * 256.0)) / ln(2.0)
+    val latitudeZoom = ln(usableHeight / (latitudeFraction * 256.0)) / ln(2.0)
+    return minOf(longitudeZoom, latitudeZoom).coerceIn(8.5, 16.8)
 }
+
+private fun mercatorY(latitude: Double): Double {
+    val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
+    val radians = clamped * PI / 180.0
+    return (1.0 - ln(tan(radians) + 1.0 / cos(radians)) / PI) / 2.0
+}
+
+private fun buildSingleTrackPointGeoJson(
+    point: ActivityTrackPointUiModel,
+    kind: String,
+): String = """
+    {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"kind":"$kind"},"geometry":{"type":"Point","coordinates":[${point.longitude},${point.latitude}]}}]}
+""".trimIndent()
 
 @Composable
 private fun ProfileChartCard(

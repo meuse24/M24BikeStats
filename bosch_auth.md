@@ -213,7 +213,7 @@ Diese Detailpunkte sind funktional relevant:
 - `distance` beschreibt die kumulierte Distanz entlang der Aktivität
 - `latitude` und `longitude` liefern die Trackpunkte
 - `altitude`, `speed`, `cadence` und `riderPower` liefern punktbezogene Metrikdaten
-- Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite, eine MapLibre/OpenFreeMap-Kartenansicht, Linienprofile und den GPX-Exportdialog
+- Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite, eine MapLibre/OpenFreeMap-Kartenansicht mit Auto-Fit, Linienprofile und einen GPX-Exportdialog mit Vorschau
 
 `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 
