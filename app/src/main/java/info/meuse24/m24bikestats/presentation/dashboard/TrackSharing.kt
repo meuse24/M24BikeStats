@@ -9,6 +9,15 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+data class TrackExportMetadata(
+    val title: String,
+    val trackPointCount: Int,
+    val profilePointCount: Int,
+    val distanceLabel: String?,
+    val startCoordinateLabel: String?,
+    val endCoordinateLabel: String?,
+)
+
 fun createTrackGpxUri(
     context: Context,
     activity: ActivityDetailUiModel,
@@ -20,7 +29,7 @@ fun createTrackGpxUri(
         .trim('-')
         .ifBlank { "activity-track" }
     val file = File(exportDir, "$safeName.gpx")
-    file.writeText(buildGpx(activity))
+    file.writeText(buildTrackGpx(activity))
     return FileProvider.getUriForFile(
         context,
         "${context.packageName}.fileprovider",
@@ -28,7 +37,7 @@ fun createTrackGpxUri(
     )
 }
 
-private fun buildGpx(activity: ActivityDetailUiModel): String {
+fun buildTrackGpx(activity: ActivityDetailUiModel): String {
     val timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now().atOffset(ZoneOffset.UTC))
     val points = activity.trackPoints.joinToString("\n") { point ->
         buildString {
@@ -56,6 +65,48 @@ private fun buildGpx(activity: ActivityDetailUiModel): String {
     """.trimMargin()
 }
 
+fun buildTrackGeoJson(activity: ActivityDetailUiModel): String {
+    val coordinates = activity.trackPoints.joinToString(",\n") { point ->
+        val altitude = point.altitudeMeters?.let { ",$it" }.orEmpty()
+        "          [${point.longitude}, ${point.latitude}$altitude]"
+    }
+    return """
+        |{
+        |  "type": "FeatureCollection",
+        |  "features": [
+        |    {
+        |      "type": "Feature",
+        |      "properties": {
+        |        "name": "${escapeJson(activity.title)}"
+        |      },
+        |      "geometry": {
+        |        "type": "LineString",
+        |        "coordinates": [
+        |$coordinates
+        |        ]
+        |      }
+        |    }
+        |  ]
+        |}
+    """.trimMargin()
+}
+
+fun buildTrackExportMetadata(activity: ActivityDetailUiModel): TrackExportMetadata {
+    val startPoint = activity.trackPoints.firstOrNull()
+    val endPoint = activity.trackPoints.lastOrNull()
+    val distanceLabel = activity.summary.firstOrNull { it.first == "Distanz" }?.second
+        ?: activity.trackPoints.lastOrNull()?.distanceMeters?.let { formatKilometers(it) }
+
+    return TrackExportMetadata(
+        title = activity.title,
+        trackPointCount = activity.trackPoints.size,
+        profilePointCount = activity.profilePoints.size,
+        distanceLabel = distanceLabel,
+        startCoordinateLabel = startPoint?.let { formatCoordinatePair(it.latitude, it.longitude) },
+        endCoordinateLabel = endPoint?.let { formatCoordinatePair(it.latitude, it.longitude) },
+    )
+}
+
 private fun escapeXml(value: String): String =
     value
         .replace("&", "&amp;")
@@ -63,3 +114,14 @@ private fun escapeXml(value: String): String =
         .replace(">", "&gt;")
         .replace("\"", "&quot;")
         .replace("'", "&apos;")
+
+private fun escapeJson(value: String): String =
+    value
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+
+private fun formatCoordinatePair(latitude: Double, longitude: Double): String =
+    String.format(Locale.US, "%.5f, %.5f", latitude, longitude)
+
+private fun formatKilometers(distanceMeters: Double): String =
+    String.format(Locale.US, "%.1f km", distanceMeters / 1000.0)

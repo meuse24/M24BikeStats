@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.koin.android)
     implementation(libs.koin.androidx.compose)
+    implementation(libs.maplibre.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

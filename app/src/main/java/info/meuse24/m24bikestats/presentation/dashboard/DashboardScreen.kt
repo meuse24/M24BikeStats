@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,11 +41,14 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -53,10 +57,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -65,6 +72,17 @@ import info.meuse24.m24bikestats.presentation.apitest.ApiTestUiState
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.ln
+import org.maplibre.compose.camera.CameraPosition
+import org.maplibre.compose.camera.rememberCameraState
+import org.maplibre.compose.expressions.dsl.const
+import org.maplibre.compose.layers.CircleLayer
+import org.maplibre.compose.layers.LineLayer
+import org.maplibre.compose.map.MaplibreMap
+import org.maplibre.compose.sources.GeoJsonData
+import org.maplibre.compose.sources.rememberGeoJsonSource
+import org.maplibre.compose.style.BaseStyle
+import org.maplibre.spatialk.geojson.Position
 
 private val dashboardTabs = listOf("Aktivitäten", "Bike", "API-Test")
 
@@ -293,6 +311,9 @@ fun TrackScreen(
                             title = activity.title,
                             subtitle = "${activity.trackPoints.size} GPS-Punkte und ${activity.profilePoints.size} Profilpunkte",
                         )
+                    }
+                    item {
+                        TrackMapCard(activity = activity)
                     }
                     item {
                         TrackCanvasCard(trackPoints = activity.trackPoints)
@@ -694,7 +715,9 @@ private fun DetailSectionCard(
     activity: ActivityDetailUiModel? = null,
     onNavigateToTrack: (String) -> Unit = {},
 ) {
+    var showExportDialog by rememberSaveable(activity?.id, section.title) { mutableStateOf(false) }
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -719,16 +742,7 @@ private fun DetailSectionCard(
                             onClick = {
                                 when (action.type) {
                                     DetailSectionActionType.SHARE -> {
-                                        activity?.let {
-                                            val gpxUri = createTrackGpxUri(context, it)
-                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                                type = "application/gpx+xml"
-                                                putExtra(Intent.EXTRA_STREAM, gpxUri)
-                                                putExtra(Intent.EXTRA_SUBJECT, it.title)
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                            }
-                                            context.startActivity(Intent.createChooser(shareIntent, "Track teilen"))
-                                        }
+                                        if (activity != null) showExportDialog = true
                                     }
                                     DetailSectionActionType.MAP -> {
                                         activity?.let { onNavigateToTrack(it.id) }
@@ -741,6 +755,141 @@ private fun DetailSectionCard(
                     }
                 }
             }
+        }
+    }
+    if (showExportDialog && activity != null) {
+        TrackExportDialog(
+            activity = activity,
+            onDismiss = { showExportDialog = false },
+            onShare = {
+                val gpxUri = createTrackGpxUri(context, activity)
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "application/gpx+xml"
+                    putExtra(Intent.EXTRA_STREAM, gpxUri)
+                    putExtra(Intent.EXTRA_SUBJECT, activity.title)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
+            },
+            onCopyGpx = {
+                clipboardManager.setText(AnnotatedString(buildTrackGpx(activity)))
+                Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+            },
+        )
+    }
+}
+
+@Composable
+private fun TrackExportDialog(
+    activity: ActivityDetailUiModel,
+    onDismiss: () -> Unit,
+    onShare: () -> Unit,
+    onCopyGpx: () -> Unit,
+) {
+    val metadata = remember(activity.id, activity.trackPoints.size, activity.profilePoints.size) {
+        buildTrackExportMetadata(activity)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("GPX-Export") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                DetailRow(label = "Aktivität", value = metadata.title)
+                metadata.distanceLabel?.let { DetailRow(label = "Distanz", value = it) }
+                DetailRow(label = "GPS-Punkte", value = metadata.trackPointCount.toString())
+                DetailRow(label = "Profilpunkte", value = metadata.profilePointCount.toString())
+                metadata.startCoordinateLabel?.let { DetailRow(label = "Start", value = it) }
+                metadata.endCoordinateLabel?.let { DetailRow(label = "Ziel", value = it) }
+                DetailRow(label = "Format", value = "GPX 1.1 mit Tracksegment, Höhe und Distanzpunkten")
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onShare) {
+                Text("GPX teilen")
+            }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = onCopyGpx) {
+                    Text("GPX kopieren")
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Schließen")
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun TrackMapCard(activity: ActivityDetailUiModel) {
+    if (activity.trackPoints.size < 2) return
+
+    val centerLatitude = remember(activity.trackPoints) { activity.trackPoints.map { it.latitude }.average() }
+    val centerLongitude = remember(activity.trackPoints) { activity.trackPoints.map { it.longitude }.average() }
+    val cameraState = rememberCameraState(
+        firstPosition = CameraPosition(
+            target = Position(longitude = centerLongitude, latitude = centerLatitude),
+            zoom = estimateTrackZoom(activity.trackPoints),
+        )
+    )
+    val trackSourceData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildTrackGeoJson(activity))
+    }
+    val endpointSourceData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildTrackEndpointsGeoJson(activity))
+    }
+    val trackSource = rememberGeoJsonSource(data = trackSourceData)
+    val endpointSource = rememberGeoJsonSource(data = endpointSourceData)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = "Kartenkacheln",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(320.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                MaplibreMap(
+                    modifier = Modifier.fillMaxSize(),
+                    baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+                    cameraState = cameraState,
+                ) {
+                    LineLayer(
+                        id = "activity-track",
+                        source = trackSource,
+                        color = const(MaterialTheme.colorScheme.primary),
+                        width = const(5.dp),
+                    )
+                    CircleLayer(
+                        id = "activity-track-points",
+                        source = endpointSource,
+                        color = const(MaterialTheme.colorScheme.tertiary),
+                        radius = const(6.dp),
+                        strokeColor = const(Color.White),
+                        strokeWidth = const(2.dp),
+                    )
+                }
+            }
+            Text(
+                text = "OpenFreeMap-Kacheln mit live gerendertem Bosch-Track und Start-/Zielmarkern.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -880,6 +1029,30 @@ private fun List<ProjectedTrackPoint>.withSyntheticVerticalSpread(canvasHeight: 
         val wave = (progress - 0.5f) * 2f
         point.copy(y = centerY - (wave * visualAmplitude))
     }
+}
+
+private fun estimateTrackZoom(trackPoints: List<ActivityTrackPointUiModel>): Double {
+    if (trackPoints.size < 2) return 13.0
+    val latSpan = (trackPoints.maxOf { it.latitude } - trackPoints.minOf { it.latitude }).coerceAtLeast(0.0005)
+    val lonSpan = (trackPoints.maxOf { it.longitude } - trackPoints.minOf { it.longitude }).coerceAtLeast(0.0005)
+    val span = maxOf(latSpan, lonSpan)
+    val rawZoom = 11.5 - ln(span) / ln(2.0)
+    return rawZoom.coerceIn(9.0, 16.5)
+}
+
+private fun buildTrackEndpointsGeoJson(activity: ActivityDetailUiModel): String {
+    val start = activity.trackPoints.firstOrNull()
+    val end = activity.trackPoints.lastOrNull()
+    val featureJson = listOfNotNull(
+        start?.let {
+            """{"type":"Feature","properties":{"kind":"start"},"geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]}}"""
+        },
+        end?.let {
+            """{"type":"Feature","properties":{"kind":"end"},"geometry":{"type":"Point","coordinates":[${it.longitude},${it.latitude}]}}"""
+        },
+    ).joinToString(",")
+
+    return """{"type":"FeatureCollection","features":[$featureJson]}"""
 }
 
 @Composable
