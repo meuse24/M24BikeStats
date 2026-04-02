@@ -36,11 +36,11 @@ Single-Module Android-App mit **Clean Architecture** und **Jetpack Compose**.
 domain/          ← reines Kotlin, kein Android-Framework
   model/         ← BoschEndpoint (Enum mit baseUrl + path)
   repository/    ← AuthRepository, BoschRepository (Interfaces)
-  usecase/       ← FetchBoschDataUseCase
+  usecase/       ← FetchBoschDataUseCase, Smart-System-UseCases
 
 data/            ← implementiert Domain-Interfaces
   remote/        ← BoschApiClient (OkHttp, JWT-Decoder)
-  repository/    ← BoschRepositoryImpl
+  repository/    ← BoschRepositoryImpl, BoschSmartSystemRepositoryImpl
 
 auth/            ← OAuth2-Brücke (plattformspezifisch)
   AuthManager    ← implementiert LoginRepository (extends AuthRepository)
@@ -50,6 +50,7 @@ auth/            ← OAuth2-Brücke (plattformspezifisch)
 presentation/    ← stateless Screens, ViewModels, Navigation
   login/         ← LoginViewModel, LoginScreen, LoginStatus
   apitest/       ← ApiTestViewModel (StateFlow), ApiTestScreen, ApiTestUiState
+  dashboard/     ← DashboardViewModel, DashboardScreen, Detail-Screens
   navigation/    ← AppNavigation (verbindet VMs mit Screens)
 
 di/              ← AppModule (Koin)
@@ -133,10 +134,18 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - `bikes` und `bikes/{bikeId}` liefern Komponenten-, Batterie- und Drive-Unit-Informationen
 - JWT-Claims enthalten `aud=api-bosch-ebike`, `scope=euda:read`, `bosch-id`, `ebike-rider-id`
 
+### Aktueller UI-Stand
+
+- Startziel nach Login ist jetzt `dashboard`
+- Dashboard zeigt eine fachliche Aktivitätenübersicht und Bike-Ansicht
+- Aktivitäten werden paginiert über `limit`/`offset` geladen
+- Aktivitätsdetails basieren derzeit auf den Summary-Daten aus der Listenantwort
+- Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
+
 ---
 
 ## Offene Punkte
 
 - Alternative Pfade für Activity-Detail und Activity-Track recherchieren
-- JSON-Strukturen in verständliche UI-Modelle und Ansichten überführen
+- Echte Activity-Detail-/Track-Endpunkte finden, damit die Detailseite über Summary-Daten hinausgeht
 - Log-Ausgaben für produktive Nutzung datensparsam machen

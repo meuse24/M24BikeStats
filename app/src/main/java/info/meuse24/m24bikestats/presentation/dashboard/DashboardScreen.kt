@@ -21,6 +21,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 fun DashboardScreen(
     uiState: DashboardUiState,
     onRefresh: () -> Unit,
+    onLoadMoreActivities: () -> Unit,
     onNavigateToApiTest: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToBikeDetail: (String) -> Unit,
@@ -101,8 +103,10 @@ fun DashboardScreen(
 
                     when (selectedTabIndex) {
                         0 -> ActivitiesOverview(
+                            uiState = uiState,
                             activities = uiState.activities,
                             onActivityClick = onNavigateToActivityDetail,
+                            onLoadMore = onLoadMoreActivities,
                             isRefreshing = uiState.isRefreshing,
                         )
                         else -> BikesOverview(
@@ -155,8 +159,16 @@ fun ActivityDetailScreen(
                 item {
                     Text(activity.title, style = MaterialTheme.typography.headlineSmall)
                 }
-                items(activity.metrics) { (label, value) ->
-                    DetailRow(label = label, value = value)
+                item {
+                    DetailSectionCard(
+                        section = DetailSectionUiModel(
+                            title = "Kurzüberblick",
+                            rows = activity.summary,
+                        )
+                    )
+                }
+                items(activity.sections) { section ->
+                    DetailSectionCard(section)
                 }
             }
         }
@@ -232,8 +244,10 @@ fun BikeDetailScreen(
 
 @Composable
 private fun ActivitiesOverview(
+    uiState: DashboardUiState,
     activities: List<ActivityCardUiModel>,
     onActivityClick: (String) -> Unit,
+    onLoadMore: () -> Unit,
     isRefreshing: Boolean,
 ) {
     LazyColumn(
@@ -248,7 +262,14 @@ private fun ActivitiesOverview(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Aktivitäten", style = MaterialTheme.typography.headlineSmall)
+                Column {
+                    Text("Aktivitäten", style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "${uiState.loadedActivityCount} von ${uiState.activityTotalCount}",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 if (isRefreshing) CircularProgressIndicator()
             }
         }
@@ -269,6 +290,26 @@ private fun ActivitiesOverview(
                     activity.powerLabel?.let { Text("Leistung: $it") }
                     activity.elevationLabel?.let { Text("Höhenmeter: $it") }
                     activity.caloriesLabel?.let { Text("Kalorien: $it") }
+                }
+            }
+        }
+        item {
+            when {
+                uiState.isLoadingMoreActivities -> {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                }
+                uiState.canLoadMoreActivities -> {
+                    OutlinedButton(
+                        onClick = onLoadMore,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Mehr Aktivitäten laden")
+                    }
                 }
             }
         }

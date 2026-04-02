@@ -51,6 +51,7 @@ fun AppNavigation() {
             DashboardScreen(
                 uiState = uiState,
                 onRefresh = dashboardViewModel::refresh,
+                onLoadMoreActivities = dashboardViewModel::loadMoreActivities,
                 onNavigateToApiTest = { navController.navigate("api_test") },
                 onNavigateToActivityDetail = { activityId ->
                     navController.navigate("activity/$activityId")

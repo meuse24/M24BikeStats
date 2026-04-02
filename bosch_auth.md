@@ -173,6 +173,11 @@ GET https://p9.authz.bosch.com/auth/realms/obc/.well-known/openid-configuration
 }
 ```
 
+Pagination ist funktional relevant:
+- `total` beschreibt die Gesamtzahl der Aktivitäten
+- `offset` und `limit` steuern weitere Seiten
+- Die App nutzt diese Parameter jetzt im Dashboard für `Mehr Aktivitäten laden`
+
 `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 
 ```json
@@ -242,5 +247,7 @@ GET https://p9.authz.bosch.com/auth/realms/obc/.well-known/openid-configuration
 
 - [x] Smart System für Cannondale Performance Line CX bestätigt
 - [x] Bike-Detail-Endpunkt mit echter `bikeId` bestätigt
+- [x] Fachliche Dashboard-UI für Aktivitäten und Bikes auf Basis der verifizierten JSON-Strukturen
+- [x] Aktivitäten-Paginierung über `limit`/`offset`
 - [ ] Alternativen für Activity-Detail- und Track-Endpunkte recherchieren
-- [ ] Datenmodelle aus den verifizierten JSON-Strukturen für die UI ableiten
+- [ ] Echte Activity-Detail-/Track-Daten statt Summary-only in der Aktivitätsdetailseite nutzen

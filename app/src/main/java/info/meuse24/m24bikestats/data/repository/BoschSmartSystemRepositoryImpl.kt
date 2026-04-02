@@ -2,9 +2,11 @@ package info.meuse24.m24bikestats.data.repository
 
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.BoschRequest
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
@@ -16,13 +18,30 @@ class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
 ) : BoschSmartSystemRepository {
 
-    override suspend fun getActivities(accessToken: String): Result<List<BoschActivity>> =
+    override suspend fun getActivities(
+        accessToken: String,
+        limit: Int,
+        offset: Int,
+    ): Result<BoschActivityPage> =
         runCatching {
-            val response = apiClient.get(BoschEndpoint.SMART_ACTIVITIES.toRequest(), accessToken)
+            val response = apiClient.get(
+                BoschRequest(
+                    label = BoschEndpoint.SMART_ACTIVITIES.label,
+                    baseUrl = BoschEndpoint.SMART_ACTIVITIES.baseUrl,
+                    path = "/activity/smart-system/v1/activities?limit=$limit&offset=$offset",
+                ),
+                accessToken
+            )
             val json = extractJsonBody(response) ?: error("Keine Aktivitätendaten erhalten")
             val root = JSONObject(json)
             val items = root.optJSONArray("activitySummaries") ?: JSONArray()
-            items.mapObjects(::parseActivity)
+            val pagination = root.optJSONObject("pagination")
+            BoschActivityPage(
+                total = pagination?.optInt("total") ?: items.length(),
+                offset = pagination?.optInt("offset") ?: offset,
+                limit = pagination?.optInt("limit") ?: limit,
+                items = items.mapObjects(::parseActivity),
+            )
         }
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> =

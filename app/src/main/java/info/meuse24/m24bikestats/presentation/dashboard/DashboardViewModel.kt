@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
@@ -31,6 +32,8 @@ class DashboardViewModel(
 
     private var cachedActivities: List<BoschActivity> = emptyList()
     private var cachedBikes: List<BoschBike> = emptyList()
+    private var activityOffset: Int = 0
+    private var activityTotalCount: Int = 0
 
     init {
         refresh()
@@ -47,13 +50,13 @@ class DashboardViewModel(
                 )
             }
 
-            val activitiesDeferred = async { getActivities() }
+            val activitiesDeferred = async { getActivities(limit = ACTIVITIES_PAGE_SIZE, offset = 0) }
             val bikesDeferred = async { getBikes() }
 
             val activitiesResult = activitiesDeferred.await()
             val bikesResult = bikesDeferred.await()
 
-            val activities = activitiesResult.getOrElse { error ->
+            val activityPage = activitiesResult.getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isLoading = false,
@@ -75,16 +78,56 @@ class DashboardViewModel(
                 return@launch
             }
 
-            cachedActivities = activities
+            cachedActivities = activityPage.items
             cachedBikes = bikes
+            activityOffset = activityPage.offset + activityPage.items.size
+            activityTotalCount = activityPage.total
 
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
-                    activities = activities.map(::toActivityCardUiModel),
+                    isLoadingMoreActivities = false,
+                    activityTotalCount = activityPage.total,
+                    loadedActivityCount = cachedActivities.size,
+                    canLoadMoreActivities = cachedActivities.size < activityPage.total,
+                    activities = cachedActivities.map(::toActivityCardUiModel),
                     bikes = bikes.map(::toBikeCardUiModel),
                     error = null,
+                )
+            }
+        }
+    }
+
+    fun loadMoreActivities() {
+        val state = _uiState.value
+        if (state.isLoading || state.isRefreshing || state.isLoadingMoreActivities || !state.canLoadMoreActivities) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMoreActivities = true, error = null) }
+
+            val nextPage = getActivities(limit = ACTIVITIES_PAGE_SIZE, offset = activityOffset)
+                .getOrElse { error ->
+                    _uiState.update {
+                        it.copy(
+                            isLoadingMoreActivities = false,
+                            error = error.message ?: "Weitere Aktivitäten konnten nicht geladen werden",
+                        )
+                    }
+                    return@launch
+                }
+
+            cachedActivities = cachedActivities + nextPage.items
+            activityOffset = nextPage.offset + nextPage.items.size
+            activityTotalCount = nextPage.total
+
+            _uiState.update {
+                it.copy(
+                    isLoadingMoreActivities = false,
+                    activityTotalCount = activityTotalCount,
+                    loadedActivityCount = cachedActivities.size,
+                    canLoadMoreActivities = cachedActivities.size < activityTotalCount,
+                    activities = cachedActivities.map(::toActivityCardUiModel),
                 )
             }
         }
@@ -157,25 +200,54 @@ class DashboardViewModel(
     private fun toActivityDetailUiModel(activity: BoschActivity): ActivityDetailUiModel {
         return ActivityDetailUiModel(
             title = activity.title,
-            metrics = buildList {
+            summary = buildList {
                 add("Start" to activity.startTime.toReadableDateTime())
-                activity.endTime?.let { add("Ende" to it.toReadableDateTime()) }
-                add("Dauer" to activity.durationWithoutStopsSeconds.toDurationText())
                 add("Distanz" to activity.distanceMeters.toKilometerText())
-                activity.startOdometerMeters?.let { add("Start-Kilometerstand" to it.toKilometerText()) }
-                activity.bikeId?.let { add("Bike-ID" to it) }
+                add("Dauer" to activity.durationWithoutStopsSeconds.toDurationText())
                 activity.averageSpeedKmh?.let { add("Ø Geschwindigkeit" to it.toSpeedText()) }
-                activity.maxSpeedKmh?.let { add("Max. Geschwindigkeit" to it.toSpeedText()) }
-                activity.averageCadenceRpm?.let { add("Ø Kadenz" to "${it.toWholeNumber()} rpm") }
-                activity.maxCadenceRpm?.let { add("Max. Kadenz" to "${it.toWholeNumber()} rpm") }
-                activity.averageRiderPowerWatts?.let { add("Ø Fahrerleistung" to "${it.toWholeNumber()} W") }
-                activity.maxRiderPowerWatts?.let { add("Max. Fahrerleistung" to "${it.toWholeNumber()} W") }
-                if (activity.elevationGainMeters != null && activity.elevationLossMeters != null) {
-                    add("Höhenmeter" to "+${activity.elevationGainMeters} m / -${activity.elevationLossMeters} m")
-                }
-                activity.caloriesBurned?.let { add("Kalorien" to "${it.toWholeNumber()} kcal") }
-                activity.timeZone?.let { add("Zeitzone" to it) }
-            }
+            },
+            sections = buildList {
+                add(
+                    DetailSectionUiModel(
+                        title = "Zeit & Strecke",
+                        rows = buildList {
+                            add("Start" to activity.startTime.toReadableDateTime())
+                            activity.endTime?.let { add("Ende" to it.toReadableDateTime()) }
+                            add("Dauer ohne Stopps" to activity.durationWithoutStopsSeconds.toDurationText())
+                            add("Distanz" to activity.distanceMeters.toKilometerText())
+                            activity.startOdometerMeters?.let { add("Start-Kilometerstand" to it.toKilometerText()) }
+                            activity.timeZone?.let { add("Zeitzone" to it) }
+                            activity.bikeId?.let { add("Bike-ID" to it) }
+                        }
+                    )
+                )
+
+                add(
+                    DetailSectionUiModel(
+                        title = "Leistung & Fahrt",
+                        rows = buildList {
+                            activity.averageSpeedKmh?.let { add("Ø Geschwindigkeit" to it.toSpeedText()) }
+                            activity.maxSpeedKmh?.let { add("Max. Geschwindigkeit" to it.toSpeedText()) }
+                            activity.averageCadenceRpm?.let { add("Ø Kadenz" to "${it.toWholeNumber()} rpm") }
+                            activity.maxCadenceRpm?.let { add("Max. Kadenz" to "${it.toWholeNumber()} rpm") }
+                            activity.averageRiderPowerWatts?.let { add("Ø Fahrerleistung" to "${it.toWholeNumber()} W") }
+                            activity.maxRiderPowerWatts?.let { add("Max. Fahrerleistung" to "${it.toWholeNumber()} W") }
+                        }
+                    )
+                )
+
+                add(
+                    DetailSectionUiModel(
+                        title = "Höhenmeter & Energie",
+                        rows = buildList {
+                            if (activity.elevationGainMeters != null && activity.elevationLossMeters != null) {
+                                add("Höhenmeter" to "+${activity.elevationGainMeters} m / -${activity.elevationLossMeters} m")
+                            }
+                            activity.caloriesBurned?.let { add("Kalorien" to "${it.toWholeNumber()} kcal") }
+                        }
+                    )
+                )
+            }.filter { it.rows.isNotEmpty() }
         )
     }
 
@@ -320,6 +392,7 @@ class DashboardViewModel(
         String.format(Locale.US, "%.0f", this)
 
     companion object {
+        private const val ACTIVITIES_PAGE_SIZE = 20
         private val DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
     }

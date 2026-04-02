@@ -3,6 +3,10 @@ package info.meuse24.m24bikestats.presentation.dashboard
 data class DashboardUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
+    val isLoadingMoreActivities: Boolean = false,
+    val activityTotalCount: Int = 0,
+    val loadedActivityCount: Int = 0,
+    val canLoadMoreActivities: Boolean = false,
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
     val selectedBikeDetail: BikeDetailUiModel? = null,
@@ -26,7 +30,8 @@ data class ActivityCardUiModel(
 
 data class ActivityDetailUiModel(
     val title: String,
-    val metrics: List<Pair<String, String>>,
+    val summary: List<Pair<String, String>>,
+    val sections: List<DetailSectionUiModel>,
 )
 
 data class BikeCardUiModel(
