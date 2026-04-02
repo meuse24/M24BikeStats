@@ -34,12 +34,12 @@ Single-Module Android-App mit **Clean Architecture** und **Jetpack Compose**.
 
 ```
 domain/          ← reines Kotlin, kein Android-Framework
-  model/         ← BoschEndpoint (Enum)
+  model/         ← BoschEndpoint (Enum mit baseUrl + path)
   repository/    ← AuthRepository, BoschRepository (Interfaces)
   usecase/       ← FetchBoschDataUseCase
 
 data/            ← implementiert Domain-Interfaces
-  remote/        ← BoschApiClient (OkHttp, class)
+  remote/        ← BoschApiClient (OkHttp, JWT-Decoder)
   repository/    ← BoschRepositoryImpl
 
 auth/            ← OAuth2-Brücke (plattformspezifisch)
@@ -92,16 +92,51 @@ Koin (`AppModule`):
 
 ### Credentials
 
-```
-# secrets.properties (nicht im Repo, in .gitignore)
-BOSCH_CLIENT_ID=euda-2c8d2760-d459-40aa-adc9-6eb7a8b91bd7
-BOSCH_CLIENT_SECRET=  ← nicht benötigt (public client)
-```
-
 Client-ID ist in `OAuthConfig.kt` hart kodiert (kein Geheimnis bei public clients).
+`secrets.properties` wird nicht benötigt.
 
-### Offene Punkte
+---
 
-- Genaue Scope-Werte aus `https://portal.bosch-ebike.com/data-act/app#/introduction` ermitteln
-- Bosch API-Endpunkte in `BoschEndpoint.kt` nach erstem erfolgreichen Login validieren
-- Token-Refresh-Logik implementieren (Refresh Token ist in `AuthManager` gespeichert)
+## Bosch eBike API – bestätigte Erkenntnisse
+
+### Token-Eigenschaften (aus JWT-Analyse)
+
+| Claim | Wert | Bedeutung |
+|---|---|---|
+| `aud` | `api-bosch-ebike` | Token gilt für `api.bosch-ebike.com` |
+| `scope` | `euda:read ...` | EU Data Act Lesezugriff – automatisch erteilt |
+| `ebike-rider-id` | UUID | Rider-ID für Detailabfragen |
+| Lebensdauer | 3600 s | Refresh Token vorhanden |
+
+### API-Endpunkte (Quelle: open-ebike/open-ebike-backend)
+
+**Base URL:** `https://api.bosch-ebike.com`
+
+```
+# Smart System / BES3 (Flow-App, ~ab 2022) – wahrscheinlich korrekt
+GET /activity/smart-system/v1/activities?limit=20&offset=0
+GET /bike-profile/smart-system/v1/bikes
+
+# eBike System 2 / BES2 (ältere Modelle)
+GET /activity/ebike-system-2/v1/activities?limit=20&offset=0
+GET /bike-profile/ebike-system-2/v1/bikes
+
+# OIDC – bestätigt HTTP 200
+GET https://p9.authz.bosch.com/.../userinfo
+```
+
+`BoschEndpoint.kt` enthält alle Varianten inkl. TOKEN_INFO (lokaler JWT-Decoder) und OIDC_DISCOVERY.
+
+### Endpunkte die nicht funktionieren
+
+- `flow.bosch-ebike.com/data-act/...` → HTTP 401 (falscher Host für API-Token)
+- `api.bosch-ebike.com/data-act/v1/...` → HTTP 404 (falsche Pfadstruktur)
+- `api.bosch-ebike.com/bikes` → HTTP 404 (kein Präfix)
+
+---
+
+## Offene Punkte
+
+- Smart System vs. BES2 für Cannondale Performance Line CX bestätigen
+- Token-Refresh-Logik implementieren (`getRefreshToken()` in `AuthManager` vorhanden)
+- Weitere Endpunkte aus Bruno-Collection (Diagnose, Remote Config) einbinden
