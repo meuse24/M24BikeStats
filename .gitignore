@@ -1,0 +1,36 @@
+# --- Gradle ---
+.gradle/
+build/
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- Android Studio / IntelliJ ---
+*.iml
+.idea/caches/
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/.gitignore
+
+# --- Local config (machine-specific, never commit) ---
+local.properties
+secrets.properties
+
+# --- Keystore / Signing ---
+*.jks
+*.keystore
+keystore.properties
+
+# --- NDK / Native ---
+.externalNativeBuild/
+.cxx/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+
+# --- Misc ---
+/captures/
+*.orig
