@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.data.remote
 
 import android.util.Base64
 import info.meuse24.m24bikestats.domain.model.BoschRequest
+import info.meuse24.m24bikestats.shared.TokenInfoFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -46,7 +47,7 @@ class BoschApiClient {
             val header  = String(Base64.decode(parts[0], Base64.URL_SAFE or Base64.NO_PADDING))
             val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING))
 
-            "=== HEADER ===\n$header\n\n=== PAYLOAD ===\n$payload"
+            TokenInfoFormat.format(header = header, payload = payload)
         } catch (e: Exception) {
             "JWT-Decodierung fehlgeschlagen: ${e.message}"
         }

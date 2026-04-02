@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+import info.meuse24.m24bikestats.shared.TokenInfoFormat
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -94,18 +95,34 @@ private fun parseActivities(response: String): BoschReadableResult.Activities? {
                 duration = activity.optInt("durationWithoutStops").toDurationText(),
                 distanceKm = activity.optInt("distance").toKilometerText(),
                 averageSpeed = activity.optJSONObject("speed")
-                    ?.optDouble("average")
-                    ?.toSpeedText()
+                    ?.optMetricText("average", unit = "km/h")
                     ?: "n/a",
                 maxSpeed = activity.optJSONObject("speed")
-                    ?.optDouble("maximum")
-                    ?.toSpeedText()
+                    ?.optMetricText("maximum", unit = "km/h")
                     ?: "n/a",
                 cadence = activity.optJSONObject("cadence")?.let {
-                    "Ø ${it.optDouble("average").toWholeNumber()} rpm, max ${it.optDouble("maximum").toWholeNumber()} rpm"
+                    val average = it.optMetricText("average", unit = "rpm")
+                    val maximum = it.optMetricText("maximum", unit = "rpm")
+                    if (average == null && maximum == null) {
+                        null
+                    } else {
+                        listOfNotNull(
+                            average?.let { value -> "Ø $value" },
+                            maximum?.let { value -> "max $value" },
+                        ).joinToString(", ")
+                    }
                 },
                 riderPower = activity.optJSONObject("riderPower")?.let {
-                    "Ø ${it.optDouble("average").toWholeNumber()} W, max ${it.optDouble("maximum").toWholeNumber()} W"
+                    val average = it.optMetricText("average", unit = "W")
+                    val maximum = it.optMetricText("maximum", unit = "W")
+                    if (average == null && maximum == null) {
+                        null
+                    } else {
+                        listOfNotNull(
+                            average?.let { value -> "Ø $value" },
+                            maximum?.let { value -> "max $value" },
+                        ).joinToString(", ")
+                    }
                 },
                 elevation = activity.optJSONObject("elevation")?.let {
                     "+${it.optInt("gain")} m / -${it.optInt("loss")} m"
@@ -146,8 +163,7 @@ private fun parseUserInfo(response: String): BoschReadableResult.UserInfo? {
 }
 
 private fun parseTokenInfo(response: String): BoschReadableResult.TokenInfo? {
-    val payload = response.substringAfter("=== PAYLOAD ===", "").trim()
-    if (!payload.startsWith("{")) return null
+    val payload = TokenInfoFormat.extractPayload(response) ?: return null
     val root = JSONObject(payload)
     return BoschReadableResult.TokenInfo(
         audience = root.optJSONArray("aud")?.toStringList().orEmpty(),
@@ -204,7 +220,8 @@ private fun parseBikeItem(root: JSONObject): BikeItem {
     )
 }
 
-private fun extractJsonBody(response: String): String? {
+internal fun extractJsonBody(response: String?): String? {
+    if (response.isNullOrBlank()) return null
     return response.substringAfter("\n\n", missingDelimiterValue = response)
         .trim()
         .takeIf { it.startsWith("{") || it.startsWith("[") }
@@ -246,11 +263,16 @@ private fun Int.toDurationText(): String {
 private fun Int.toKilometerText(): String =
     String.format(Locale.US, "%.1f km", this / 1000.0)
 
-private fun Double.toSpeedText(): String =
-    String.format(Locale.US, "%.1f km/h", this)
-
 private fun Double.toWholeNumber(): String =
     String.format(Locale.US, "%.0f", this)
+
+private fun JSONObject.optMetricText(key: String, unit: String): String? {
+    val value = optDouble(key)
+    return value.takeIf { !it.isNaN() }?.let {
+        if (unit == "km/h") String.format(Locale.US, "%.1f %s", it, unit)
+        else "${it.toWholeNumber()} $unit"
+    }
+}
 
 private val DATE_TIME_FORMATTER: DateTimeFormatter =
     DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")

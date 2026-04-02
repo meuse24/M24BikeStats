@@ -49,9 +49,9 @@ class ApiTestViewModel(
 
             val reportBuilder = StringBuilder(
                 buildString {
-                appendLine("=== Bosch Endpoint Batch Test ===")
-                appendLine("Endpoints: ${BoschEndpoint.entries.size}")
-                appendLine()
+                    appendLine("=== Bosch Endpoint Batch Test ===")
+                    appendLine("Endpoints: ${BoschEndpoint.entries.size}")
+                    appendLine()
                 }
             )
 
@@ -124,12 +124,5 @@ class ApiTestViewModel(
         val json = extractJsonBody(response) ?: return null
         val bikes = JSONObject(json).optJSONArray("bikes") ?: return null
         return bikes.optJSONObject(0)?.optString("id")?.takeIf { it.isNotBlank() }
-    }
-
-    private fun extractJsonBody(response: String?): String? {
-        if (response.isNullOrBlank()) return null
-        return response.substringAfter("\n\n", missingDelimiterValue = response)
-            .trim()
-            .takeIf { it.startsWith("{") || it.startsWith("[") }
     }
 }

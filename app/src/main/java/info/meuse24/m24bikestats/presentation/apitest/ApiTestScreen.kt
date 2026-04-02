@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -82,6 +83,7 @@ fun ApiTestScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             EndpointDropdown(
                 selected = uiState.selectedEndpoint,
@@ -142,10 +144,7 @@ fun ApiTestScreen(
 
             Text("Rohdaten", style = MaterialTheme.typography.titleMedium)
             Spacer(modifier = Modifier.height(8.dp))
-            JsonOutputBox(
-                json = uiState.jsonOutput,
-                modifier = Modifier.weight(1f)
-            )
+            JsonOutputBox(json = uiState.jsonOutput)
         }
     }
 }
@@ -192,11 +191,7 @@ private fun EndpointDropdown(
 
 @Composable
 private fun ReadableResultSection(result: BoschReadableResult) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-    ) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text("Verständliche Ansicht", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -263,10 +258,7 @@ private fun ActivitiesSection(result: BoschReadableResult.Activities) {
 
 @Composable
 private fun BikeListSection(result: BoschReadableResult.BikeList) {
-    SimpleInfoCard(
-        title = "Bikes (${result.bikes.size})",
-        lines = listOf("Gefundene Bikes: ${result.bikes.size}")
-    )
+    Text("Bikes (${result.bikes.size})", style = MaterialTheme.typography.titleMedium)
     Spacer(modifier = Modifier.height(8.dp))
     result.bikes.forEach { bike ->
         BikeCard(bike)
@@ -345,7 +337,9 @@ private fun JsonOutputBox(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 220.dp, max = 420.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
         shape = MaterialTheme.shapes.medium,
     ) {
