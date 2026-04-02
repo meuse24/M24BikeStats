@@ -136,8 +136,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 
 ### Aktueller UI-Stand
 
-- Startziel nach Login ist jetzt `dashboard`
-- Dashboard zeigt eine fachliche Aktivitätenübersicht und Bike-Ansicht
+- Startziel nach Login ist `dashboard`
+- Dashboard zeigt Aktivitäten, Bike und API-Test in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätsdetails basieren derzeit auf den Summary-Daten aus der Listenantwort
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`

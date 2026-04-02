@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -56,6 +57,8 @@ fun LoginScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        Spacer(modifier = Modifier.height(24.dp))
+        SingleKeyHint()
         Spacer(modifier = Modifier.height(48.dp))
 
         when (status) {
@@ -83,5 +86,28 @@ fun LoginScreen(
 private fun LoginButton(onClick: () -> Unit) {
     Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
         Text("Mit Bosch anmelden")
+    }
+}
+
+@Composable
+private fun SingleKeyHint() {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Anmeldung mit Bosch SingleKey ID",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Die eBike Flow App nutzt Bosch SingleKey ID als gemeinsamen Login fuer Bosch-Dienste.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Wenn du bereits eine SingleKey ID hast, kannst du diese direkt verwenden. Ein altes eBike Connect-Konto funktioniert fuer die Flow-App-Anmeldung nicht automatisch.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

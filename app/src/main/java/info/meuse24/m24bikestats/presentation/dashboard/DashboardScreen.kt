@@ -1,21 +1,29 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -26,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,16 +47,28 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
+import info.meuse24.m24bikestats.presentation.apitest.ApiTestUiState
+import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+
+private val dashboardTabs = listOf("Aktivitäten", "Bike", "API-Test")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
+    apiTestUiState: ApiTestUiState,
     onRefresh: () -> Unit,
     onLoadMoreActivities: () -> Unit,
-    onNavigateToApiTest: () -> Unit,
+    onSelectApiEndpoint: (BoschEndpoint) -> Unit,
+    onFetchApiEndpoint: () -> Unit,
+    onRunAllApiEndpoints: () -> Unit,
+    onClearApiOutput: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToBikeDetail: (String) -> Unit,
     onLogout: () -> Unit,
@@ -66,16 +87,24 @@ fun DashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("M24 Bike Stats") },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Aktualisieren")
+                title = {
+                    Column {
+                        Text("M24 Bike Stats")
+                        Text(
+                            text = dashboardTabs[selectedTabIndex],
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
-                    IconButton(onClick = onNavigateToApiTest) {
-                        Text("API")
+                },
+                actions = {
+                    if (selectedTabIndex != 2) {
+                        IconButton(onClick = onRefresh) {
+                            Icon(Icons.Default.Refresh, contentDescription = "Aktualisieren")
+                        }
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Abmelden")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Abmelden")
                     }
                 }
             )
@@ -92,7 +121,7 @@ fun DashboardScreen(
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     ScrollableTabRow(selectedTabIndex = selectedTabIndex) {
-                        listOf("Aktivitäten", "Bike").forEachIndexed { index, title ->
+                        dashboardTabs.forEachIndexed { index, title ->
                             Tab(
                                 selected = selectedTabIndex == index,
                                 onClick = { selectedTabIndex = index },
@@ -107,12 +136,18 @@ fun DashboardScreen(
                             activities = uiState.activities,
                             onActivityClick = onNavigateToActivityDetail,
                             onLoadMore = onLoadMoreActivities,
-                            isRefreshing = uiState.isRefreshing,
                         )
-                        else -> BikesOverview(
+                        1 -> BikesOverview(
                             bikes = uiState.bikes,
-                            onBikeClick = onNavigateToBikeDetail,
                             isRefreshing = uiState.isRefreshing,
+                            onBikeClick = onNavigateToBikeDetail,
+                        )
+                        else -> ApiTestContent(
+                            uiState = apiTestUiState,
+                            onSelectEndpoint = onSelectApiEndpoint,
+                            onFetch = onFetchApiEndpoint,
+                            onRunAll = onRunAllApiEndpoints,
+                            onClear = onClearApiOutput,
                         )
                     }
                 }
@@ -152,20 +187,18 @@ fun ActivityDetailScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 item {
-                    Text(activity.title, style = MaterialTheme.typography.headlineSmall)
-                }
-                item {
-                    DetailSectionCard(
-                        section = DetailSectionUiModel(
-                            title = "Kurzüberblick",
-                            rows = activity.summary,
-                        )
-                    )
+                    HeroCard(
+                        eyebrow = "Aktivität",
+                        title = activity.title,
+                        subtitle = "Zusammenfassung aus den Bosch Smart-System-Listenwerten",
+                    ) {
+                        SummaryChipRow(activity.summary)
+                    }
                 }
                 items(activity.sections) { section ->
                     DetailSectionCard(section)
@@ -214,14 +247,16 @@ fun BikeDetailScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
-                        .padding(16.dp),
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     item {
-                        uiState.selectedBikeDetail.subtitle?.let {
-                            Text(it, style = MaterialTheme.typography.titleMedium)
-                        }
+                        HeroCard(
+                            eyebrow = "Smart System Bike",
+                            title = uiState.selectedBikeDetail.title,
+                            subtitle = uiState.selectedBikeDetail.subtitle ?: "Komponenten und Batteriesystem",
+                        )
                     }
                     items(uiState.selectedBikeDetail.sections) { section ->
                         DetailSectionCard(section)
@@ -248,51 +283,48 @@ private fun ActivitiesOverview(
     activities: List<ActivityCardUiModel>,
     onActivityClick: (String) -> Unit,
     onLoadMore: () -> Unit,
-    isRefreshing: Boolean,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            HeroCard(
+                eyebrow = "Tourenübersicht",
+                title = "${uiState.loadedActivityCount} von ${uiState.activityTotalCount} Aktivitäten geladen",
+                subtitle = "Die App liest aktuell die bestätigten Summary-Daten aus Bosch Smart System.",
             ) {
-                Column {
-                    Text("Aktivitäten", style = MaterialTheme.typography.headlineSmall)
-                    Text(
-                        "${uiState.loadedActivityCount} von ${uiState.activityTotalCount}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        MetricPill(
+                            label = "Geladen",
+                            value = uiState.loadedActivityCount.toString(),
+                        )
+                    }
+                    item {
+                        MetricPill(
+                            label = "Gesamt",
+                            value = uiState.activityTotalCount.toString(),
+                        )
+                    }
+                    item {
+                        MetricPill(
+                            label = "Status",
+                            value = if (uiState.isRefreshing) "Aktualisiert..." else "Bereit",
+                        )
+                    }
                 }
-                if (isRefreshing) CircularProgressIndicator()
             }
         }
+
         items(activities, key = { it.id }) { activity ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onActivityClick(activity.id) }
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(activity.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(activity.dateLabel, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("Distanz: ${activity.distanceLabel}")
-                    Text("Dauer: ${activity.durationLabel}")
-                    Text("Geschwindigkeit: ${activity.speedLabel}")
-                    activity.powerLabel?.let { Text("Leistung: $it") }
-                    activity.elevationLabel?.let { Text("Höhenmeter: $it") }
-                    activity.caloriesLabel?.let { Text("Kalorien: $it") }
-                }
-            }
+            ActivityCard(
+                activity = activity,
+                onClick = { onActivityClick(activity.id) },
+            )
         }
+
         item {
             when {
                 uiState.isLoadingMoreActivities -> {
@@ -319,42 +351,171 @@ private fun ActivitiesOverview(
 @Composable
 private fun BikesOverview(
     bikes: List<BikeCardUiModel>,
-    onBikeClick: (String) -> Unit,
     isRefreshing: Boolean,
+    onBikeClick: (String) -> Unit,
 ) {
     LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
+            HeroCard(
+                eyebrow = "Bike-Profil",
+                title = if (bikes.isEmpty()) "Kein Bike gefunden" else "${bikes.size} Bike${if (bikes.size == 1) "" else "s"} verfügbar",
+                subtitle = if (isRefreshing) "Bike-Daten werden aktualisiert." else "Komponenten-, Assist- und Batterieinformationen aus Bosch Smart System.",
+            )
+        }
+
+        items(bikes, key = { it.id }) { bike ->
+            BikeOverviewCard(
+                bike = bike,
+                onClick = { onBikeClick(bike.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroCard(
+    eyebrow: String,
+    title: String,
+    subtitle: String,
+    content: @Composable (() -> Unit)? = null,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            colorScheme.primaryContainer,
+                            colorScheme.secondaryContainer,
+                        )
+                    )
+                )
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = eyebrow,
+                style = MaterialTheme.typography.labelLarge,
+                color = colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+            )
+            content?.invoke()
+        }
+    }
+}
+
+@Composable
+private fun ActivityCard(
+    activity: ActivityCardUiModel,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
-                Text("Bike", style = MaterialTheme.typography.headlineSmall)
-                if (isRefreshing) CircularProgressIndicator()
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = activity.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = activity.dateLabel,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                StatusBadge(activity.distanceLabel)
+            }
+
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item { MetricPill("Dauer", activity.durationLabel) }
+                item { MetricPill("Tempo", activity.speedLabel) }
+                activity.powerLabel?.let { item { MetricPill("Leistung", it) } }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                OptionalRow("Höhenmeter", activity.elevationLabel)
+                OptionalRow("Kalorien", activity.caloriesLabel)
             }
         }
-        items(bikes, key = { it.id }) { bike ->
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onBikeClick(bike.id) }
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(bike.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-                    bike.subtitle?.let {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    bike.odometerLabel?.let { Text("Kilometerstand: $it") }
-                    bike.assistSpeedLabel?.let { Text("Max. Unterstützung: $it") }
-                    bike.batterySummary?.let { Text("Batterie: $it") }
-                }
+    }
+}
+
+@Composable
+private fun BikeOverviewCard(
+    bike: BikeCardUiModel,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = bike.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            bike.subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                bike.odometerLabel?.let { item { MetricPill("Kilometer", it) } }
+                bike.assistSpeedLabel?.let { item { MetricPill("Assist", it) } }
+            }
+            SectionSurface {
+                OptionalRow("Batterie", bike.batterySummary)
+                Text(
+                    text = "Tippe für Komponenten-, Batterie- und Head-Unit-Details.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
@@ -362,10 +523,18 @@ private fun BikesOverview(
 
 @Composable
 private fun DetailSectionCard(section: DetailSectionUiModel) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(section.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(modifier = Modifier.height(8.dp))
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(
+                section.title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(10.dp))
             section.rows.forEach { (label, value) ->
                 DetailRow(label = label, value = value)
             }
@@ -378,8 +547,114 @@ private fun DetailRow(
     label: String,
     value: String,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.bodyLarge)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            value,
+            style = MaterialTheme.typography.bodyLarge,
+        )
+    }
+}
+
+@Composable
+private fun SummaryChipRow(summary: List<Pair<String, String>>) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(summary) { (label, value) ->
+            MetricPill(label = label, value = value)
+        }
+    }
+}
+
+@Composable
+private fun MetricPill(
+    label: String,
+    value: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusBadge(value: String) {
+    Box(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.secondaryContainer)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+        )
+    }
+}
+
+@Composable
+private fun SectionSurface(content: @Composable () -> Unit) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun OptionalRow(
+    label: String,
+    value: String?,
+) {
+    if (value == null) return
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium,
+        )
     }
 }

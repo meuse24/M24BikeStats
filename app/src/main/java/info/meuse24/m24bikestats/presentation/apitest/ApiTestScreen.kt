@@ -62,10 +62,6 @@ fun ApiTestScreen(
     onClear: () -> Unit,
     onLogout: () -> Unit,
 ) {
-    val readableResult = remember(uiState.selectedEndpoint, uiState.jsonOutput) {
-        parseReadableResult(uiState.selectedEndpoint, uiState.jsonOutput)
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -78,74 +74,95 @@ fun ApiTestScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            EndpointDropdown(
-                selected = uiState.selectedEndpoint,
-                onSelect = onSelectEndpoint,
-            )
+        ApiTestContent(
+            uiState = uiState,
+            onSelectEndpoint = onSelectEndpoint,
+            onFetch = onFetch,
+            onRunAll = onRunAll,
+            onClear = onClear,
+            modifier = Modifier.padding(padding),
+        )
+    }
+}
 
-            Spacer(modifier = Modifier.height(4.dp))
+@Composable
+fun ApiTestContent(
+    uiState: ApiTestUiState,
+    onSelectEndpoint: (BoschEndpoint) -> Unit,
+    onFetch: () -> Unit,
+    onRunAll: () -> Unit,
+    onClear: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val readableResult = remember(uiState.selectedEndpoint, uiState.jsonOutput) {
+        parseReadableResult(uiState.selectedEndpoint, uiState.jsonOutput)
+    }
 
-            // Vollständige URL anzeigen – hilft beim Debuggen der 404-Varianten
-            Text(
-                text = "${uiState.selectedEndpoint.baseUrl}${uiState.selectedEndpoint.path}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontFamily = FontFamily.Monospace,
-            )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        EndpointDropdown(
+            selected = uiState.selectedEndpoint,
+            onSelect = onSelectEndpoint,
+        )
 
-            Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
-            val context = LocalContext.current
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Button(onClick = onFetch, enabled = !uiState.isLoading) {
-                    Text("Abrufen")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(onClick = onRunAll, enabled = !uiState.isLoading) {
-                    Text("Alle testen")
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-                IconButton(
-                    onClick = {
-                        val intent = Intent(Intent.ACTION_SEND).apply {
-                            type = "text/plain"
-                            putExtra(Intent.EXTRA_SUBJECT, uiState.selectedEndpoint.label)
-                            putExtra(Intent.EXTRA_TEXT, uiState.jsonOutput)
-                        }
-                        context.startActivity(Intent.createChooser(intent, "JSON teilen"))
-                    },
-                    enabled = uiState.jsonOutput.isNotEmpty(),
-                ) {
-                    Icon(Icons.Default.Share, contentDescription = "Teilen")
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                IconButton(onClick = onClear, enabled = uiState.jsonOutput.isNotEmpty()) {
-                    Icon(Icons.Default.Clear, contentDescription = "Ausgabe leeren")
-                }
-                if (uiState.isLoading) {
-                    Spacer(modifier = Modifier.width(12.dp))
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                }
+        Text(
+            text = "${uiState.selectedEndpoint.baseUrl}${uiState.selectedEndpoint.path}",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontFamily = FontFamily.Monospace,
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        val context = LocalContext.current
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Button(onClick = onFetch, enabled = !uiState.isLoading) {
+                Text("Abrufen")
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (readableResult != null) {
-                ReadableResultSection(readableResult)
-                Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(onClick = onRunAll, enabled = !uiState.isLoading) {
+                Text("Alle testen")
             }
-
-            Text("Rohdaten", style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-            JsonOutputBox(json = uiState.jsonOutput)
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_SUBJECT, uiState.selectedEndpoint.label)
+                        putExtra(Intent.EXTRA_TEXT, uiState.jsonOutput)
+                    }
+                    context.startActivity(Intent.createChooser(intent, "JSON teilen"))
+                },
+                enabled = uiState.jsonOutput.isNotEmpty(),
+            ) {
+                Icon(Icons.Default.Share, contentDescription = "Teilen")
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            IconButton(onClick = onClear, enabled = uiState.jsonOutput.isNotEmpty()) {
+                Icon(Icons.Default.Clear, contentDescription = "Ausgabe leeren")
+            }
+            if (uiState.isLoading) {
+                Spacer(modifier = Modifier.width(12.dp))
+                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+            }
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (readableResult != null) {
+            ReadableResultSection(readableResult)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        Text("Rohdaten", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        JsonOutputBox(json = uiState.jsonOutput)
     }
 }
 

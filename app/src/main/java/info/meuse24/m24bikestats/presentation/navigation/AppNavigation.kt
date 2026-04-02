@@ -4,11 +4,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
-import info.meuse24.m24bikestats.presentation.apitest.ApiTestScreen
 import info.meuse24.m24bikestats.presentation.dashboard.ActivityDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardScreen
@@ -16,17 +16,16 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginScreen
 import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
-import androidx.navigation.navArgument
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
 
-    // Activity-scoped: überlebt die Navigation zwischen Screens
     val loginViewModel: LoginViewModel = koinViewModel()
     val isAuthenticated = loginViewModel.status is LoginStatus.Authenticated
     val dashboardViewModel: DashboardViewModel? = if (isAuthenticated) koinViewModel() else null
+    val apiTestViewModel: ApiTestViewModel? = if (isAuthenticated) koinViewModel() else null
 
     val startDestination = if (isAuthenticated)
         "dashboard" else "login"
@@ -48,11 +47,16 @@ fun AppNavigation() {
 
         composable("dashboard") {
             val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
+            val apiTestUiState by apiTestViewModel!!.uiState.collectAsStateWithLifecycle()
             DashboardScreen(
                 uiState = uiState,
+                apiTestUiState = apiTestUiState,
                 onRefresh = dashboardViewModel::refresh,
                 onLoadMoreActivities = dashboardViewModel::loadMoreActivities,
-                onNavigateToApiTest = { navController.navigate("api_test") },
+                onSelectApiEndpoint = apiTestViewModel::selectEndpoint,
+                onFetchApiEndpoint = apiTestViewModel::fetch,
+                onRunAllApiEndpoints = apiTestViewModel::runAllEndpoints,
+                onClearApiOutput = apiTestViewModel::clear,
                 onNavigateToActivityDetail = { activityId ->
                     navController.navigate("activity/$activityId")
                 },
@@ -91,24 +95,6 @@ fun AppNavigation() {
                 onLoadBike = dashboardViewModel::loadBikeDetail,
                 bikeId = bikeId,
                 onNavigateBack = { navController.popBackStack() },
-            )
-        }
-
-        composable("api_test") {
-            val apiTestViewModel: ApiTestViewModel = koinViewModel()
-            val uiState by apiTestViewModel.uiState.collectAsStateWithLifecycle()
-            ApiTestScreen(
-                uiState = uiState,
-                onSelectEndpoint = apiTestViewModel::selectEndpoint,
-                onFetch = apiTestViewModel::fetch,
-                onRunAll = apiTestViewModel::runAllEndpoints,
-                onClear = apiTestViewModel::clear,
-                onLogout = {
-                    loginViewModel.logout()
-                    navController.navigate("login") {
-                        popUpTo("api_test") { inclusive = true }
-                    }
-                }
             )
         }
     }

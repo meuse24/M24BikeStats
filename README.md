@@ -8,8 +8,9 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Sicherer Token-Speicher via Android Keystore (`EncryptedSharedPreferences`)
 - Automatischer Access-Token-Refresh über den Bosch-OIDC-Token-Endpunkt
 - Fachliches Dashboard mit Aktivitätenübersicht, Aktivitätsdetail und Bike-Ansicht
+- API-Test als zusätzlicher Tab innerhalb des Dashboards
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
-- API-Test-Screen: Einzelaufrufe und Batch-Test aller bekannten Endpunkte mit Roh-JSON
+- API-Test-Tab: Einzelaufrufe und Batch-Test aller bekannten Endpunkte mit Roh-JSON
 
 ## Voraussetzungen
 
@@ -107,6 +108,7 @@ Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch 
 - paginierte Aktivitätenübersicht
 - Aktivitätsdetailseite auf Basis der Summary-Daten
 - `Mehr Aktivitäten laden` über `limit`/`offset`
+- API-Test als zusätzlicher Tab der Hauptnavigation statt als separater Primär-Screen
 
 ### Bike-Liste und Bike-Detail
 
