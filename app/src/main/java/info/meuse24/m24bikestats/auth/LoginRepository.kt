@@ -11,4 +11,6 @@ import info.meuse24.m24bikestats.domain.repository.AuthRepository
 interface LoginRepository : AuthRepository {
     fun buildAuthIntent(): Intent
     fun handleAuthResponse(intent: Intent, onSuccess: () -> Unit, onError: (String) -> Unit)
+    fun buildLogoutIntent(): Intent?
+    fun handleLogoutResponse(intent: Intent?, onComplete: () -> Unit, onError: (String) -> Unit)
 }

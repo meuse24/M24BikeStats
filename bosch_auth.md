@@ -83,6 +83,19 @@ grant_type=refresh_token
 &client_id=euda-2c8d2760-d459-40aa-adc9-6eb7a8b91bd7
 ```
 
+### Schritt 6 – Logout
+
+Die App versucht beim Abmelden einen OIDC-Logout gegen den Bosch-End-Session-Endpunkt:
+
+```
+GET https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/logout
+  ?id_token_hint=<id_token>
+  &post_logout_redirect_uri=m24bikestats://oauth-callback
+  &state=<zufälliger_wert>
+```
+
+Zusätzlich werden die lokal gespeicherten Tokens gelöscht. Wenn danach trotzdem ein automatischer Login passiert, kommt dieser in der Regel aus der bestehenden Session des Systembrowsers bzw. der Bosch-SingleKey-Anmeldung außerhalb der App.
+
 ---
 
 ## JWT-Token – bestätigte Claims
@@ -240,6 +253,7 @@ Pagination ist funktional relevant:
 - Tokens werden in `EncryptedSharedPreferences` (AES-256-GCM, Android Keystore) gespeichert
 - Token-Lebensdauer: 3600 Sekunden (1 Stunde) – Refresh Token für stille Verlängerung vorhanden
 - Die App soll vor API-Aufrufen den Access Token automatisch per Refresh Token erneuern
+- Beim Logout versucht die App zusätzlich, die OIDC-Session beim Provider zu beenden
 
 ---
 
@@ -249,5 +263,6 @@ Pagination ist funktional relevant:
 - [x] Bike-Detail-Endpunkt mit echter `bikeId` bestätigt
 - [x] Fachliche Dashboard-UI für Aktivitäten und Bikes auf Basis der verifizierten JSON-Strukturen
 - [x] Aktivitäten-Paginierung über `limit`/`offset`
+- [x] Logout gegen Bosch OIDC-End-Session erfolgreich getestet
 - [ ] Alternativen für Activity-Detail- und Track-Endpunkte recherchieren
 - [ ] Echte Activity-Detail-/Track-Daten statt Summary-only in der Aktivitätsdetailseite nutzen

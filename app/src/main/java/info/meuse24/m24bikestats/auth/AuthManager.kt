@@ -10,6 +10,8 @@ import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.CodeVerifierUtil
+import net.openid.appauth.EndSessionRequest
+import net.openid.appauth.EndSessionResponse
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.TokenRequest
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -88,7 +90,8 @@ class AuthManager(private val context: Context) : LoginRepository {
                     saveTokens(
                         accessToken = tokenResponse.accessToken ?: "",
                         refreshToken = tokenResponse.refreshToken ?: "",
-                        expiresAt = tokenResponse.accessTokenExpirationTime ?: 0L
+                        expiresAt = tokenResponse.accessTokenExpirationTime ?: 0L,
+                        idToken = tokenResponse.idToken
                     )
                     onSuccess()
                 }
@@ -127,6 +130,34 @@ class AuthManager(private val context: Context) : LoginRepository {
 
     override fun clearTokens() {
         prefs.edit().clear().apply()
+    }
+
+    override fun buildLogoutIntent(): Intent? {
+        val endSessionEndpoint = OAuthConfig.serviceConfiguration.endSessionEndpoint ?: return null
+        val requestBuilder = EndSessionRequest.Builder(OAuthConfig.serviceConfiguration)
+            .setPostLogoutRedirectUri(Uri.parse(OAuthConfig.REDIRECT_URI))
+
+        getIdToken()?.let(requestBuilder::setIdTokenHint)
+
+        val request = requestBuilder.build()
+        return authService.getEndSessionRequestIntent(request)
+    }
+
+    override fun handleLogoutResponse(
+        intent: Intent?,
+        onComplete: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val exception = intent?.let(AuthorizationException::fromIntent)
+        val response = intent?.let(EndSessionResponse::fromIntent)
+
+        clearTokens()
+
+        when {
+            exception != null -> onError("Logout-Fehler: ${exception.errorDescription ?: exception.error}")
+            response != null || intent != null -> onComplete()
+            else -> onComplete()
+        }
     }
 
     private suspend fun refreshAccessToken(refreshToken: String): Result<String> =
@@ -168,7 +199,8 @@ class AuthManager(private val context: Context) : LoginRepository {
                         saveTokens(
                             accessToken = updatedAccessToken,
                             refreshToken = updatedRefreshToken,
-                            expiresAt = expiresAt
+                            expiresAt = expiresAt,
+                            idToken = tokenResponse?.idToken ?: getIdToken()
                         )
                         continuation.resume(Result.success(updatedAccessToken))
                     }
@@ -181,11 +213,14 @@ class AuthManager(private val context: Context) : LoginRepository {
         return expiresAt <= System.currentTimeMillis() + EXPIRY_BUFFER_MS
     }
 
-    private fun saveTokens(accessToken: String, refreshToken: String, expiresAt: Long) {
+    private fun getIdToken(): String? = prefs.getString(KEY_ID_TOKEN, null)
+
+    private fun saveTokens(accessToken: String, refreshToken: String, expiresAt: Long, idToken: String?) {
         prefs.edit()
             .putString(KEY_ACCESS_TOKEN, accessToken)
             .putString(KEY_REFRESH_TOKEN, refreshToken)
             .putLong(KEY_EXPIRES_AT, expiresAt)
+            .putString(KEY_ID_TOKEN, idToken)
             .apply()
     }
 
@@ -193,6 +228,7 @@ class AuthManager(private val context: Context) : LoginRepository {
         private const val KEY_ACCESS_TOKEN = "access_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_EXPIRES_AT = "expires_at"
+        private const val KEY_ID_TOKEN = "id_token"
         private const val EXPIRY_BUFFER_MS = 60_000L
         private const val DEFAULT_TOKEN_LIFETIME_MS = 3_600_000L
     }

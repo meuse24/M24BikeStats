@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,6 +28,14 @@ fun AppNavigation() {
     val isAuthenticated = loginViewModel.status is LoginStatus.Authenticated
     val dashboardViewModel: DashboardViewModel? = if (isAuthenticated) koinViewModel() else null
     val apiTestViewModel: ApiTestViewModel? = if (isAuthenticated) koinViewModel() else null
+    val logoutLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) {
+        loginViewModel.handleLogoutResult(it.resultCode, it.data)
+        navController.navigate("login") {
+            popUpTo("dashboard") { inclusive = true }
+        }
+    }
 
     val startDestination = if (isAuthenticated)
         "dashboard" else "login"
@@ -64,9 +74,14 @@ fun AppNavigation() {
                     navController.navigate("bike/$bikeId")
                 },
                 onLogout = {
-                    loginViewModel.logout()
-                    navController.navigate("login") {
-                        popUpTo("dashboard") { inclusive = true }
+                    val logoutIntent = loginViewModel.buildLogoutIntent()
+                    if (logoutIntent != null) {
+                        logoutLauncher.launch(logoutIntent)
+                    } else {
+                        loginViewModel.logoutLocally()
+                        navController.navigate("login") {
+                            popUpTo("dashboard") { inclusive = true }
+                        }
                     }
                 },
                 onErrorShown = dashboardViewModel::clearError,

@@ -7,6 +7,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - OAuth2 + PKCE Authentifizierung gegen das Bosch eBike Portal (kein Client Secret erforderlich)
 - Sicherer Token-Speicher via Android Keystore (`EncryptedSharedPreferences`)
 - Automatischer Access-Token-Refresh über den Bosch-OIDC-Token-Endpunkt
+- Best-Effort-Logout über den Bosch-OIDC-End-Session-Endpunkt
 - Fachliches Dashboard mit Aktivitätenübersicht, Aktivitätsdetail und Bike-Ansicht
 - API-Test als zusätzlicher Tab innerhalb des Dashboards
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
@@ -62,6 +63,9 @@ Detaillierte Beschreibung: [CLAUDE.md](CLAUDE.md)
 | Redirect URI | `m24bikestats://oauth-callback` |
 | Flow        | Authorization Code + PKCE (RFC 7636) |
 | Endpunkte   | `p9.authz.bosch.com` (Keycloak, Realm `obc`) |
+
+Die Login-Seite verwendet einen kurzen Hinweis auf Bosch SingleKey ID.
+Die Anmeldung erfolgt in `M24 Bike Stats` mit demselben Bosch-Login-Prinzip wie bei der eBike Flow App.
 
 ## Tech Stack
 

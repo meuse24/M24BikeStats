@@ -82,7 +82,8 @@ Koin (`AppModule`):
 2. Bosch-Login → Redirect auf `m24bikestats://oauth-callback`
 3. `RedirectUriReceiverActivity` fängt Callback ab, liefert Result zurück
 4. `LoginViewModel.handleAuthResult()` → Token-Austausch → Token in `EncryptedSharedPreferences`
-5. Navigation → `ApiTestScreen`
+5. Navigation → `dashboard`
+6. Logout versucht zusätzlich einen OIDC-End-Session-Flow gegen Bosch, bevor die App lokal auf `login` zurückkehrt
 
 ### Compose-Muster
 
@@ -141,6 +142,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätsdetails basieren derzeit auf den Summary-Daten aus der Listenantwort
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
+- Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 
 ---
 

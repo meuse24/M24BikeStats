@@ -15,6 +15,8 @@ object OAuthConfig {
         "https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth"
     private const val TOKEN_ENDPOINT =
         "https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token"
+    private const val END_SESSION_ENDPOINT =
+        "https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/logout"
 
     // "openid" + "offline_access" sind OIDC-Standard.
     // "profile" + "email" werden zusätzlich angefragt (häufig für API-Zugriff nötig).
@@ -23,6 +25,8 @@ object OAuthConfig {
 
     val serviceConfiguration = AuthorizationServiceConfiguration(
         Uri.parse(AUTHORIZATION_ENDPOINT),
-        Uri.parse(TOKEN_ENDPOINT)
+        Uri.parse(TOKEN_ENDPOINT),
+        null,
+        Uri.parse(END_SESSION_ENDPOINT)
     )
 }

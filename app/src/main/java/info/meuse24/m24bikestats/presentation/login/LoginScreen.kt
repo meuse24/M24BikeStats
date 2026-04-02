@@ -99,12 +99,7 @@ private fun SingleKeyHint() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Die eBike Flow App nutzt Bosch SingleKey ID als gemeinsamen Login fuer Bosch-Dienste.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Wenn du bereits eine SingleKey ID hast, kannst du diese direkt verwenden. Ein altes eBike Connect-Konto funktioniert fuer die Flow-App-Anmeldung nicht automatisch.",
+                text = "Melde dich hier mit deiner Bosch SingleKey ID an, aehnlich wie bei der eBike Flow App. Wenn du bereits eine SingleKey ID hast, kannst du sie direkt verwenden.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -30,7 +30,26 @@ class LoginViewModel(private val authRepo: LoginRepository) : ViewModel() {
         )
     }
 
-    fun logout() {
+    fun buildLogoutIntent(): Intent? = authRepo.buildLogoutIntent()
+
+    fun handleLogoutResult(resultCode: Int, data: Intent?) {
+        if (resultCode != Activity.RESULT_OK) {
+            authRepo.clearTokens()
+            status = LoginStatus.Idle
+            return
+        }
+
+        authRepo.handleLogoutResponse(
+            intent = data,
+            onComplete = { status = LoginStatus.Idle },
+            onError = {
+                authRepo.clearTokens()
+                status = LoginStatus.Idle
+            }
+        )
+    }
+
+    fun logoutLocally() {
         authRepo.clearTokens()
         status = LoginStatus.Idle
     }
