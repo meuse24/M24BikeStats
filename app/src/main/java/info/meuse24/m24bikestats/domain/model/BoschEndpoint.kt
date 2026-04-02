@@ -1,39 +1,50 @@
 package info.meuse24.m24bikestats.domain.model
 
 /**
- * Bosch eBike Data Act API – bestätigte Endpunkte aus open-ebike-backend (Bruno-Collection).
- * Basis: https://api.bosch-ebike.com
+ * Bosch eBike Data Act API – Endpunkte für Smart System (BES3 / Flow-App).
  *
- * BES3 = Smart System (Flow-App, neuere Bikes ab ~2022) → wahrscheinlich dein Bike
- * BES2 = eBike System 2 (ältere Modelle)
+ * Base URL: https://api.bosch-ebike.com
+ * Quelle: open-ebike/open-ebike-backend (Bruno-Collection)
+ *
+ * Getestet mit Cannondale Performance Line CX (Smart System):
+ *   - smart-system Endpunkte → HTTP 200 ✓
+ *   - ebike-system-2 Endpunkte → HTTP 400 (falscher System-Typ, entfernt)
  */
 enum class BoschEndpoint(val label: String, val baseUrl: String, val path: String) {
 
-    // --- Smart System (BES3) – wahrscheinlich korrekt für Cannondale Flow-Portal ---
+    // --- Smart System (BES3) – bestätigt HTTP 200 ✓ ---
+
     SMART_ACTIVITIES(
-        "Aktivitäten – Smart System ★",
+        "Aktivitäten ✓",
         "https://api.bosch-ebike.com",
         "/activity/smart-system/v1/activities?limit=20&offset=0"
     ),
     SMART_BIKES(
-        "Bikes – Smart System ★",
+        "Bikes ✓",
         "https://api.bosch-ebike.com",
         "/bike-profile/smart-system/v1/bikes"
     ),
 
-    // --- eBike System 2 (BES2) – ältere Modelle ---
-    BES2_ACTIVITIES(
-        "Aktivitäten – eBike System 2",
+    // --- Smart System – weitere Endpunkte (aus Bruno-Collection, noch ungetestet) ---
+
+    SMART_ACTIVITY_DETAIL(
+        "Aktivität Detail (ID ersetzen)",
         "https://api.bosch-ebike.com",
-        "/activity/ebike-system-2/v1/activities?limit=20&offset=0"
+        "/activity/smart-system/v1/activities/ACTIVITY_ID"
     ),
-    BES2_BIKES(
-        "Bikes – eBike System 2",
+    SMART_ACTIVITY_TRACK(
+        "Aktivität GPS-Track (ID ersetzen)",
         "https://api.bosch-ebike.com",
-        "/bike-profile/ebike-system-2/v1/bikes"
+        "/activity/smart-system/v1/activities/ACTIVITY_ID/track"
+    ),
+    SMART_BIKE_DETAIL(
+        "Bike Detail (ID ersetzen)",
+        "https://api.bosch-ebike.com",
+        "/bike-profile/smart-system/v1/bikes/BIKE_ID"
     ),
 
     // --- OIDC (bestätigt ✓) ---
+
     USERINFO(
         "OIDC UserInfo ✓",
         "https://p9.authz.bosch.com",
@@ -41,6 +52,7 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
     ),
 
     // --- Diagnose (kein HTTP-Call) ---
+
     TOKEN_INFO(
         "🔍 Token-Info (lokal dekodiert)",
         "",
