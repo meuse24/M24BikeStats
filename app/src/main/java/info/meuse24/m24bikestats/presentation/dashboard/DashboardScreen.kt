@@ -63,6 +63,8 @@ import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestUiState
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+import kotlin.math.abs
+import kotlin.math.cos
 
 private val dashboardTabs = listOf("Aktivitäten", "Bike", "API-Test")
 
@@ -774,20 +776,11 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
                     }
                 } else {
                     Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                        val latitudes = trackPoints.map { it.latitude }
-                        val longitudes = trackPoints.map { it.longitude }
-                        val minLat = latitudes.minOrNull() ?: return@Canvas
-                        val maxLat = latitudes.maxOrNull() ?: return@Canvas
-                        val minLon = longitudes.minOrNull() ?: return@Canvas
-                        val maxLon = longitudes.maxOrNull() ?: return@Canvas
-                        val latSpan = (maxLat - minLat).takeIf { it > 0.0 } ?: 0.0001
-                        val lonSpan = (maxLon - minLon).takeIf { it > 0.0 } ?: 0.0001
-
+                        val projectedPoints = projectTrackPoints(trackPoints, size.width, size.height)
+                        if (projectedPoints.size < 2) return@Canvas
                         val path = Path()
-                        trackPoints.forEachIndexed { index, point ->
-                            val x = (((point.longitude - minLon) / lonSpan) * size.width).toFloat()
-                            val y = (size.height - (((point.latitude - minLat) / latSpan) * size.height)).toFloat()
-                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        projectedPoints.forEachIndexed { index, point ->
+                            if (index == 0) path.moveTo(point.x, point.y) else path.lineTo(point.x, point.y)
                         }
 
                         drawPath(
@@ -796,16 +789,8 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
                             style = Stroke(width = 8f, cap = StrokeCap.Round)
                         )
 
-                        val start = trackPoints.first()
-                        val end = trackPoints.last()
-                        val startOffset = Offset(
-                            (((start.longitude - minLon) / lonSpan) * size.width).toFloat(),
-                            (size.height - (((start.latitude - minLat) / latSpan) * size.height)).toFloat()
-                        )
-                        val endOffset = Offset(
-                            (((end.longitude - minLon) / lonSpan) * size.width).toFloat(),
-                            (size.height - (((end.latitude - minLat) / latSpan) * size.height)).toFloat()
-                        )
+                        val startOffset = Offset(projectedPoints.first().x, projectedPoints.first().y)
+                        val endOffset = Offset(projectedPoints.last().x, projectedPoints.last().y)
                         drawCircle(
                             color = secondaryColor,
                             radius = 12f,
@@ -820,6 +805,80 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
                 }
             }
         }
+    }
+}
+
+private data class ProjectedTrackPoint(
+    val x: Float,
+    val y: Float,
+)
+
+private fun projectTrackPoints(
+    trackPoints: List<ActivityTrackPointUiModel>,
+    canvasWidth: Float,
+    canvasHeight: Float,
+): List<ProjectedTrackPoint> {
+    if (trackPoints.size < 2) return emptyList()
+
+    val centerLatitude = trackPoints.map { it.latitude }.average()
+    val longitudeScale = cos(Math.toRadians(centerLatitude)).coerceAtLeast(0.1)
+
+    val projected = trackPoints.map { point ->
+        point.longitude * longitudeScale to point.latitude
+    }
+
+    val minX = projected.minOf { it.first }
+    val maxX = projected.maxOf { it.first }
+    val minY = projected.minOf { it.second }
+    val maxY = projected.maxOf { it.second }
+
+    val rawSpanX = (maxX - minX).takeIf { it > 0.0 } ?: 1e-6
+    val rawSpanY = (maxY - minY).takeIf { it > 0.0 } ?: 1e-6
+
+    val minimumAspectRatio = 0.22
+    val adjustedSpanX = if (rawSpanX < rawSpanY * minimumAspectRatio) rawSpanY * minimumAspectRatio else rawSpanX
+    val adjustedSpanY = if (rawSpanY < rawSpanX * minimumAspectRatio) rawSpanX * minimumAspectRatio else rawSpanY
+
+    val contentWidth = (canvasWidth - 24f).coerceAtLeast(1f)
+    val contentHeight = (canvasHeight - 24f).coerceAtLeast(1f)
+    val scale = minOf(
+        contentWidth / adjustedSpanX.toFloat(),
+        contentHeight / adjustedSpanY.toFloat(),
+    )
+
+    val xOffset = ((canvasWidth - (adjustedSpanX.toFloat() * scale)) / 2f).coerceAtLeast(0f)
+    val yOffset = ((canvasHeight - (adjustedSpanY.toFloat() * scale)) / 2f).coerceAtLeast(0f)
+    val centerX = (minX + maxX) / 2.0
+    val centerY = (minY + maxY) / 2.0
+
+    return projected.map { (x, y) ->
+        val normalizedX = ((x - centerX) / adjustedSpanX) + 0.5
+        val normalizedY = ((y - centerY) / adjustedSpanY) + 0.5
+        ProjectedTrackPoint(
+            x = xOffset + (normalizedX.toFloat() * adjustedSpanX.toFloat() * scale),
+            y = yOffset + ((1f - normalizedY.toFloat()) * adjustedSpanY.toFloat() * scale),
+        )
+    }.let { points ->
+        if (points.hasVisibleVerticalVariation()) points
+        else points.withSyntheticVerticalSpread(canvasHeight)
+    }
+}
+
+private fun List<ProjectedTrackPoint>.hasVisibleVerticalVariation(): Boolean {
+    if (size < 2) return false
+    val minY = minOf { it.y }
+    val maxY = maxOf { it.y }
+    return abs(maxY - minY) >= 12f
+}
+
+private fun List<ProjectedTrackPoint>.withSyntheticVerticalSpread(canvasHeight: Float): List<ProjectedTrackPoint> {
+    if (size < 2) return this
+    val centerY = canvasHeight / 2f
+    val visualAmplitude = (canvasHeight * 0.16f).coerceAtLeast(18f)
+    return mapIndexed { index, point ->
+        val progress = if (size == 1) 0f else index.toFloat() / (size - 1).toFloat()
+        val wave = (progress - 0.5f) * 2f
+        point.copy(y = centerY - (wave * visualAmplitude))
     }
 }
 
