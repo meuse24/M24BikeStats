@@ -32,10 +32,12 @@ data class ActivityCardUiModel(
 )
 
 data class ActivityDetailUiModel(
+    val id: String,
     val title: String,
     val subtitle: String?,
     val summary: List<Pair<String, String>>,
     val sections: List<DetailSectionUiModel>,
+    val trackPoints: List<ActivityTrackPointUiModel>,
 )
 
 data class BikeCardUiModel(
@@ -62,10 +64,16 @@ data class DetailSectionUiModel(
 data class DetailSectionActionUiModel(
     val label: String,
     val type: DetailSectionActionType,
-    val payload: String,
 )
 
 enum class DetailSectionActionType {
     SHARE,
     MAP,
 }
+
+data class ActivityTrackPointUiModel(
+    val latitude: Double,
+    val longitude: Double,
+    val altitudeMeters: Double?,
+    val distanceMeters: Double?,
+)

@@ -15,6 +15,7 @@ import info.meuse24.m24bikestats.presentation.dashboard.ActivityDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardScreen
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
+import info.meuse24.m24bikestats.presentation.dashboard.TrackScreen
 import info.meuse24.m24bikestats.presentation.login.LoginScreen
 import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
@@ -95,6 +96,21 @@ fun AppNavigation() {
             val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
             val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
             ActivityDetailScreen(
+                uiState = uiState,
+                onLoadActivity = dashboardViewModel::loadActivityDetail,
+                activityId = activityId,
+                onNavigateToTrack = { navController.navigate("activity/$activityId/track") },
+                onNavigateBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(
+            route = "activity/{activityId}/track",
+            arguments = listOf(navArgument("activityId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
+            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
+            TrackScreen(
                 uiState = uiState,
                 onLoadActivity = dashboardViewModel::loadActivityDetail,
                 activityId = activityId,

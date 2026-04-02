@@ -213,7 +213,7 @@ Diese Detailpunkte sind funktional relevant:
 - `distance` beschreibt die kumulierte Distanz entlang der Aktivität
 - `latitude` und `longitude` liefern die Trackpunkte
 - `altitude`, `speed`, `cadence` und `riderPower` liefern punktbezogene Metrikdaten
-- Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite
+- Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite, die interne Trackansicht und den GPX-Export
 
 `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 
@@ -288,6 +288,7 @@ Diese Detailpunkte sind funktional relevant:
 - [x] Fachliche Dashboard-UI für Aktivitäten und Bikes auf Basis der verifizierten JSON-Strukturen
 - [x] Aktivitäten-Paginierung über `limit`/`offset`
 - [x] Aktivitäts-Detailpunkte über `/activities/{activityId}/details` bestätigt
+- [x] Track-/Kartenansicht auf Basis der bestätigten Detailpunkte ergänzt
+- [x] GPX-Export des vollständigen Tracks über Android Share Sheet ergänzt
 - [x] Logout gegen Bosch OIDC-End-Session erfolgreich getestet
 - [ ] Alternativen für Activity-Detail- und Track-Endpunkte recherchieren
-- [ ] Track-/Kartenansicht auf Basis der bestätigten Detailpunkte ergänzen

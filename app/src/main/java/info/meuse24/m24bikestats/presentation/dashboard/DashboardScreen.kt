@@ -1,7 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import android.content.Intent
-import android.net.Uri
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,7 +51,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -165,6 +170,7 @@ fun ActivityDetailScreen(
     uiState: DashboardUiState,
     onLoadActivity: (String) -> Unit,
     activityId: String,
+    onNavigateToTrack: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     LaunchedEffect(activityId) {
@@ -213,7 +219,11 @@ fun ActivityDetailScreen(
                         }
                     }
                     items(activity.sections) { section ->
-                        DetailSectionCard(section)
+                        DetailSectionCard(
+                            section = section,
+                            activity = activity,
+                            onNavigateToTrack = onNavigateToTrack,
+                        )
                     }
                 }
             }
@@ -225,6 +235,93 @@ fun ActivityDetailScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("Aktivität nicht gefunden")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TrackScreen(
+    uiState: DashboardUiState,
+    onLoadActivity: (String) -> Unit,
+    activityId: String,
+    onNavigateBack: () -> Unit,
+) {
+    LaunchedEffect(activityId) {
+        onLoadActivity(activityId)
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(uiState.selectedActivityDetail?.title ?: "Track") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        when {
+            uiState.isActivityDetailLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
+                val activity = uiState.selectedActivityDetail
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        HeroCard(
+                            eyebrow = "Trackansicht",
+                            title = activity.title,
+                            subtitle = "${activity.trackPoints.size} GPS-Punkte als vollständiger Verlauf",
+                        )
+                    }
+                    item {
+                        TrackCanvasCard(trackPoints = activity.trackPoints)
+                    }
+                    item {
+                        DetailSectionCard(
+                            section = DetailSectionUiModel(
+                                title = "Trackdaten",
+                                rows = listOf(
+                                    "GPS-Punkte" to activity.trackPoints.size.toString(),
+                                    "Start" to activity.trackPoints.firstOrNull()?.let { "${it.latitude}, ${it.longitude}" }.orEmpty(),
+                                    "Ziel" to activity.trackPoints.lastOrNull()?.let { "${it.latitude}, ${it.longitude}" }.orEmpty(),
+                                ),
+                                actions = listOf(
+                                    DetailSectionActionUiModel("Teilen", DetailSectionActionType.SHARE),
+                                )
+                            ),
+                            activity = activity,
+                            onNavigateToTrack = { onNavigateBack() },
+                        )
+                    }
+                }
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("Track nicht verfügbar")
                 }
             }
         }
@@ -545,7 +642,11 @@ private fun BikeOverviewCard(
 }
 
 @Composable
-private fun DetailSectionCard(section: DetailSectionUiModel) {
+private fun DetailSectionCard(
+    section: DetailSectionUiModel,
+    activity: ActivityDetailUiModel? = null,
+    onNavigateToTrack: (String) -> Unit = {},
+) {
     val context = LocalContext.current
 
     Card(
@@ -571,21 +672,105 @@ private fun DetailSectionCard(section: DetailSectionUiModel) {
                             onClick = {
                                 when (action.type) {
                                     DetailSectionActionType.SHARE -> {
-                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                            type = "text/plain"
-                                            putExtra(Intent.EXTRA_TEXT, action.payload)
+                                        activity?.let {
+                                            val gpxUri = createTrackGpxUri(context, it)
+                                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                                type = "application/gpx+xml"
+                                                putExtra(Intent.EXTRA_STREAM, gpxUri)
+                                                putExtra(Intent.EXTRA_SUBJECT, it.title)
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                            }
+                                            context.startActivity(Intent.createChooser(shareIntent, "Track teilen"))
                                         }
-                                        context.startActivity(Intent.createChooser(shareIntent, "Track teilen"))
                                     }
                                     DetailSectionActionType.MAP -> {
-                                        val mapIntent = Intent(Intent.ACTION_VIEW, Uri.parse(action.payload))
-                                        context.startActivity(mapIntent)
+                                        activity?.let { onNavigateToTrack(it.id) }
                                     }
                                 }
                             }
                         ) {
                             Text(action.label)
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val secondaryColor = MaterialTheme.colorScheme.secondary
+    val tertiaryColor = MaterialTheme.colorScheme.tertiary
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text(
+                text = "Vollständiger Track",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 260.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                if (trackPoints.size < 2) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("Zu wenige GPS-Punkte für eine Trackansicht")
+                    }
+                } else {
+                    Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                        val latitudes = trackPoints.map { it.latitude }
+                        val longitudes = trackPoints.map { it.longitude }
+                        val minLat = latitudes.minOrNull() ?: return@Canvas
+                        val maxLat = latitudes.maxOrNull() ?: return@Canvas
+                        val minLon = longitudes.minOrNull() ?: return@Canvas
+                        val maxLon = longitudes.maxOrNull() ?: return@Canvas
+                        val latSpan = (maxLat - minLat).takeIf { it > 0.0 } ?: 0.0001
+                        val lonSpan = (maxLon - minLon).takeIf { it > 0.0 } ?: 0.0001
+
+                        val path = Path()
+                        trackPoints.forEachIndexed { index, point ->
+                            val x = (((point.longitude - minLon) / lonSpan) * size.width).toFloat()
+                            val y = (size.height - (((point.latitude - minLat) / latSpan) * size.height)).toFloat()
+                            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                        }
+
+                        drawPath(
+                            path = path,
+                            color = primaryColor,
+                            style = Stroke(width = 8f, cap = StrokeCap.Round)
+                        )
+
+                        val start = trackPoints.first()
+                        val end = trackPoints.last()
+                        val startOffset = Offset(
+                            (((start.longitude - minLon) / lonSpan) * size.width).toFloat(),
+                            (size.height - (((start.latitude - minLat) / latSpan) * size.height)).toFloat()
+                        )
+                        val endOffset = Offset(
+                            (((end.longitude - minLon) / lonSpan) * size.width).toFloat(),
+                            (size.height - (((end.latitude - minLat) / latSpan) * size.height)).toFloat()
+                        )
+                        drawCircle(
+                            color = secondaryColor,
+                            radius = 12f,
+                            center = startOffset
+                        )
+                        drawCircle(
+                            color = tertiaryColor,
+                            radius = 12f,
+                            center = endOffset
+                        )
                     }
                 }
             }

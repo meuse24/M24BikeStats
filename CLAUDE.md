@@ -142,6 +142,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Dashboard zeigt Aktivitäten, Bike und API-Test in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
+- Aktivitätsdetails können den vollständigen Track als GPX teilen
+- Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 
@@ -150,5 +152,4 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ## Offene Punkte
 
 - Alternative Pfade für Activity-Detail und Activity-Track recherchieren
-- Track-/Kartenansicht auf Basis des bestätigten `/details`-Endpunkts bauen
 - Log-Ausgaben für produktive Nutzung datensparsam machen

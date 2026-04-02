@@ -255,10 +255,19 @@ class DashboardViewModel(
         val lastDistanceMeters = detail.points.lastOrNull { it.distanceMeters != null }?.distanceMeters
         val startCoordinate = geoPoints.firstOrNull()
         val endCoordinate = geoPoints.lastOrNull()
-        val directionsUrl = buildDirectionsUrl(startCoordinate, endCoordinate)
-        val shareText = buildShareText(activity, startCoordinate, endCoordinate, directionsUrl)
+        val trackPoints = geoPoints.mapNotNull { point ->
+            val latitude = point.latitude ?: return@mapNotNull null
+            val longitude = point.longitude ?: return@mapNotNull null
+            ActivityTrackPointUiModel(
+                latitude = latitude,
+                longitude = longitude,
+                altitudeMeters = point.altitudeMeters,
+                distanceMeters = point.distanceMeters,
+            )
+        }
 
         return ActivityDetailUiModel(
+            id = activity.id,
             title = activity.title,
             subtitle = "${detail.points.size} Detailpunkte • ${geoPoints.size} mit GPS",
             summary = buildList {
@@ -342,22 +351,21 @@ class DashboardViewModel(
                                 DetailSectionActionUiModel(
                                     label = "Teilen",
                                     type = DetailSectionActionType.SHARE,
-                                    payload = shareText,
                                 )
                             )
-                            directionsUrl?.let {
+                            if (trackPoints.isNotEmpty()) {
                                 add(
                                     DetailSectionActionUiModel(
                                         label = "Kartenanzeige",
                                         type = DetailSectionActionType.MAP,
-                                        payload = it,
                                     )
                                 )
                             }
                         },
                     )
                 )
-            }.filter { it.rows.isNotEmpty() }
+            }.filter { it.rows.isNotEmpty() },
+            trackPoints = trackPoints,
         )
     }
 
@@ -511,46 +519,6 @@ class DashboardViewModel(
         val latitude = latitude ?: return false
         val longitude = longitude ?: return false
         return latitude != 0.0 || longitude != 0.0
-    }
-
-    private fun buildDirectionsUrl(
-        startCoordinate: BoschActivityDetailPoint?,
-        endCoordinate: BoschActivityDetailPoint?,
-    ): String? {
-        val startLat = startCoordinate?.latitude ?: return null
-        val startLon = startCoordinate.longitude ?: return null
-        val endLat = endCoordinate?.latitude ?: return "geo:0,0?q=${startLat.toCoordinateText()},${startLon.toCoordinateText()}"
-        val endLon = endCoordinate.longitude ?: return "geo:0,0?q=${startLat.toCoordinateText()},${startLon.toCoordinateText()}"
-
-        return if (startLat == endLat && startLon == endLon) {
-            "geo:0,0?q=${startLat.toCoordinateText()},${startLon.toCoordinateText()}"
-        } else {
-            "https://www.google.com/maps/dir/?api=1&origin=${startLat.toCoordinateText()},${startLon.toCoordinateText()}&destination=${endLat.toCoordinateText()},${endLon.toCoordinateText()}&travelmode=bicycling"
-        }
-    }
-
-    private fun buildShareText(
-        activity: BoschActivity,
-        startCoordinate: BoschActivityDetailPoint?,
-        endCoordinate: BoschActivityDetailPoint?,
-        directionsUrl: String?,
-    ): String {
-        val startText = startCoordinate?.let {
-            "${it.latitude?.toCoordinateText()}, ${it.longitude?.toCoordinateText()}"
-        }
-        val endText = endCoordinate?.let {
-            "${it.latitude?.toCoordinateText()}, ${it.longitude?.toCoordinateText()}"
-        }
-
-        return buildString {
-            appendLine(activity.title)
-            appendLine("Start: ${activity.startTime.toReadableDateTime()}")
-            appendLine("Distanz: ${activity.distanceMeters.toKilometerText()}")
-            activity.averageSpeedKmh?.let { appendLine("Ø Geschwindigkeit: ${it.toSpeedText()}") }
-            startText?.let { appendLine("Startkoordinate: $it") }
-            endText?.let { appendLine("Zielkoordinate: $it") }
-            directionsUrl?.let { appendLine("Karte: $it") }
-        }.trim()
     }
 
     companion object {
