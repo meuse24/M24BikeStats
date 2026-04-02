@@ -3,10 +3,13 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
+import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
@@ -23,6 +26,7 @@ import java.util.Locale
 
 class DashboardViewModel(
     private val getActivities: GetSmartSystemActivitiesUseCase,
+    private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
     private val getBikes: GetSmartSystemBikesUseCase,
     private val getBikeDetail: GetSmartSystemBikeDetailUseCase,
 ) : ViewModel() {
@@ -32,6 +36,7 @@ class DashboardViewModel(
 
     private var cachedActivities: List<BoschActivity> = emptyList()
     private var cachedBikes: List<BoschBike> = emptyList()
+    private val cachedActivityDetails = mutableMapOf<String, BoschActivityDetail>()
     private var activityOffset: Int = 0
     private var activityTotalCount: Int = 0
 
@@ -166,8 +171,49 @@ class DashboardViewModel(
         }
     }
 
-    fun getActivityDetail(activityId: String): ActivityDetailUiModel? {
-        return cachedActivities.firstOrNull { it.id == activityId }?.let(::toActivityDetailUiModel)
+    fun loadActivityDetail(activityId: String) {
+        val activity = cachedActivities.firstOrNull { it.id == activityId }
+        if (activity == null) {
+            _uiState.update { it.copy(error = "Aktivität nicht gefunden") }
+            return
+        }
+
+        val cachedDetail = cachedActivityDetails[activityId]
+        if (_uiState.value.selectedActivityId == activityId && _uiState.value.selectedActivityDetail != null && cachedDetail != null) {
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    selectedActivityId = activityId,
+                    selectedActivityDetail = if (cachedDetail != null) toActivityDetailUiModel(activity, cachedDetail) else null,
+                    isActivityDetailLoading = true,
+                    error = null,
+                )
+            }
+
+            val detail = cachedDetail ?: getActivityDetail(activityId).getOrElse { error ->
+                _uiState.update {
+                    it.copy(
+                        isActivityDetailLoading = false,
+                        error = error.message ?: "Aktivitätsdetails konnten nicht geladen werden",
+                    )
+                }
+                return@launch
+            }
+
+            cachedActivityDetails[activityId] = detail
+
+            _uiState.update {
+                it.copy(
+                    selectedActivityId = activityId,
+                    selectedActivityDetail = toActivityDetailUiModel(activity, detail),
+                    isActivityDetailLoading = false,
+                    error = null,
+                )
+            }
+        }
     }
 
     fun clearError() {
@@ -197,9 +243,22 @@ class DashboardViewModel(
         )
     }
 
-    private fun toActivityDetailUiModel(activity: BoschActivity): ActivityDetailUiModel {
+    private fun toActivityDetailUiModel(
+        activity: BoschActivity,
+        detail: BoschActivityDetail,
+    ): ActivityDetailUiModel {
+        val geoPoints = detail.points.filter { it.hasCoordinates() }
+        val speedPoints = detail.points.mapNotNull { it.speedKmh?.takeIf { speed -> speed > 0.0 } }
+        val cadencePoints = detail.points.mapNotNull { it.cadenceRpm?.takeIf { cadence -> cadence > 0.0 } }
+        val riderPowerPoints = detail.points.mapNotNull { it.riderPowerWatts?.takeIf { power -> power > 0.0 } }
+        val altitudePoints = detail.points.mapNotNull { it.altitudeMeters?.takeIf { altitude -> altitude > 0.0 } }
+        val lastDistanceMeters = detail.points.lastOrNull { it.distanceMeters != null }?.distanceMeters
+        val startCoordinate = geoPoints.firstOrNull()
+        val endCoordinate = geoPoints.lastOrNull()
+
         return ActivityDetailUiModel(
             title = activity.title,
+            subtitle = "${detail.points.size} Detailpunkte • ${geoPoints.size} mit GPS",
             summary = buildList {
                 add("Start" to activity.startTime.toReadableDateTime())
                 add("Distanz" to activity.distanceMeters.toKilometerText())
@@ -215,6 +274,7 @@ class DashboardViewModel(
                             activity.endTime?.let { add("Ende" to it.toReadableDateTime()) }
                             add("Dauer ohne Stopps" to activity.durationWithoutStopsSeconds.toDurationText())
                             add("Distanz" to activity.distanceMeters.toKilometerText())
+                            lastDistanceMeters?.let { add("Track-Distanz" to it.toKilometerText()) }
                             activity.startOdometerMeters?.let { add("Start-Kilometerstand" to it.toKilometerText()) }
                             activity.timeZone?.let { add("Zeitzone" to it) }
                             activity.bikeId?.let { add("Bike-ID" to it) }
@@ -228,10 +288,19 @@ class DashboardViewModel(
                         rows = buildList {
                             activity.averageSpeedKmh?.let { add("Ø Geschwindigkeit" to it.toSpeedText()) }
                             activity.maxSpeedKmh?.let { add("Max. Geschwindigkeit" to it.toSpeedText()) }
+                            if (speedPoints.isNotEmpty()) {
+                                add("Track-Speed max." to speedPoints.max().toSpeedText())
+                            }
                             activity.averageCadenceRpm?.let { add("Ø Kadenz" to "${it.toWholeNumber()} rpm") }
                             activity.maxCadenceRpm?.let { add("Max. Kadenz" to "${it.toWholeNumber()} rpm") }
+                            if (cadencePoints.isNotEmpty()) {
+                                add("Track-Kadenz Ø" to "${cadencePoints.average().toWholeNumber()} rpm")
+                            }
                             activity.averageRiderPowerWatts?.let { add("Ø Fahrerleistung" to "${it.toWholeNumber()} W") }
                             activity.maxRiderPowerWatts?.let { add("Max. Fahrerleistung" to "${it.toWholeNumber()} W") }
+                            if (riderPowerPoints.isNotEmpty()) {
+                                add("Track-Leistung Ø" to "${riderPowerPoints.average().toWholeNumber()} W")
+                            }
                         }
                     )
                 )
@@ -243,7 +312,28 @@ class DashboardViewModel(
                             if (activity.elevationGainMeters != null && activity.elevationLossMeters != null) {
                                 add("Höhenmeter" to "+${activity.elevationGainMeters} m / -${activity.elevationLossMeters} m")
                             }
+                            if (altitudePoints.isNotEmpty()) {
+                                add(
+                                    "Höhenprofil" to "${altitudePoints.minOrNull()?.toWholeNumber()} m bis ${altitudePoints.maxOrNull()?.toWholeNumber()} m"
+                                )
+                            }
                             activity.caloriesBurned?.let { add("Kalorien" to "${it.toWholeNumber()} kcal") }
+                        }
+                    )
+                )
+
+                add(
+                    DetailSectionUiModel(
+                        title = "Track & GPS",
+                        rows = buildList {
+                            add("Detailpunkte" to detail.points.size.toString())
+                            add("GPS-Punkte" to geoPoints.size.toString())
+                            startCoordinate?.let {
+                                add("Startkoordinate" to "${it.latitude!!.toCoordinateText()}, ${it.longitude!!.toCoordinateText()}")
+                            }
+                            endCoordinate?.let {
+                                add("Zielkoordinate" to "${it.latitude!!.toCoordinateText()}, ${it.longitude!!.toCoordinateText()}")
+                            }
                         }
                     )
                 )
@@ -385,11 +475,23 @@ class DashboardViewModel(
     private fun Int.toKilometerText(): String =
         String.format(Locale.US, "%.1f km", this / 1000.0)
 
+    private fun Double.toKilometerText(): String =
+        String.format(Locale.US, "%.1f km", this / 1000.0)
+
     private fun Double.toSpeedText(): String =
         String.format(Locale.US, "%.1f km/h", this)
 
     private fun Double.toWholeNumber(): String =
         String.format(Locale.US, "%.0f", this)
+
+    private fun Double.toCoordinateText(): String =
+        String.format(Locale.US, "%.5f", this)
+
+    private fun BoschActivityDetailPoint.hasCoordinates(): Boolean {
+        val latitude = latitude ?: return false
+        val longitude = longitude ?: return false
+        return latitude != 0.0 || longitude != 0.0
+    }
 
     companion object {
         private const val ACTIVITIES_PAGE_SIZE = 20

@@ -2,6 +2,8 @@ package info.meuse24.m24bikestats.data.repository
 
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
+import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
@@ -53,6 +55,19 @@ class BoschSmartSystemRepositoryImpl(
             items.mapObjects(::parseBike)
         }
 
+    override suspend fun getActivityDetail(
+        accessToken: String,
+        activityId: String,
+    ): Result<BoschActivityDetail> =
+        runCatching {
+            val response = apiClient.get(
+                BoschEndpoint.SMART_ACTIVITY_DETAIL.toRequest(activityId = activityId),
+                accessToken
+            )
+            val json = extractJsonBody(response) ?: error("Keine Aktivitätsdetaildaten erhalten")
+            parseActivityDetail(activityId, JSONObject(json))
+        }
+
     override suspend fun getBikeDetail(accessToken: String, bikeId: String): Result<BoschBike> =
         runCatching {
             val response = apiClient.get(
@@ -101,6 +116,26 @@ class BoschSmartSystemRepositoryImpl(
             remoteControl = root.optJSONObject("remoteControl")?.let(::parseComponent),
             headUnit = root.optJSONObject("headUnit")?.let(::parseComponent),
             batteries = root.optJSONArray("batteries")?.mapObjects(::parseBattery).orEmpty(),
+        )
+    }
+
+    private fun parseActivityDetail(activityId: String, root: JSONObject): BoschActivityDetail {
+        val items = root.optJSONArray("activityDetails") ?: JSONArray()
+        return BoschActivityDetail(
+            activityId = activityId,
+            points = items.mapObjects(::parseActivityDetailPoint),
+        )
+    }
+
+    private fun parseActivityDetailPoint(root: JSONObject): BoschActivityDetailPoint {
+        return BoschActivityDetailPoint(
+            distanceMeters = root.optNullableDouble("distance"),
+            altitudeMeters = root.optNullableDouble("altitude"),
+            speedKmh = root.optNullableDouble("speed"),
+            cadenceRpm = root.optNullableDouble("cadence"),
+            latitude = root.optNullableDouble("latitude"),
+            longitude = root.optNullableDouble("longitude"),
+            riderPowerWatts = root.optNullableDouble("riderPower"),
         )
     }
 

@@ -9,6 +9,9 @@ data class DashboardUiState(
     val canLoadMoreActivities: Boolean = false,
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
+    val selectedActivityDetail: ActivityDetailUiModel? = null,
+    val selectedActivityId: String? = null,
+    val isActivityDetailLoading: Boolean = false,
     val selectedBikeDetail: BikeDetailUiModel? = null,
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,
@@ -30,6 +33,7 @@ data class ActivityCardUiModel(
 
 data class ActivityDetailUiModel(
     val title: String,
+    val subtitle: String?,
     val summary: List<Pair<String, String>>,
     val sections: List<DetailSectionUiModel>,
 )

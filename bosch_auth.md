@@ -135,13 +135,13 @@ Aus einem realen Token dekodiert (Stand: April 2026):
 
 ```
 GET /activity/smart-system/v1/activities?limit=20&offset=0   → HTTP 200
+GET /activity/smart-system/v1/activities/{activityId}/details → HTTP 200
 GET /bike-profile/smart-system/v1/bikes                       → HTTP 200
 GET /bike-profile/smart-system/v1/bikes/{bikeId}             → HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}        → HTTP 404
 GET /activity/smart-system/v1/activities/{activityId}/track  → HTTP 404
 ```
 
-Die drei `200`-Antworten sind mit echtem Token und echten IDs am **2. April 2026** live verifiziert.
+Die vier `200`-Antworten sind mit echtem Token und echten IDs am **2. April 2026** live verifiziert.
 
 ### OIDC (bestätigt funktionierend)
 
@@ -190,6 +190,30 @@ Pagination ist funktional relevant:
 - `total` beschreibt die Gesamtzahl der Aktivitäten
 - `offset` und `limit` steuern weitere Seiten
 - Die App nutzt diese Parameter jetzt im Dashboard für `Mehr Aktivitäten laden`
+
+`GET /activity/smart-system/v1/activities/{activityId}/details`
+
+```json
+{
+  "activityDetails": [
+    {
+      "distance": 4.0,
+      "altitude": 0.0,
+      "speed": 3.0,
+      "cadence": 0.0,
+      "latitude": 47.48244,
+      "longitude": 9.71577,
+      "riderPower": 0.0
+    }
+  ]
+}
+```
+
+Diese Detailpunkte sind funktional relevant:
+- `distance` beschreibt die kumulierte Distanz entlang der Aktivität
+- `latitude` und `longitude` liefern die Trackpunkte
+- `altitude`, `speed`, `cadence` und `riderPower` liefern punktbezogene Metrikdaten
+- Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite
 
 `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 
@@ -263,6 +287,7 @@ Pagination ist funktional relevant:
 - [x] Bike-Detail-Endpunkt mit echter `bikeId` bestätigt
 - [x] Fachliche Dashboard-UI für Aktivitäten und Bikes auf Basis der verifizierten JSON-Strukturen
 - [x] Aktivitäten-Paginierung über `limit`/`offset`
+- [x] Aktivitäts-Detailpunkte über `/activities/{activityId}/details` bestätigt
 - [x] Logout gegen Bosch OIDC-End-Session erfolgreich getestet
 - [ ] Alternativen für Activity-Detail- und Track-Endpunkte recherchieren
-- [ ] Echte Activity-Detail-/Track-Daten statt Summary-only in der Aktivitätsdetailseite nutzen
+- [ ] Track-/Kartenansicht auf Basis der bestätigten Detailpunkte ergänzen

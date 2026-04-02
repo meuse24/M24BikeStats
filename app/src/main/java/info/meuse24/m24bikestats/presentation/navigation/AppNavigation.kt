@@ -92,9 +92,12 @@ fun AppNavigation() {
             route = "activity/{activityId}",
             arguments = listOf(navArgument("activityId") { type = NavType.StringType })
         ) { backStackEntry ->
-            val activityId = backStackEntry.arguments?.getString("activityId")
+            val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
+            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
             ActivityDetailScreen(
-                activity = activityId?.let(dashboardViewModel!!::getActivityDetail),
+                uiState = uiState,
+                onLoadActivity = dashboardViewModel::loadActivityDetail,
+                activityId = activityId,
                 onNavigateBack = { navController.popBackStack() },
             )
         }

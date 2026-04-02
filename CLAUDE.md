@@ -118,8 +118,8 @@ Client-ID ist in `OAuthConfig.kt` hart kodiert (kein Geheimnis bei public client
 # Smart System / BES3 (Flow-App, live bestätigt am 2026-04-02)
 GET /activity/smart-system/v1/activities?limit=20&offset=0     -> HTTP 200
 GET /bike-profile/smart-system/v1/bikes                        -> HTTP 200
+GET /activity/smart-system/v1/activities/{activityId}/details  -> HTTP 200
 GET /bike-profile/smart-system/v1/bikes/{bikeId}               -> HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}          -> HTTP 404
 GET /activity/smart-system/v1/activities/{activityId}/track    -> HTTP 404
 
 # OIDC – live bestätigt HTTP 200
@@ -132,6 +132,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ### Verifizierte Datenformen
 
 - `activities` liefert `pagination` und `activitySummaries[]` mit Fahrdaten, Leistungswerten und `bikeId`
+- `activities/{activityId}/details` liefert `activityDetails[]` mit Distanz-, Höhen-, GPS-, Speed-, Kadenz- und Rider-Power-Punkten
 - `bikes` und `bikes/{bikeId}` liefern Komponenten-, Batterie- und Drive-Unit-Informationen
 - JWT-Claims enthalten `aud=api-bosch-ebike`, `scope=euda:read`, `bosch-id`, `ebike-rider-id`
 
@@ -140,7 +141,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Startziel nach Login ist `dashboard`
 - Dashboard zeigt Aktivitäten, Bike und API-Test in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
-- Aktivitätsdetails basieren derzeit auf den Summary-Daten aus der Listenantwort
+- Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 
@@ -149,5 +150,5 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ## Offene Punkte
 
 - Alternative Pfade für Activity-Detail und Activity-Track recherchieren
-- Echte Activity-Detail-/Track-Endpunkte finden, damit die Detailseite über Summary-Daten hinausgeht
+- Track-/Kartenansicht auf Basis des bestätigten `/details`-Endpunkts bauen
 - Log-Ausgaben für produktive Nutzung datensparsam machen

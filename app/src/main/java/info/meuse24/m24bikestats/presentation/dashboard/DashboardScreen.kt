@@ -159,13 +159,19 @@ fun DashboardScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityDetailScreen(
-    activity: ActivityDetailUiModel?,
+    uiState: DashboardUiState,
+    onLoadActivity: (String) -> Unit,
+    activityId: String,
     onNavigateBack: () -> Unit,
 ) {
+    LaunchedEffect(activityId) {
+        onLoadActivity(activityId)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(activity?.title ?: "Aktivität") },
+                title = { Text(uiState.selectedActivityDetail?.title ?: "Aktivität") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
@@ -174,34 +180,48 @@ fun ActivityDetailScreen(
             )
         }
     ) { padding ->
-        if (activity == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text("Aktivität nicht gefunden")
+        when {
+            uiState.isActivityDetailLoading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    HeroCard(
-                        eyebrow = "Aktivität",
-                        title = activity.title,
-                        subtitle = "Zusammenfassung aus den Bosch Smart-System-Listenwerten",
-                    ) {
-                        SummaryChipRow(activity.summary)
+            uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
+                val activity = uiState.selectedActivityDetail
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    item {
+                        HeroCard(
+                            eyebrow = "Aktivität",
+                            title = activity.title,
+                            subtitle = activity.subtitle ?: "Detaildaten aus Bosch Smart System",
+                        ) {
+                            SummaryChipRow(activity.summary)
+                        }
+                    }
+                    items(activity.sections) { section ->
+                        DetailSectionCard(section)
                     }
                 }
-                items(activity.sections) { section ->
-                    DetailSectionCard(section)
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("Aktivität nicht gefunden")
                 }
             }
         }

@@ -88,8 +88,8 @@ Stand: 2. April 2026, live mit echtem Smart-System-Token getestet.
 |----------|--------|-------|
 | `GET /activity/smart-system/v1/activities?limit=20&offset=0` | `200` | Aktivitätenliste mit Pagination und Summary-Feldern |
 | `GET /bike-profile/smart-system/v1/bikes` | `200` | Liste der Bikes |
+| `GET /activity/smart-system/v1/activities/{activityId}/details` | `200` | Detailpunkte einer Aktivität inkl. GPS-/Metrikdaten |
 | `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | `200` | Detailansicht eines Bikes |
-| `GET /activity/smart-system/v1/activities/{activityId}` | `404` | Mit echter ID aktuell nicht bestätigt |
 | `GET /activity/smart-system/v1/activities/{activityId}/track` | `404` | Mit echter ID aktuell nicht bestätigt |
 
 ### OIDC
@@ -113,6 +113,17 @@ Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch 
 - Aktivitätsdetailseite auf Basis der Summary-Daten
 - `Mehr Aktivitäten laden` über `limit`/`offset`
 - API-Test als zusätzlicher Tab der Hauptnavigation statt als separater Primär-Screen
+
+### Aktivitätsdetails
+
+Die Antwort auf `activities/{activityId}/details` enthält:
+- `activityDetails[]`
+- pro Detailpunkt u. a. `distance`, `altitude`, `speed`, `cadence`, `latitude`, `longitude`, `riderPower`
+
+Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
+- echte Detailpunkte statt nur Summary-Daten
+- GPS-Punktanzahl und Start-/Zielkoordinaten
+- zusätzliche Kennzahlen aus dem Detail-Track
 
 ### Bike-Liste und Bike-Detail
 

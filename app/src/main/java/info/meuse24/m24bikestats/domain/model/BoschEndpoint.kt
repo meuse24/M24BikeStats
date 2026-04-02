@@ -28,9 +28,9 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
     // --- Smart System – weitere Endpunkte (aus Bruno-Collection, noch ungetestet) ---
 
     SMART_ACTIVITY_DETAIL(
-        "Aktivität Detail (ID ersetzen)",
+        "Aktivität Detail /details (ID ersetzen)",
         "https://api.bosch-ebike.com",
-        "/activity/smart-system/v1/activities/ACTIVITY_ID"
+        "/activity/smart-system/v1/activities/ACTIVITY_ID/details"
     ),
     SMART_ACTIVITY_TRACK(
         "Aktivität GPS-Track (ID ersetzen)",
