@@ -1,71 +1,53 @@
 package info.meuse24.m24bikestats.domain.model
 
 /**
- * Bekannte Bosch eBike Data Act API-Endpunkte.
+ * Bosch eBike Data Act API – bestätigte Endpunkte aus open-ebike-backend (Bruno-Collection).
+ * Basis: https://api.bosch-ebike.com
  *
- * Da die offizielle Dokumentation keine öffentlichen Pfade listet, sind hier
- * mehrere Kombinationen (Base-URL × Pfad) eingetragen.
- * Nach dem ersten erfolgreichen Aufruf nicht benötigte Einträge entfernen.
- *
- * OIDC UserInfo (✓ bestätigt funktioniert) dient als Kontrollaufruf.
+ * BES3 = Smart System (Flow-App, neuere Bikes ab ~2022) → wahrscheinlich dein Bike
+ * BES2 = eBike System 2 (ältere Modelle)
  */
 enum class BoschEndpoint(val label: String, val baseUrl: String, val path: String) {
 
-    // --- flow.bosch-ebike.com (Portal-Host – wahrscheinlichste API-Basis) ---
-    BIKES_FLOW(
-        "Bikes [flow / data-act/v1]",
-        "https://flow.bosch-ebike.com",
-        "/data-act/v1/bikes"
+    // --- Smart System (BES3) – wahrscheinlich korrekt für Cannondale Flow-Portal ---
+    SMART_ACTIVITIES(
+        "Aktivitäten – Smart System ★",
+        "https://api.bosch-ebike.com",
+        "/activity/smart-system/v1/activities?limit=20&offset=0"
     ),
-    TRIPS_FLOW(
-        "Trips [flow / data-act/v1]",
-        "https://flow.bosch-ebike.com",
-        "/data-act/v1/trips"
-    ),
-    FITNESS_FLOW(
-        "Fitness [flow / data-act/v1]",
-        "https://flow.bosch-ebike.com",
-        "/data-act/v1/fitness-data"
+    SMART_BIKES(
+        "Bikes – Smart System ★",
+        "https://api.bosch-ebike.com",
+        "/bike-profile/smart-system/v1/bikes"
     ),
 
-    // --- api.bosch-ebike.com – direkt ohne Präfix ---
-    BIKES_API_DIRECT(
-        "Bikes [api / direkt]",
+    // --- eBike System 2 (BES2) – ältere Modelle ---
+    BES2_ACTIVITIES(
+        "Aktivitäten – eBike System 2",
         "https://api.bosch-ebike.com",
-        "/bikes"
+        "/activity/ebike-system-2/v1/activities?limit=20&offset=0"
     ),
-    TRIPS_API_DIRECT(
-        "Trips [api / direkt]",
+    BES2_BIKES(
+        "Bikes – eBike System 2",
         "https://api.bosch-ebike.com",
-        "/trips"
-    ),
-
-    // --- api.bosch-ebike.com – mit /data-act/v1/-Präfix (bisherige Annahme → 404) ---
-    BIKES_API_DATAACT(
-        "Bikes [api / data-act/v1]",
-        "https://api.bosch-ebike.com",
-        "/data-act/v1/bikes"
+        "/bike-profile/ebike-system-2/v1/bikes"
     ),
 
-    // --- OIDC (bestätigt funktioniert) ---
+    // --- OIDC (bestätigt ✓) ---
     USERINFO(
         "OIDC UserInfo ✓",
         "https://p9.authz.bosch.com",
         "/auth/realms/obc/protocol/openid-connect/userinfo"
     ),
 
-    // --- Diagnose-Endpunkte (kein HTTP-Call) ---
-
-    /** Dekodiert das Access-Token lokal – zeigt Scopes, Audience, Ablaufzeit. */
+    // --- Diagnose (kein HTTP-Call) ---
     TOKEN_INFO(
         "🔍 Token-Info (lokal dekodiert)",
         "",
         ""
     ),
-
-    /** OIDC Discovery – zeigt alle vom Server angebotenen Scopes. */
     OIDC_DISCOVERY(
-        "🔍 OIDC Discovery (verfügbare Scopes)",
+        "🔍 OIDC Discovery",
         "https://p9.authz.bosch.com",
         "/auth/realms/obc/.well-known/openid-configuration"
     ),
