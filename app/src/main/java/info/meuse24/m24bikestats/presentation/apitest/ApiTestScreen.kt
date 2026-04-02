@@ -13,9 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
@@ -80,8 +83,9 @@ fun ApiTestScreen(
 
             Spacer(modifier = Modifier.height(4.dp))
 
+            // Vollständige URL anzeigen – hilft beim Debuggen der 404-Varianten
             Text(
-                text = uiState.selectedEndpoint.path,
+                text = "${uiState.selectedEndpoint.baseUrl}${uiState.selectedEndpoint.path}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontFamily = FontFamily.Monospace,
@@ -89,11 +93,26 @@ fun ApiTestScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            val context = LocalContext.current
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onFetch, enabled = !uiState.isLoading) {
                     Text("Abrufen")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_SUBJECT, uiState.selectedEndpoint.label)
+                            putExtra(Intent.EXTRA_TEXT, uiState.jsonOutput)
+                        }
+                        context.startActivity(Intent.createChooser(intent, "JSON teilen"))
+                    },
+                    enabled = uiState.jsonOutput.isNotEmpty(),
+                ) {
+                    Icon(Icons.Default.Share, contentDescription = "Teilen")
+                }
+                Spacer(modifier = Modifier.width(4.dp))
                 IconButton(onClick = onClear, enabled = uiState.jsonOutput.isNotEmpty()) {
                     Icon(Icons.Default.Clear, contentDescription = "Ausgabe leeren")
                 }

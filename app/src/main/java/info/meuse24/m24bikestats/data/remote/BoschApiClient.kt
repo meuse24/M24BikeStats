@@ -16,7 +16,7 @@ class BoschApiClient {
 
     suspend fun get(endpoint: BoschEndpoint, accessToken: String): String =
         withContext(Dispatchers.IO) {
-            val url = "${baseUrl(endpoint)}${endpoint.path}"
+            val url = "${endpoint.baseUrl}${endpoint.path}"
             val request = Request.Builder()
                 .url(url)
                 .header("Authorization", "Bearer $accessToken")
@@ -25,13 +25,8 @@ class BoschApiClient {
 
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
-                if (!response.isSuccessful) "HTTP ${response.code} ${response.message}\n\n$body"
-                else body.ifBlank { "(Leere Antwort)" }
+                // Immer HTTP-Status mitsenden, damit 404 sofort sichtbar ist
+                "HTTP ${response.code} ${response.message}\n\n$body"
             }
         }
-
-    private fun baseUrl(endpoint: BoschEndpoint) = when (endpoint) {
-        BoschEndpoint.USERINFO -> "https://p9.authz.bosch.com"
-        else -> "https://api.bosch-ebike.com"
-    }
 }
