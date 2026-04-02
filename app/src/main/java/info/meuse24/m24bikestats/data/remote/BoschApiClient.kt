@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.data.remote
 
+import android.util.Base64
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -16,6 +17,11 @@ class BoschApiClient {
 
     suspend fun get(endpoint: BoschEndpoint, accessToken: String): String =
         withContext(Dispatchers.IO) {
+            // TOKEN_INFO: kein HTTP-Call, Token lokal dekodieren
+            if (endpoint == BoschEndpoint.TOKEN_INFO) {
+                return@withContext decodeJwt(accessToken)
+            }
+
             val url = "${endpoint.baseUrl}${endpoint.path}"
             val request = Request.Builder()
                 .url(url)
@@ -25,8 +31,25 @@ class BoschApiClient {
 
             client.newCall(request).execute().use { response ->
                 val body = response.body?.string() ?: ""
-                // Immer HTTP-Status mitsenden, damit 404 sofort sichtbar ist
                 "HTTP ${response.code} ${response.message}\n\n$body"
             }
         }
+
+    /**
+     * Dekodiert den JWT-Payload (mittleres Segment) ohne Signaturprüfung.
+     * Zeigt Scopes, Audience, Sub und Ablaufzeit des Access Tokens.
+     */
+    private fun decodeJwt(token: String): String {
+        return try {
+            val parts = token.split(".")
+            if (parts.size < 2) return "Kein gültiges JWT (Segmente: ${parts.size})"
+
+            val header  = String(Base64.decode(parts[0], Base64.URL_SAFE or Base64.NO_PADDING))
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING))
+
+            "=== HEADER ===\n$header\n\n=== PAYLOAD ===\n$payload"
+        } catch (e: Exception) {
+            "JWT-Decodierung fehlgeschlagen: ${e.message}"
+        }
+    }
 }

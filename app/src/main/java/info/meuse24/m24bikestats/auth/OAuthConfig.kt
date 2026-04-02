@@ -16,9 +16,10 @@ object OAuthConfig {
     private const val TOKEN_ENDPOINT =
         "https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token"
 
-    // "openid" + "offline_access" sind OIDC-Standard; weitere Data-Act-Scopes
-    // aus https://portal.bosch-ebike.com/data-act/app#/introduction entnehmen
-    val SCOPES = listOf("openid", "offline_access")
+    // "openid" + "offline_access" sind OIDC-Standard.
+    // "profile" + "email" werden zusätzlich angefragt (häufig für API-Zugriff nötig).
+    // Weitere Data-Act-Scopes: flow.bosch-ebike.com/data-act/app#/introduction
+    val SCOPES = listOf("openid", "offline_access", "profile", "email")
 
     val serviceConfiguration = AuthorizationServiceConfiguration(
         Uri.parse(AUTHORIZATION_ENDPOINT),

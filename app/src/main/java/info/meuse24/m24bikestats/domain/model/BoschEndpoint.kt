@@ -53,4 +53,20 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
         "https://p9.authz.bosch.com",
         "/auth/realms/obc/protocol/openid-connect/userinfo"
     ),
+
+    // --- Diagnose-Endpunkte (kein HTTP-Call) ---
+
+    /** Dekodiert das Access-Token lokal – zeigt Scopes, Audience, Ablaufzeit. */
+    TOKEN_INFO(
+        "🔍 Token-Info (lokal dekodiert)",
+        "",
+        ""
+    ),
+
+    /** OIDC Discovery – zeigt alle vom Server angebotenen Scopes. */
+    OIDC_DISCOVERY(
+        "🔍 OIDC Discovery (verfügbare Scopes)",
+        "https://p9.authz.bosch.com",
+        "/auth/realms/obc/.well-known/openid-configuration"
+    ),
 }
