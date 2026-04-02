@@ -840,8 +840,6 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
     val endpointSourceData = remember(activity.id, activity.trackPoints.size) {
         GeoJsonData.JsonString(buildTrackEndpointsGeoJson(activity))
     }
-    val trackSource = rememberGeoJsonSource(data = trackSourceData)
-    val endpointSource = rememberGeoJsonSource(data = endpointSourceData)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -869,6 +867,8 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                     baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
                     cameraState = cameraState,
                 ) {
+                    val trackSource = rememberGeoJsonSource(data = trackSourceData)
+                    val endpointSource = rememberGeoJsonSource(data = endpointSourceData)
                     LineLayer(
                         id = "activity-track",
                         source = trackSource,
