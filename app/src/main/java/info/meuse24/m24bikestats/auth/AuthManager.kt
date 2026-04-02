@@ -5,15 +5,18 @@ import android.content.Intent
 import android.net.Uri
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.auth.LoginRepository
-import net.openid.appauth.AuthorizationException
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
 import net.openid.appauth.CodeVerifierUtil
 import net.openid.appauth.ResponseTypeValues
 import net.openid.appauth.TokenRequest
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import net.openid.appauth.AuthorizationException
+import kotlin.coroutines.resume
 
 /**
  * Verwaltet den OAuth2 Authorization Code Flow gegen das Bosch eBike Portal (PKCE).
@@ -27,6 +30,7 @@ import net.openid.appauth.TokenRequest
 class AuthManager(private val context: Context) : LoginRepository {
 
     private val authService = AuthorizationService(context)
+    private val refreshMutex = Mutex()
 
     private val prefs by lazy {
         val masterKey = MasterKey.Builder(context)
@@ -97,23 +101,84 @@ class AuthManager(private val context: Context) : LoginRepository {
 
     override fun getAccessToken(): String? = prefs.getString(KEY_ACCESS_TOKEN, null)
 
+    override suspend fun getValidAccessToken(): Result<String> = refreshMutex.withLock {
+        val accessToken = prefs.getString(KEY_ACCESS_TOKEN, null)
+        if (!accessToken.isNullOrBlank() && !isTokenExpiringSoon()) {
+            return@withLock Result.success(accessToken)
+        }
+
+        val refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null)
+        if (refreshToken.isNullOrBlank()) {
+            clearTokens()
+            return@withLock Result.failure(
+                IllegalStateException("Nicht angemeldet oder Sitzung abgelaufen – bitte erneut anmelden")
+            )
+        }
+
+        refreshAccessToken(refreshToken)
+    }
+
     override fun isAuthenticated(): Boolean {
         val token = prefs.getString(KEY_ACCESS_TOKEN, null)
-        if (token.isNullOrBlank()) return false
-        val expiresAt = prefs.getLong(KEY_EXPIRES_AT, 0L)
-        return expiresAt > System.currentTimeMillis() + EXPIRY_BUFFER_MS
+        val refreshToken = prefs.getString(KEY_REFRESH_TOKEN, null)
+        if (!token.isNullOrBlank() && !isTokenExpiringSoon()) return true
+        return !refreshToken.isNullOrBlank()
     }
 
     override fun clearTokens() {
         prefs.edit().clear().apply()
     }
 
-    // ---
+    private suspend fun refreshAccessToken(refreshToken: String): Result<String> =
+        suspendCancellableCoroutine { continuation ->
+            val request = TokenRequest.Builder(
+                OAuthConfig.serviceConfiguration,
+                OAuthConfig.CLIENT_ID
+            )
+                .setGrantType("refresh_token")
+                .setRefreshToken(refreshToken)
+                .build()
 
-    fun getRefreshToken(): String? = prefs.getString(KEY_REFRESH_TOKEN, null)
+            authService.performTokenRequest(request) { tokenResponse, ex ->
+                when {
+                    ex != null -> {
+                        clearTokens()
+                        continuation.resume(
+                            Result.failure(
+                                IllegalStateException(
+                                    "Token-Refresh fehlgeschlagen: ${ex.errorDescription ?: ex.error}"
+                                )
+                            )
+                        )
+                    }
+                    tokenResponse?.accessToken.isNullOrBlank() -> {
+                        clearTokens()
+                        continuation.resume(
+                            Result.failure(
+                                IllegalStateException("Token-Refresh lieferte kein Access Token")
+                            )
+                        )
+                    }
+                    else -> {
+                        val updatedRefreshToken = tokenResponse?.refreshToken ?: refreshToken
+                        val expiresAt = tokenResponse?.accessTokenExpirationTime
+                            ?: (System.currentTimeMillis() + DEFAULT_TOKEN_LIFETIME_MS)
+                        val updatedAccessToken = tokenResponse?.accessToken.orEmpty()
 
-    fun dispose() {
-        authService.dispose()
+                        saveTokens(
+                            accessToken = updatedAccessToken,
+                            refreshToken = updatedRefreshToken,
+                            expiresAt = expiresAt
+                        )
+                        continuation.resume(Result.success(updatedAccessToken))
+                    }
+                }
+            }
+        }
+
+    private fun isTokenExpiringSoon(): Boolean {
+        val expiresAt = prefs.getLong(KEY_EXPIRES_AT, 0L)
+        return expiresAt <= System.currentTimeMillis() + EXPIRY_BUFFER_MS
     }
 
     private fun saveTokens(accessToken: String, refreshToken: String, expiresAt: Long) {
@@ -129,5 +194,6 @@ class AuthManager(private val context: Context) : LoginRepository {
         private const val KEY_REFRESH_TOKEN = "refresh_token"
         private const val KEY_EXPIRES_AT = "expires_at"
         private const val EXPIRY_BUFFER_MS = 60_000L
+        private const val DEFAULT_TOKEN_LIFETIME_MS = 3_600_000L
     }
 }

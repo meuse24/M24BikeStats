@@ -1,7 +1,7 @@
 package info.meuse24.m24bikestats.data.remote
 
 import android.util.Base64
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+import info.meuse24.m24bikestats.domain.model.BoschRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -15,21 +15,20 @@ class BoschApiClient {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    suspend fun get(endpoint: BoschEndpoint, accessToken: String): String =
+    suspend fun get(request: BoschRequest, accessToken: String): String =
         withContext(Dispatchers.IO) {
             // TOKEN_INFO: kein HTTP-Call, Token lokal dekodieren
-            if (endpoint == BoschEndpoint.TOKEN_INFO) {
+            if (request.isLocalOnly) {
                 return@withContext decodeJwt(accessToken)
             }
 
-            val url = "${endpoint.baseUrl}${endpoint.path}"
-            val request = Request.Builder()
-                .url(url)
+            val httpRequest = Request.Builder()
+                .url(request.url)
                 .header("Authorization", "Bearer $accessToken")
                 .header("Accept", "application/json")
                 .build()
 
-            client.newCall(request).execute().use { response ->
+            client.newCall(httpRequest).execute().use { response ->
                 val body = response.body?.string() ?: ""
                 "HTTP ${response.code} ${response.message}\n\n$body"
             }

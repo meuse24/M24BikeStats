@@ -45,6 +45,7 @@ fun AppNavigation() {
                 uiState = uiState,
                 onSelectEndpoint = apiTestViewModel::selectEndpoint,
                 onFetch = apiTestViewModel::fetch,
+                onRunAll = apiTestViewModel::runAllEndpoints,
                 onClear = apiTestViewModel::clear,
                 onLogout = {
                     loginViewModel.logout()

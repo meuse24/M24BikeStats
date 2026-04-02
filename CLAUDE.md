@@ -113,30 +113,30 @@ Client-ID ist in `OAuthConfig.kt` hart kodiert (kein Geheimnis bei public client
 **Base URL:** `https://api.bosch-ebike.com`
 
 ```
-# Smart System / BES3 (Flow-App, ~ab 2022) – wahrscheinlich korrekt
-GET /activity/smart-system/v1/activities?limit=20&offset=0
-GET /bike-profile/smart-system/v1/bikes
+# Smart System / BES3 (Flow-App, live bestätigt am 2026-04-02)
+GET /activity/smart-system/v1/activities?limit=20&offset=0     -> HTTP 200
+GET /bike-profile/smart-system/v1/bikes                        -> HTTP 200
+GET /bike-profile/smart-system/v1/bikes/{bikeId}               -> HTTP 200
+GET /activity/smart-system/v1/activities/{activityId}          -> HTTP 404
+GET /activity/smart-system/v1/activities/{activityId}/track    -> HTTP 404
 
-# eBike System 2 / BES2 (ältere Modelle)
-GET /activity/ebike-system-2/v1/activities?limit=20&offset=0
-GET /bike-profile/ebike-system-2/v1/bikes
-
-# OIDC – bestätigt HTTP 200
+# OIDC – live bestätigt HTTP 200
 GET https://p9.authz.bosch.com/.../userinfo
+GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ```
 
 `BoschEndpoint.kt` enthält alle Varianten inkl. TOKEN_INFO (lokaler JWT-Decoder) und OIDC_DISCOVERY.
 
-### Endpunkte die nicht funktionieren
+### Verifizierte Datenformen
 
-- `flow.bosch-ebike.com/data-act/...` → HTTP 401 (falscher Host für API-Token)
-- `api.bosch-ebike.com/data-act/v1/...` → HTTP 404 (falsche Pfadstruktur)
-- `api.bosch-ebike.com/bikes` → HTTP 404 (kein Präfix)
+- `activities` liefert `pagination` und `activitySummaries[]` mit Fahrdaten, Leistungswerten und `bikeId`
+- `bikes` und `bikes/{bikeId}` liefern Komponenten-, Batterie- und Drive-Unit-Informationen
+- JWT-Claims enthalten `aud=api-bosch-ebike`, `scope=euda:read`, `bosch-id`, `ebike-rider-id`
 
 ---
 
 ## Offene Punkte
 
-- Smart System vs. BES2 für Cannondale Performance Line CX bestätigen
-- Token-Refresh-Logik implementieren (`getRefreshToken()` in `AuthManager` vorhanden)
-- Weitere Endpunkte aus Bruno-Collection (Diagnose, Remote Config) einbinden
+- Alternative Pfade für Activity-Detail und Activity-Track recherchieren
+- JSON-Strukturen in verständliche UI-Modelle und Ansichten überführen
+- Log-Ausgaben für produktive Nutzung datensparsam machen

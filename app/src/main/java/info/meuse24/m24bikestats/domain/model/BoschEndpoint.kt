@@ -63,4 +63,22 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
         "https://p9.authz.bosch.com",
         "/auth/realms/obc/.well-known/openid-configuration"
     ),
+
+    ;
+
+    fun toRequest(
+        activityId: String? = null,
+        bikeId: String? = null,
+    ): BoschRequest {
+        val resolvedPath = path
+            .replace("ACTIVITY_ID", activityId ?: "ACTIVITY_ID")
+            .replace("BIKE_ID", bikeId ?: "BIKE_ID")
+
+        return BoschRequest(
+            label = label,
+            baseUrl = baseUrl,
+            path = resolvedPath,
+            isLocalOnly = this == TOKEN_INFO,
+        )
+    }
 }

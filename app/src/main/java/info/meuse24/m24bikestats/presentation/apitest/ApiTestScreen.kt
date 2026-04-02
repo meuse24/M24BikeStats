@@ -55,6 +55,7 @@ fun ApiTestScreen(
     uiState: ApiTestUiState,
     onSelectEndpoint: (BoschEndpoint) -> Unit,
     onFetch: () -> Unit,
+    onRunAll: () -> Unit,
     onClear: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -97,6 +98,10 @@ fun ApiTestScreen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Button(onClick = onFetch, enabled = !uiState.isLoading) {
                     Text("Abrufen")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = onRunAll, enabled = !uiState.isLoading) {
+                    Text("Alle testen")
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(

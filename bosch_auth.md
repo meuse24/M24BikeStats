@@ -116,29 +116,114 @@ Aus einem realen Token dekodiert (Stand: April 2026):
 
 ## Bestätigte API-Endpunkte
 
-Quelle: [open-ebike/open-ebike-backend](https://github.com/open-ebike/open-ebike-backend) (Bruno-Collection)
-
 **Base URL:** `https://api.bosch-ebike.com`
 
 ### Smart System / BES3 (Flow-App, Bikes ab ~2022)
 
 ```
-GET /activity/smart-system/v1/activities?limit=20&offset=0
-GET /bike-profile/smart-system/v1/bikes
+GET /activity/smart-system/v1/activities?limit=20&offset=0   → HTTP 200
+GET /bike-profile/smart-system/v1/bikes                       → HTTP 200
+GET /bike-profile/smart-system/v1/bikes/{bikeId}             → HTTP 200
+GET /activity/smart-system/v1/activities/{activityId}        → HTTP 404
+GET /activity/smart-system/v1/activities/{activityId}/track  → HTTP 404
 ```
 
-### eBike System 2 / BES2 (ältere Modelle)
-
-```
-GET /activity/ebike-system-2/v1/activities?limit=20&offset=0
-GET /bike-profile/ebike-system-2/v1/bikes
-```
+Die drei `200`-Antworten sind mit echtem Token und echten IDs am **2. April 2026** live verifiziert.
 
 ### OIDC (bestätigt funktionierend)
 
 ```
 GET https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/userinfo
-→ HTTP 200, liefert sub, email, bosch-id, ebike-rider-id
+→ HTTP 200, liefert u. a. sub, email, preferred_username
+
+GET https://p9.authz.bosch.com/auth/realms/obc/.well-known/openid-configuration
+→ HTTP 200, liefert authorization_endpoint, token_endpoint, userinfo_endpoint, jwks_uri,
+  revocation_endpoint, introspection_endpoint, end_session_endpoint
+```
+
+### Verifizierte Antwortstrukturen
+
+`GET /activity/smart-system/v1/activities?limit=20&offset=0`
+
+```json
+{
+  "pagination": {
+    "total": 453,
+    "offset": 0,
+    "limit": 20
+  },
+  "activitySummaries": [
+    {
+      "id": "<activity-id>",
+      "startTime": "2026-03-27T07:12:57Z",
+      "endTime": "2026-03-27T19:21:11Z",
+      "timeZone": "Europe/Vienna",
+      "durationWithoutStops": 2201,
+      "title": "Lauterach Rundfahrt",
+      "bikeId": "<bike-id>",
+      "startOdometer": 6324521,
+      "distance": 13555,
+      "speed": { "average": 22.17, "maximum": 42.15 },
+      "cadence": { "average": 66.0, "maximum": 103.0 },
+      "riderPower": { "average": 102.0, "maximum": 444.0 },
+      "elevation": { "gain": 75, "loss": 80 },
+      "caloriesBurned": 173.0
+    }
+  ]
+}
+```
+
+`GET /bike-profile/smart-system/v1/bikes/{bikeId}`
+
+```json
+{
+  "id": "<bike-id>",
+  "createdAt": "2024-06-14T12:45:12.123452Z",
+  "driveUnit": {
+    "serialNumber": "<serial>",
+    "partNumber": "EB11100000",
+    "productName": "Drive Unit Performance Line CX",
+    "walkAssistConfiguration": {
+      "isEnabled": true,
+      "maximumSpeed": 4.0
+    },
+    "odometer": 6336824.0,
+    "rearWheelCircumferenceUser": 2260.0,
+    "maximumAssistanceSpeed": 27.4,
+    "activeAssistModes": [
+      { "name": "A100M00040", "reachableRange": 97.0 }
+    ],
+    "powerOnTime": {
+      "total": 867,
+      "withMotorSupport": 867
+    }
+  },
+  "remoteControl": {
+    "serialNumber": "<serial>",
+    "partNumber": "EB1310000E",
+    "productName": "LED Remote"
+  },
+  "batteries": [
+    {
+      "serialNumber": "<serial>",
+      "partNumber": "EB1210000X",
+      "productName": "PowerTube 750",
+      "deliveredWhOverLifetime": 51554,
+      "chargeCycles": {
+        "total": 83.8,
+        "onBike": 79.2,
+        "offBike": 4.5
+      }
+    }
+  ],
+  "language": "de",
+  "serviceDue": {},
+  "headUnit": {
+    "serialNumber": "<serial>",
+    "partNumber": "EB13100003",
+    "productName": "Kiox 300"
+  }
+}
 ```
 
 ---
@@ -149,11 +234,13 @@ GET https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/userinfo
 - `state`-Parameter wird von AppAuth automatisch gesetzt (CSRF-Schutz)
 - Tokens werden in `EncryptedSharedPreferences` (AES-256-GCM, Android Keystore) gespeichert
 - Token-Lebensdauer: 3600 Sekunden (1 Stunde) – Refresh Token für stille Verlängerung vorhanden
+- Die App soll vor API-Aufrufen den Access Token automatisch per Refresh Token erneuern
 
 ---
 
 ## Offene Punkte
 
-- [ ] Bestätigen ob Smart System oder BES2 für Cannondale Performance Line CX korrekt
-- [ ] Weitere Endpunkte aus Bruno-Collection auswerten (Diagnose, Remote Config etc.)
-- [ ] Token-Refresh-Logik in `AuthManager` implementieren
+- [x] Smart System für Cannondale Performance Line CX bestätigt
+- [x] Bike-Detail-Endpunkt mit echter `bikeId` bestätigt
+- [ ] Alternativen für Activity-Detail- und Track-Endpunkte recherchieren
+- [ ] Datenmodelle aus den verifizierten JSON-Strukturen für die UI ableiten
