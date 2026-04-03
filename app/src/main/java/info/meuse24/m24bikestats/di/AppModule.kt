@@ -16,6 +16,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
@@ -34,7 +35,9 @@ val appModule = module {
             androidContext(),
             BoschDatabase::class.java,
             "bosch_cache.db",
-        ).build()
+        )
+            .fallbackToDestructiveMigration(dropAllTables = true)
+            .build()
     }
     single { get<BoschDatabase>().activityDao() }
     single<BoschRepository> { BoschRepositoryImpl(get()) }
@@ -46,6 +49,7 @@ val appModule = module {
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
     factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
+    factory { GetCachedSmartSystemActivityUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }

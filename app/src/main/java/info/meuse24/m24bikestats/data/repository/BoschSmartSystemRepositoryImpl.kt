@@ -29,6 +29,9 @@ class BoschSmartSystemRepositoryImpl(
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
         activityDao.observeAll().map { activities -> activities.map { it.toDomain() } }
 
+    override suspend fun getCachedActivity(activityId: String): BoschActivity? =
+        activityDao.getById(activityId)?.toDomain()
+
     override suspend fun getActivities(
         accessToken: String,
         limit: Int,

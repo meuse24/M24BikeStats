@@ -7,8 +7,8 @@ import info.meuse24.m24bikestats.data.local.entity.ActivityEntity
 
 @Database(
     entities = [ActivityEntity::class],
-    version = 1,
-    exportSchema = false,
+    version = 2,
+    exportSchema = true,
 )
 abstract class BoschDatabase : RoomDatabase() {
     abstract fun activityDao(): ActivityDao

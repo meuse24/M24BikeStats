@@ -9,8 +9,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ActivityDao {
-    @Query("SELECT * FROM activities ORDER BY startTime DESC")
+    @Query("SELECT * FROM activities ORDER BY startTimeEpoch DESC, startTime DESC")
     fun observeAll(): Flow<List<ActivityEntity>>
+
+    @Query("SELECT * FROM activities WHERE id = :activityId LIMIT 1")
+    suspend fun getById(activityId: String): ActivityEntity?
 
     @Upsert
     suspend fun upsertAll(activities: List<ActivityEntity>)

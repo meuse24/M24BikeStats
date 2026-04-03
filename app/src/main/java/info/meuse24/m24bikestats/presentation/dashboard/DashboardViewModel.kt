@@ -10,6 +10,7 @@ import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
@@ -29,6 +30,7 @@ import java.util.Locale
 
 class DashboardViewModel(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
+    private val getCachedActivity: GetCachedSmartSystemActivityUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
@@ -121,8 +123,6 @@ class DashboardViewModel(
                     isRefreshing = false,
                     isLoadingMoreActivities = false,
                     activityTotalCount = activityPage.total,
-                    loadedActivityCount = maxOf(cachedActivities.size, activityPage.items.size),
-                    canLoadMoreActivities = maxOf(cachedActivities.size, activityPage.items.size) < activityPage.total,
                     bikes = bikes.map(::toBikeCardUiModel),
                     error = null,
                 )
@@ -155,8 +155,6 @@ class DashboardViewModel(
                 it.copy(
                     isLoadingMoreActivities = false,
                     activityTotalCount = activityTotalCount,
-                    loadedActivityCount = maxOf(cachedActivities.size, activityOffset),
-                    canLoadMoreActivities = maxOf(cachedActivities.size, activityOffset) < activityTotalCount,
                 )
             }
         }
@@ -256,18 +254,18 @@ class DashboardViewModel(
     }
 
     fun loadActivityDetail(activityId: String) {
-        val activity = cachedActivities.firstOrNull { it.id == activityId }
-        if (activity == null) {
-            _uiState.update { it.copy(error = "Aktivität nicht gefunden") }
-            return
-        }
-
-        val cachedDetail = cachedActivityDetails[activityId]
-        if (_uiState.value.selectedActivityId == activityId && _uiState.value.selectedActivityDetail != null && cachedDetail != null) {
-            return
-        }
-
         viewModelScope.launch {
+            val activity = getCachedActivity(activityId)
+            if (activity == null) {
+                _uiState.update { it.copy(error = "Aktivität nicht gefunden") }
+                return@launch
+            }
+
+            val cachedDetail = cachedActivityDetails[activityId]
+            if (_uiState.value.selectedActivityId == activityId && _uiState.value.selectedActivityDetail != null && cachedDetail != null) {
+                return@launch
+            }
+
             _uiState.update {
                 it.copy(
                     selectedActivityId = activityId,

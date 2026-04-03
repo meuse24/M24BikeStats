@@ -8,6 +8,7 @@ data class ActivityEntity(
     @PrimaryKey val id: String,
     val title: String,
     val startTime: String,
+    val startTimeEpoch: Long,
     val endTime: String?,
     val timeZone: String?,
     val durationWithoutStopsSeconds: Int,
