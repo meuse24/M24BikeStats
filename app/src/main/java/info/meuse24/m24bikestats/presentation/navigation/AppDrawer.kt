@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.navigation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.clickable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
@@ -17,6 +18,7 @@ import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 @Composable
 fun AppDrawer(
     currentRoute: String?,
+    onHomeClicked: () -> Unit,
     onDestinationClicked: (DrawerDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -25,7 +27,9 @@ fun AppDrawer(
             Text(
                 text = "M24 Bike Stats",
                 style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier
+                    .clickable(onClick = onHomeClicked)
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
             )
             Text(
                 text = "Setup, Hilfe, Info und Diagnosewerkzeuge",

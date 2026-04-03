@@ -163,6 +163,12 @@ fun MainShell(
             drawerContent = {
                 AppDrawer(
                     currentRoute = currentRoute,
+                    onHomeClicked = {
+                        coroutineScope.launch {
+                            drawerState.close()
+                        }
+                        onNavigateToOverview()
+                    },
                     onDestinationClicked = { destination ->
                         coroutineScope.launch {
                             drawerState.close()
