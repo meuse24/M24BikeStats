@@ -32,4 +32,12 @@ enum class MainDestination(
         label = "Funktionen",
         icon = Icons.Default.FileDownload,
     ),
+    ;
+
+    companion object {
+        fun fromRoute(route: String?): MainDestination? =
+            entries.firstOrNull { destination ->
+                route == destination.route || route?.startsWith("${destination.route}/") == true
+            }
+    }
 }

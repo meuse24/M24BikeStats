@@ -2,12 +2,14 @@
 
 ## Fortschritt
 - [x] Phase 1: Fundament & Dependencies
-- [ ] Phase 2: Main-Shell & Drawer
+- [x] Phase 2: Main-Shell & Drawer
 - [ ] Phase 3: Screen-Refactoring
 - [ ] Phase 4: Navigation verdrahten
 - [ ] Phase 5: Validierung & Tests
 
 ### Letztes Ergebnis
+- 2026-04-03: `MainShell`, `AppDrawer` sowie Hilfe-/Info-Screens ergänzt. Compact nutzt einen `ModalNavigationDrawer`, größere Breiten ein Overflow-Menü für sekundäre Ziele.
+- Validierung nach Phase 2: `./gradlew test`, `./gradlew lint`, `./gradlew build` erfolgreich.
 - 2026-04-03: Compose BOM auf `2025.05.00` aktualisiert, Adaptive-Navigation- und `androidx.window`-Dependencies ergänzt, `MainDestination` und `DrawerDestination` angelegt.
 - Validierung nach Phase 1: `./gradlew test`, `./gradlew lint`, `./gradlew build` erfolgreich.
 
