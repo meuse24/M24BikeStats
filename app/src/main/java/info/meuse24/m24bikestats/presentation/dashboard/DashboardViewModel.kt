@@ -48,7 +48,6 @@ class DashboardViewModel(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private var cachedActivities: List<BoschActivity> = emptyList()
-    private var cachedBikes: List<BoschBike> = emptyList()
     private var activityOffset: Int = 0
     private var activityTotalCount: Int = 0
 
@@ -68,8 +67,9 @@ class DashboardViewModel(
                         activityTotalCount > 0 -> maxOf(activityTotalCount, activities.size)
                         else -> activities.size
                     }
+                    val hasInitialContent = activities.isNotEmpty() || current.bikes.isNotEmpty()
                     current.copy(
-                        isLoading = current.isLoading && activities.isEmpty(),
+                        isLoading = current.isLoading && !hasInitialContent,
                         activities = activities.map(::toActivityCardUiModel),
                         loadedActivityCount = activities.size,
                         activityTotalCount = resolvedTotal,
@@ -83,10 +83,10 @@ class DashboardViewModel(
     private fun observeBikes() {
         viewModelScope.launch {
             observeCachedBikes().collectLatest { bikes ->
-                cachedBikes = bikes
                 _uiState.update { current ->
+                    val hasInitialContent = current.activities.isNotEmpty() || bikes.isNotEmpty()
                     current.copy(
-                        isLoading = current.isLoading && current.activities.isEmpty() && bikes.isEmpty(),
+                        isLoading = current.isLoading && !hasInitialContent,
                         bikes = bikes.map(::toBikeCardUiModel),
                     )
                 }
@@ -96,7 +96,7 @@ class DashboardViewModel(
 
     fun refresh() {
         viewModelScope.launch {
-            val hasContent = cachedActivities.isNotEmpty() || cachedBikes.isNotEmpty()
+            val hasContent = _uiState.value.activities.isNotEmpty() || _uiState.value.bikes.isNotEmpty()
             _uiState.update {
                 it.copy(
                     isLoading = !hasContent,

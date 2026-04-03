@@ -36,6 +36,9 @@ interface BikeDao {
     suspend fun upsertBike(bike: BikeEntity)
 
     @Upsert
+    suspend fun upsertBikes(bikes: List<BikeEntity>)
+
+    @Upsert
     suspend fun upsertBatteries(batteries: List<BikeBatteryEntity>)
 
     @Upsert
@@ -48,9 +51,7 @@ interface BikeDao {
         assistModes: List<BikeAssistModeEntity>,
     ) {
         clearAll()
-        bikes.forEach { bike ->
-            upsertBike(bike)
-        }
+        if (bikes.isNotEmpty()) upsertBikes(bikes)
         if (batteries.isNotEmpty()) upsertBatteries(batteries)
         if (assistModes.isNotEmpty()) upsertAssistModes(assistModes)
     }

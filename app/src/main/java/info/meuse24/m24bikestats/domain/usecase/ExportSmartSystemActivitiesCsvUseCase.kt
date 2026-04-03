@@ -19,26 +19,41 @@ class ExportSmartSystemActivitiesCsvUseCase(
             .getOrElse { return Result.failure(it) }
 
         val activities = repository.getCachedActivities().toMutableList()
-        var total = repository.getCachedActivityTotalCount() ?: activities.size
+        var total = repository.getCachedActivityTotalCount()
         var offset = activities.size
 
-        if (activities.isNotEmpty()) {
+        if (activities.isEmpty() && (total == null || total == 0)) {
+            val firstPage = repository.getActivities(
+                accessToken = token,
+                limit = EXPORT_PAGE_SIZE,
+                offset = 0,
+            ).getOrElse { return Result.failure(it) }
+
+            total = firstPage.total
+            activities += firstPage.items
+            offset = firstPage.offset + firstPage.items.size
             onProgress(activities.size, total.coerceAtLeast(activities.size))
         }
 
-        while (activities.size < total) {
+        var totalCount = total ?: activities.size
+
+        if (activities.isNotEmpty()) {
+            onProgress(activities.size, totalCount.coerceAtLeast(activities.size))
+        }
+
+        while (activities.size < totalCount) {
             val page = repository.getActivities(
                 accessToken = token,
                 limit = EXPORT_PAGE_SIZE,
                 offset = offset,
             ).getOrElse { return Result.failure(it) }
 
-            total = page.total
+            totalCount = page.total
             if (page.items.isEmpty()) break
 
             val knownIds = activities.asSequence().map { it.id }.toHashSet()
             activities += page.items.filterNot { it.id in knownIds }
-            onProgress(activities.size, total)
+            onProgress(activities.size, totalCount)
             offset = page.offset + page.items.size
         }
 
