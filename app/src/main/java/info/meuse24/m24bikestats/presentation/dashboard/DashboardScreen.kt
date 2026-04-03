@@ -532,7 +532,7 @@ fun TrackScreen(
                         trackBounds = trackBounds,
                         modifier = Modifier.fillMaxSize(),
                         onShare = { shareTrackGpx(context, activity) },
-                        onShareCsv = { shareTrackCsv(context, activity) },
+                onShareCsv = { shareTrackCsv(context, activity, uiState.csvSeparator) },
                         onCopyGpx = {
                             copyTrackGpxToClipboard(context, activity)
                             Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
@@ -1787,8 +1787,9 @@ private fun copyTrackGpxToClipboard(
 private fun shareTrackCsv(
     context: Context,
     activity: ActivityDetailUiModel,
+    separator: info.meuse24.m24bikestats.domain.model.CsvSeparator,
 ) {
-    val csvUri = createTrackCsvUri(context, activity)
+    val csvUri = createTrackCsvUri(context, activity, separator)
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/csv"
         putExtra(Intent.EXTRA_STREAM, csvUri)

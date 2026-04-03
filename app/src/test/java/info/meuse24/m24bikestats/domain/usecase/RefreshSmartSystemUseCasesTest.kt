@@ -170,6 +170,7 @@ class RefreshSmartSystemUseCasesTest {
         val useCase = ExportSmartSystemActivitiesCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(),
         )
 
         val result = kotlinx.coroutines.runBlocking { useCase() }
@@ -209,6 +210,7 @@ class RefreshSmartSystemUseCasesTest {
         val useCase = ExportSmartSystemActivitiesCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(),
         )
 
         val result = kotlinx.coroutines.runBlocking { useCase() }

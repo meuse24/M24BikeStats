@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
@@ -26,7 +27,12 @@ fun createTrackGpxUri(
 fun createTrackCsvUri(
     context: Context,
     activity: ActivityDetailUiModel,
-): Uri = createSharedTrackFileUri(context, "${sanitizeTrackFileName(activity.title)}.csv", buildTrackCsv(activity))
+    separator: CsvSeparator,
+): Uri = createSharedTrackFileUri(
+    context,
+    "${sanitizeTrackFileName(activity.title)}.csv",
+    buildTrackCsv(activity, separator),
+)
 
 fun buildTrackGpx(activity: ActivityDetailUiModel): String {
     val timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now().atOffset(ZoneOffset.UTC))
@@ -56,7 +62,11 @@ fun buildTrackGpx(activity: ActivityDetailUiModel): String {
     """.trimMargin()
 }
 
-fun buildTrackCsv(activity: ActivityDetailUiModel): String {
+fun buildTrackCsv(
+    activity: ActivityDetailUiModel,
+    separator: CsvSeparator = CsvSeparator.COMMA,
+): String {
+    val separatorValue = separator.character.toString()
     val header = listOf(
         "point_index",
         "latitude",
@@ -66,7 +76,7 @@ fun buildTrackCsv(activity: ActivityDetailUiModel): String {
         "speed_kmh",
         "cadence_rpm",
         "rider_power_watts",
-    ).joinToString(",")
+    ).joinToString(separatorValue)
 
     val rows = activity.trackPoints.mapIndexed { index, point ->
         val profilePoint = point.distanceMeters?.let { distance ->
@@ -84,7 +94,7 @@ fun buildTrackCsv(activity: ActivityDetailUiModel): String {
             profilePoint?.speedKmh.toCsvValue(),
             profilePoint?.cadenceRpm.toCsvValue(),
             profilePoint?.riderPowerWatts.toCsvValue(),
-        ).joinToString(",")
+        ).joinToString(separatorValue)
     }
 
     return buildString {

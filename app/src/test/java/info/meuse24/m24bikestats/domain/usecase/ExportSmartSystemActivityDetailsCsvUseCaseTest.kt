@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.domain.usecase
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,6 +33,7 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
         val useCase = ExportSmartSystemActivityDetailsCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvSeparator.COMMA),
         )
 
         val export = useCase(listOf("a1", "a2")) { processed, total ->
@@ -63,11 +65,13 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
         val export = ExportSmartSystemActivityDetailsCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvSeparator.SEMICOLON),
         )(listOf("a1")).getOrThrow()
 
         assertEquals(listOf("a1"), repository.getActivityDetailCalls)
         assertEquals(1, export.activityCount)
         assertEquals(1, export.detailPointCount)
+        assertTrue(export.csvContent.contains("\"activity_id\";\"activity_title\""))
     }
 
     private fun activity(id: String, title: String) = BoschActivity(

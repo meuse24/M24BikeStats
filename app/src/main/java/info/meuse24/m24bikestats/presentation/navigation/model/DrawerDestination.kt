@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -12,6 +13,11 @@ enum class DrawerDestination(
     val label: String,
     val icon: ImageVector,
 ) {
+    SETUP(
+        route = "setup",
+        label = "Setup",
+        icon = Icons.Default.Settings,
+    ),
     HELP(
         route = "help",
         label = "Hilfe",

@@ -28,7 +28,7 @@ fun AppDrawer(
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
             Text(
-                text = "Hilfe, Info und Diagnosewerkzeuge",
+                text = "Setup, Hilfe, Info und Diagnosewerkzeuge",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

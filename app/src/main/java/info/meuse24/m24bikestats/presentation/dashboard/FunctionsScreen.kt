@@ -103,6 +103,9 @@ fun FunctionsScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    SectionSurface {
+                        OptionalRow("CSV-Trennzeichen", uiState.csvSeparator.label)
+                    }
                     uiState.lastActivitiesCsvExport?.let { exportSummary ->
                         SectionSurface {
                             Text(
@@ -180,6 +183,7 @@ fun FunctionsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
+                        OptionalRow("CSV-Trennzeichen", uiState.csvSeparator.label)
                         OptionalRow("Sichtbare Aktivitäten", uiState.visibleActivityCount.toString())
                         OptionalRow("Geladene Aktivitäten", uiState.loadedActivityCount.toString())
                     }

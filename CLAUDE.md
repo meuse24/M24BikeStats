@@ -143,7 +143,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Startziel nach Login ist `home`
 - Die Hauptnavigation nutzt `NavigationSuiteScaffold` adaptiv für Home, Aktivitäten, Bike und Funktionen
 - Auf Compact-Geräten liegen Hilfe, Info, API-Test und Logout im `ModalNavigationDrawer`
-- Auf größeren Breiten liegen Hilfe, Info, API-Test und Logout im Overflow-Menü der `TopAppBar`
+- Auf größeren Breiten liegen Setup, Hilfe, Info, API-Test und Logout im Overflow-Menü der `TopAppBar`
+- Der Setup-Screen verwaltet App-Einstellungen wie das CSV-Trennzeichen
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
 - Aktivitätenlisten-UI arbeitet ohne separate Domain-In-Memory-Kopie; Filter/Sortierung basieren auf `allActivities` im UiState
@@ -164,6 +165,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 - Der Functions-Screen enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
 - Der Functions-Screen enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
+- Das CSV-Trennzeichen ist persistent konfigurierbar und wird standardmäßig aus der Systemsprache abgeleitet
 - Der Functions-Screen zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 - Repository-, Mapper-, ViewModel-, Room-, Migrations- und Exportpfade sind testseitig abgedeckt

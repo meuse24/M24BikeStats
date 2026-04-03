@@ -39,6 +39,14 @@ class AppNavigationRoutingTest {
     fun `drawer routes expose matching top bar title`() {
         assertEquals(
             null,
+            DrawerDestination.SETUP.route.toMainDestination(),
+        )
+        assertEquals(
+            DrawerDestination.SETUP.label,
+            DrawerDestination.SETUP.route.toTopBarTitle(),
+        )
+        assertEquals(
+            null,
             DrawerDestination.HELP.route.toMainDestination(),
         )
         assertEquals(
@@ -88,6 +96,7 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
         assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
         assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
+        assertFalse(DrawerDestination.SETUP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.HELP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.INFO.route.canNavigateToOverview())
         assertFalse(DrawerDestination.API_TEST.route.canNavigateToOverview())

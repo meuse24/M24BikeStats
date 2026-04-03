@@ -4,10 +4,12 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
@@ -16,10 +18,12 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActiviti
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -165,7 +169,26 @@ class DashboardViewModelTest {
         assertEquals(2, state.lastActivityDetailsCsvExport?.detailPointCount)
     }
 
-    private fun createViewModel(repository: DashboardFakeRepository): DashboardViewModel {
+    @Test
+    fun `csv separator changes propagate into ui state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository(CsvSeparator.COMMA)
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateCsvSeparator(CsvSeparator.SEMICOLON)
+        advanceUntilIdle()
+
+        assertEquals(CsvSeparator.SEMICOLON, viewModel.uiState.value.csvSeparator)
+    }
+
+    private fun createViewModel(
+        repository: DashboardFakeRepository,
+        settingsRepository: FakeAppSettingsRepository = FakeAppSettingsRepository(),
+    ): DashboardViewModel {
         val authRepository = object : AuthRepository {
             override fun getAccessToken(): String? = "token"
             override suspend fun getValidAccessToken(): Result<String> = Result.success("token")
@@ -183,11 +206,13 @@ class DashboardViewModelTest {
             getCachedBike = GetCachedSmartSystemBikeUseCase(repository),
             getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
             refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
-            exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository),
-            exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository),
+            exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
+            exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
             refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, authRepository),
             refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
             refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, authRepository),
+            observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
+            updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
         )
     }
 

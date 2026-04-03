@@ -9,6 +9,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Automatischer Access-Token-Refresh über den Bosch-OIDC-Token-Endpunkt
 - Best-Effort-Logout über den Bosch-OIDC-End-Session-Endpunkt
 - Adaptive Hauptnavigation mit Home, Aktivitäten, Bike und Funktionen
+- Setup-Screen für App-Einstellungen in der Sekundärnavigation
 - Lokaler Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - Explizite Room-Migrationen für die bekannten Cache-Schema-Versionen ab v2
 - Cache-first Detail- und Bike-Screens mit Hintergrund-Refresh aus Room
@@ -16,6 +17,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
 - Functions-Screen mit CSV-Export aller Aktivitäten
 - Functions-Screen mit CSV-Export aller Aktivitäten und sichtbarer Aktivitätsdetails
+- Konfigurierbares CSV-Trennzeichen mit sprachabhängigem Standard (`;` bei Dezimalkomma, `,` bei Dezimalpunkt)
 - Aktivitätenliste mit Datumsfilter und Sortierung
 - Aktivitätenliste mit zusätzlicher Textsuche
 - Trackansicht mit vollständigem Verlauf auf Basis der bestätigten GPS-Punkte

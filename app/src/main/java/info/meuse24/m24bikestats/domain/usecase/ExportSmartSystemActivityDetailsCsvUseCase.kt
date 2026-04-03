@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.domain.usecase
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailsCsvExport
+import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import java.time.LocalDateTime
@@ -12,6 +13,7 @@ import java.util.Locale
 class ExportSmartSystemActivityDetailsCsvUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
+    private val appSettingsRepository: AppSettingsRepository,
     private val detailCacheTtlMillis: Long = DEFAULT_DETAIL_CACHE_TTL_MILLIS,
 ) {
     suspend operator fun invoke(
@@ -28,6 +30,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
 
         val detailRows = mutableListOf<String>()
         var exportedPointCount = 0
+        val separator = appSettingsRepository.getSettings().csvSeparator.character.toString()
 
         normalizedIds.forEachIndexed { index, activityId ->
             val activity = repository.getCachedActivity(activityId)
@@ -36,7 +39,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             val detail = loadActivityDetail(token, activityId)
                 .getOrElse { return Result.failure(it) }
 
-            detailRows += buildRows(activity, detail)
+            detailRows += buildRows(activity, detail, separator)
             exportedPointCount += detail.points.size
             onProgress(index + 1, normalizedIds.size)
         }
@@ -48,7 +51,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             BoschActivityDetailsCsvExport(
                 fileName = "bosch-activity-details-$timestamp.csv",
                 csvContent = buildString {
-                    appendLine(CSV_HEADER)
+                    appendLine(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
                     detailRows.forEach(::appendLine)
                 },
                 activityCount = normalizedIds.size,
@@ -79,6 +82,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
     private fun buildRows(
         activity: BoschActivity,
         detail: BoschActivityDetail,
+        separator: String,
     ): List<String> = detail.points.mapIndexed { index, point ->
         listOf(
             activity.id,
@@ -94,7 +98,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             point.speedKmh?.toCsvNumber().orEmpty(),
             point.cadenceRpm?.toCsvNumber().orEmpty(),
             point.riderPowerWatts?.toCsvNumber().orEmpty(),
-        ).joinToString(separator = ",") { it.escapeCsv() }
+        ).joinToString(separator = separator) { it.escapeCsv() }
     }
 
     private fun Double.toCsvNumber(): String =
@@ -107,7 +111,20 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
 
     companion object {
         private const val DEFAULT_DETAIL_CACHE_TTL_MILLIS = 30 * 60 * 1000L
-        private const val CSV_HEADER =
-            "\"activity_id\",\"activity_title\",\"start_time\",\"end_time\",\"bike_id\",\"point_index\",\"latitude\",\"longitude\",\"distance_meters\",\"altitude_meters\",\"speed_kmh\",\"cadence_rpm\",\"rider_power_watts\""
+        private val CSV_COLUMNS = listOf(
+            "activity_id",
+            "activity_title",
+            "start_time",
+            "end_time",
+            "bike_id",
+            "point_index",
+            "latitude",
+            "longitude",
+            "distance_meters",
+            "altitude_meters",
+            "speed_kmh",
+            "cadence_rpm",
+            "rider_power_watts",
+        )
     }
 }

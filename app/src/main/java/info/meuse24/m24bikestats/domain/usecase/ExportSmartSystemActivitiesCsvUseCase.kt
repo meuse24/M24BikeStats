@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.BoschActivitiesCsvExport
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import java.time.LocalDateTime
@@ -11,6 +12,7 @@ import java.util.Locale
 class ExportSmartSystemActivitiesCsvUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
+    private val appSettingsRepository: AppSettingsRepository,
 ) {
     suspend operator fun invoke(
         onProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
@@ -63,15 +65,21 @@ class ExportSmartSystemActivitiesCsvUseCase(
         return Result.success(
             BoschActivitiesCsvExport(
                 fileName = "bosch-activities-$timestamp.csv",
-                csvContent = buildCsv(activities),
+                csvContent = buildCsv(
+                    activities = activities,
+                    separator = appSettingsRepository.getSettings().csvSeparator.character.toString(),
+                ),
                 activityCount = activities.size,
             )
         )
     }
 
-    private fun buildCsv(activities: List<BoschActivity>): String {
+    private fun buildCsv(
+        activities: List<BoschActivity>,
+        separator: String,
+    ): String {
         val rows = buildList {
-            add(CSV_HEADER)
+            add(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
             activities.forEach { activity ->
                 add(
                     listOf(
@@ -93,7 +101,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
                         activity.elevationGainMeters?.toString().orEmpty(),
                         activity.elevationLossMeters?.toString().orEmpty(),
                         activity.caloriesBurned?.toCsvNumber().orEmpty(),
-                    ).joinToString(separator = ",") { it.escapeCsv() }
+                    ).joinToString(separator = separator) { it.escapeCsv() }
                 )
             }
         }
@@ -110,7 +118,25 @@ class ExportSmartSystemActivitiesCsvUseCase(
 
     companion object {
         private const val EXPORT_PAGE_SIZE = 100
-        private const val CSV_HEADER =
-            "\"id\",\"title\",\"start_time\",\"end_time\",\"time_zone\",\"duration_without_stops_seconds\",\"bike_id\",\"start_odometer_meters\",\"distance_meters\",\"average_speed_kmh\",\"max_speed_kmh\",\"average_cadence_rpm\",\"max_cadence_rpm\",\"average_rider_power_watts\",\"max_rider_power_watts\",\"elevation_gain_meters\",\"elevation_loss_meters\",\"calories_burned\""
+        private val CSV_COLUMNS = listOf(
+            "id",
+            "title",
+            "start_time",
+            "end_time",
+            "time_zone",
+            "duration_without_stops_seconds",
+            "bike_id",
+            "start_odometer_meters",
+            "distance_meters",
+            "average_speed_kmh",
+            "max_speed_kmh",
+            "average_cadence_rpm",
+            "max_cadence_rpm",
+            "average_rider_power_watts",
+            "max_rider_power_watts",
+            "elevation_gain_meters",
+            "elevation_loss_meters",
+            "calories_burned",
+        )
     }
 }

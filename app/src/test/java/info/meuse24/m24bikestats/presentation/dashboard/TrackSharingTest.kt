@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -9,12 +10,22 @@ class TrackSharingTest {
     fun `buildTrackCsv contains point and metric columns`() {
         val activity = testActivityDetail()
 
-        val csv = buildTrackCsv(activity)
+        val csv = buildTrackCsv(activity, CsvSeparator.COMMA)
 
         assertTrue(csv.contains("point_index,latitude,longitude"))
         assertTrue(csv.contains("47.100000,9.100000"))
         assertTrue(csv.contains("24.500000"))
         assertTrue(csv.contains("210.000000"))
+    }
+
+    @Test
+    fun `buildTrackCsv uses configured separator`() {
+        val activity = testActivityDetail()
+
+        val csv = buildTrackCsv(activity, CsvSeparator.SEMICOLON)
+
+        assertTrue(csv.contains("point_index;latitude;longitude"))
+        assertTrue(csv.contains("47.100000;9.100000;100.000000"))
     }
 
     @Test

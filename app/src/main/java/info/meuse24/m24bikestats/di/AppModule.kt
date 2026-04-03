@@ -5,14 +5,17 @@ import info.meuse24.m24bikestats.auth.AuthManager
 import info.meuse24.m24bikestats.auth.LoginRepository
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
+import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
+import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
@@ -30,6 +33,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
@@ -57,6 +61,7 @@ val appModule = module {
     single { get<BoschDatabase>().bikeDao() }
     single<BoschRepository> { BoschRepositoryImpl(get()) }
     single<BoschSmartSystemRepository> { BoschSmartSystemRepositoryImpl(get(), get(), get(), get()) }
+    single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<LoginRepository> { get<AuthManager>() }
 
@@ -70,8 +75,10 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityUseCase(get()) }
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
-    factory { ExportSmartSystemActivitiesCsvUseCase(get(), get()) }
-    factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get()) }
+    factory { ObserveAppSettingsUseCase(get()) }
+    factory { UpdateCsvSeparatorUseCase(get()) }
+    factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
+    factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }

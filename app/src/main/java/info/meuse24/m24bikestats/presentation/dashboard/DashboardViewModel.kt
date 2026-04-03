@@ -9,6 +9,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
@@ -19,10 +20,12 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivity
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
@@ -52,6 +55,8 @@ class DashboardViewModel(
     private val refreshActivityDetailUseCase: RefreshSmartSystemActivityDetailUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
     private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
+    private val observeAppSettings: ObserveAppSettingsUseCase,
+    private val updateCsvSeparatorUseCase: UpdateCsvSeparatorUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isInitialLoading = true))
@@ -65,6 +70,7 @@ class DashboardViewModel(
     init {
         observeActivities()
         observeBikes()
+        observeSettings()
         refresh(force = false)
     }
 
@@ -109,6 +115,16 @@ class DashboardViewModel(
                         isInitialLoading = current.isInitialLoading && !hasInitialContent,
                         bikes = bikes.map(::toBikeCardUiModel),
                     )
+                }
+            }
+        }
+    }
+
+    private fun observeSettings() {
+        viewModelScope.launch {
+            observeAppSettings().collectLatest { settings ->
+                _uiState.update { current ->
+                    current.copy(csvSeparator = settings.csvSeparator)
                 }
             }
         }
@@ -388,6 +404,13 @@ class DashboardViewModel(
                 exportDetailedLoadedActivityCount = 0,
                 exportDetailedTotalActivityCount = 0,
             )
+        }
+    }
+
+    fun updateCsvSeparator(separator: CsvSeparator) {
+        if (_uiState.value.csvSeparator == separator) return
+        viewModelScope.launch {
+            updateCsvSeparatorUseCase(separator)
         }
     }
 

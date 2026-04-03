@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
+
 data class DashboardUiState(
     val isInitialLoading: Boolean = false,
     val isRefreshing: Boolean = false,
@@ -32,6 +34,7 @@ data class DashboardUiState(
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,
     val isBikeDetailRefreshing: Boolean = false,
+    val csvSeparator: CsvSeparator = CsvSeparator.COMMA,
     val error: String? = null,
 )
 

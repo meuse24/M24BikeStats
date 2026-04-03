@@ -211,6 +211,14 @@ fun AppNavigation() {
                         HelpScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
                     }
 
+                    composable(DrawerDestination.SETUP.route!!) {
+                        SetupScreen(
+                            csvSeparator = dashboardUiState.csvSeparator,
+                            onCsvSeparatorSelected = dashboardViewModel::updateCsvSeparator,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
+
                     composable(DrawerDestination.INFO.route!!) {
                         InfoScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
                     }
@@ -283,6 +291,7 @@ internal fun String?.toTopBarTitle(): String = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.label
     this == MainDestination.BIKE.route -> MainDestination.BIKE.label
     this == MainDestination.FUNCTIONS.route -> MainDestination.FUNCTIONS.label
+    this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.label
     this == DrawerDestination.HELP.route -> DrawerDestination.HELP.label
     this == DrawerDestination.INFO.route -> DrawerDestination.INFO.label
     this == DrawerDestination.API_TEST.route -> DrawerDestination.API_TEST.label

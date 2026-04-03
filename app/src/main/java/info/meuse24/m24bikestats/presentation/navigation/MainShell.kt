@@ -188,6 +188,7 @@ private fun isDrawerDestinationRoute(route: String?): Boolean =
 internal fun String?.canNavigateToOverview(): Boolean = when (this) {
     null,
     MainDestination.HOME.route,
+    DrawerDestination.SETUP.route,
     DrawerDestination.HELP.route,
     DrawerDestination.INFO.route,
     DrawerDestination.API_TEST.route,
