@@ -66,6 +66,7 @@
     <string name="info_credit_codex">Codex von OpenAI ist ein agentischer Software-Engineering-Assistent, der Codebasen lesen, ändern, testen und Aufgaben in isolierten Umgebungen ausführen kann.</string>
     <string name="info_credit_claude_code">Claude Code von Anthropic ist ein agentisches Coding-System für Terminal, IDE und Web, das projektweit planen, Dateien ändern, Tests ausführen und Entwicklungswerkzeuge direkt nutzen kann.</string>
     <string name="info_credit_gemini_cli">Gemini CLI von Google ist ein quelloffener KI-Agent für das Terminal, der Gemini direkt in die Kommandozeile bringt und für Coding, Recherche, Automatisierung und Problemlösung ausgelegt ist.</string>
+    <string name="info_credit_openfreemap">OpenFreeMap von Zsolt Ero liefert die in der App verwendeten Kartenkacheln und Styles; der gerenderte Karten-Stack baut auf OpenMapTiles und OpenStreetMap-Daten auf.</string>
 
     <string name="home_hero_subtitle">Die Startseite bündelt den letzten Fahrtdatensatz, Bike-Status und die letzten Exportergebnisse.</string>
     <string name="home_metric_tours">Touren</string>
