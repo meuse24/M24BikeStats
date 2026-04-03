@@ -32,6 +32,13 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.FunctionsScreen
 import info.meuse24.m24bikestats.presentation.dashboard.HomeScreen
 import info.meuse24.m24bikestats.presentation.dashboard.TrackScreen
+import info.meuse24.m24bikestats.presentation.dashboard.toActivitiesUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toActivityDetailScreenUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toBikeDetailScreenUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toBikeListUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toFunctionsUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toHomeUiState
+import info.meuse24.m24bikestats.presentation.dashboard.toTrackUiState
 import info.meuse24.m24bikestats.presentation.login.LoginScreen
 import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
@@ -160,7 +167,7 @@ fun AppNavigation() {
                 ) {
                     composable(MainDestination.HOME.route) {
                         HomeScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toHomeUiState(),
                             onSyncCloudData = dashboardViewModel::syncCloudData,
                             onNavigateToActivities = {
                                 shellNavController.navigate(MainDestination.ACTIVITIES.route) {
@@ -173,7 +180,7 @@ fun AppNavigation() {
 
                     composable(MainDestination.ACTIVITIES.route) {
                         ActivitiesScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toActivitiesUiState(),
                             onActivitySearchQueryChanged = dashboardViewModel::updateActivitySearchQuery,
                             onActivityDateRangeFilterChanged = dashboardViewModel::updateActivityDateRangeFilter,
                             onActivitySortOptionChanged = dashboardViewModel::updateActivitySortOption,
@@ -187,8 +194,7 @@ fun AppNavigation() {
 
                     composable(MainDestination.BIKE.route) {
                         BikeListScreen(
-                            bikes = dashboardUiState.bikes,
-                            isRefreshing = dashboardUiState.isRefreshing,
+                            uiState = dashboardUiState.toBikeListUiState(),
                             onBikeClick = { bikeId ->
                                 shellNavController.navigate("bike/$bikeId")
                             },
@@ -198,7 +204,7 @@ fun AppNavigation() {
 
                     composable(MainDestination.FUNCTIONS.route) {
                         FunctionsScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toFunctionsUiState(),
                             onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
                             onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
                             onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
@@ -242,7 +248,7 @@ fun AppNavigation() {
                     ) { backStackEntry ->
                         val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
                         ActivityDetailScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toActivityDetailScreenUiState(),
                             onLoadActivity = dashboardViewModel::loadActivityDetail,
                             onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                             activityId = activityId,
@@ -257,7 +263,7 @@ fun AppNavigation() {
                     ) { backStackEntry ->
                         val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
                         TrackScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toTrackUiState(),
                             onLoadActivity = dashboardViewModel::loadActivityDetail,
                             onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                             activityId = activityId,
@@ -271,7 +277,7 @@ fun AppNavigation() {
                     ) { backStackEntry ->
                         val bikeId = backStackEntry.arguments?.getString("bikeId").orEmpty()
                         BikeDetailScreen(
-                            uiState = dashboardUiState,
+                            uiState = dashboardUiState.toBikeDetailScreenUiState(),
                             onLoadBike = dashboardViewModel::loadBikeDetail,
                             onRefreshBike = dashboardViewModel::refreshBikeDetail,
                             bikeId = bikeId,

@@ -13,8 +13,7 @@ import info.meuse24.m24bikestats.R
 
 @Composable
 fun BikeListScreen(
-    bikes: List<BikeCardUiModel>,
-    isRefreshing: Boolean,
+    uiState: BikeListUiState,
     onBikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -26,12 +25,15 @@ fun BikeListScreen(
         item {
             HeroCard(
                 eyebrow = stringResource(R.string.bike_list_hero_eyebrow),
-                title = if (bikes.isEmpty()) {
+                title = if (uiState.bikes.isEmpty()) {
                     stringResource(R.string.bike_list_empty_title)
                 } else {
-                    stringResource(if (bikes.size == 1) R.string.bike_list_count_title else R.string.bike_list_count_title_plural, bikes.size)
+                    stringResource(
+                        if (uiState.bikes.size == 1) R.string.bike_list_count_title else R.string.bike_list_count_title_plural,
+                        uiState.bikes.size,
+                    )
                 },
-                subtitle = if (isRefreshing) {
+                subtitle = if (uiState.isRefreshing) {
                     stringResource(R.string.bike_list_refreshing_subtitle)
                 } else {
                     stringResource(R.string.bike_list_default_subtitle)
@@ -39,7 +41,7 @@ fun BikeListScreen(
             )
         }
 
-        items(bikes, key = { it.id }) { bike ->
+        items(uiState.bikes, key = { it.id }) { bike ->
             BikeOverviewCard(
                 bike = bike,
                 onClick = { onBikeClick(bike.id) },

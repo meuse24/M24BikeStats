@@ -18,9 +18,9 @@ class RefreshSmartSystemActivitiesUseCase(
             return Result.success(null)
         }
 
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-        return repository.getActivities(token, limit = limit, offset = offset).map { it }
+        return withValidAccessToken(authRepository) { token ->
+            repository.getActivities(token, limit = limit, offset = offset)
+        }
     }
 
     private companion object {

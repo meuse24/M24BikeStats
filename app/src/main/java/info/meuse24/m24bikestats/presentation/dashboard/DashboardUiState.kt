@@ -44,6 +44,82 @@ data class DashboardUiState(
     val error: String? = null,
 )
 
+data class HomeUiState(
+    val allActivities: List<ActivityCardUiModel>,
+    val bikes: List<BikeCardUiModel>,
+    val loadedActivityCount: Int,
+    val visibleActivityCount: Int,
+    val isInitialLoading: Boolean,
+    val isRefreshing: Boolean,
+    val isSyncingCloudData: Boolean,
+    val isExportingActivitiesCsv: Boolean,
+    val isExportingActivityDetailsCsv: Boolean,
+    val syncLoadedActivityCount: Int,
+    val syncTotalActivityCount: Int,
+    val lastCloudSyncSummary: CloudSyncSummaryUiModel?,
+    val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
+    val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
+)
+
+data class ActivitiesUiState(
+    val activities: List<ActivityCardUiModel>,
+    val activitySearchQuery: String,
+    val activityDateRangeFilter: ActivityDateRangeFilter,
+    val activitySortOption: ActivitySortOption,
+    val visibleActivityCount: Int,
+    val loadedActivityCount: Int,
+    val activityTotalCount: Int,
+    val isRefreshing: Boolean,
+    val isLoadingMoreActivities: Boolean,
+    val canLoadMoreActivities: Boolean,
+)
+
+data class FunctionsUiState(
+    val csvSeparator: CsvSeparator,
+    val loadedActivityCount: Int,
+    val visibleActivityCount: Int,
+    val activityTotalCount: Int,
+    val isInitialLoading: Boolean,
+    val isRefreshing: Boolean,
+    val isExportingActivitiesCsv: Boolean,
+    val isExportingActivityDetailsCsv: Boolean,
+    val exportLoadedActivityCount: Int,
+    val exportTotalActivityCount: Int,
+    val exportDetailedLoadedActivityCount: Int,
+    val exportDetailedTotalActivityCount: Int,
+    val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel?,
+    val pendingActivityDetailsCsvExport: ActivityDetailsCsvExportUiModel?,
+    val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
+    val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
+)
+
+data class BikeListUiState(
+    val bikes: List<BikeCardUiModel>,
+    val isRefreshing: Boolean,
+)
+
+data class ActivityDetailScreenUiState(
+    val selectedActivityDetail: ActivityDetailUiModel?,
+    val selectedActivityId: String?,
+    val isActivityDetailLoading: Boolean,
+    val isActivityDetailRefreshing: Boolean,
+)
+
+data class TrackUiState(
+    val selectedActivityDetail: ActivityDetailUiModel?,
+    val selectedActivityId: String?,
+    val isActivityDetailLoading: Boolean,
+    val isActivityDetailRefreshing: Boolean,
+    val csvSeparator: CsvSeparator,
+)
+
+data class BikeDetailScreenUiState(
+    val selectedBikeDetail: BikeDetailUiModel?,
+    val selectedBikeId: String?,
+    val isBikeDetailLoading: Boolean,
+    val isBikeDetailRefreshing: Boolean,
+)
+
 data class ActivityCardUiModel(
     val id: String,
     val title: String,
@@ -160,3 +236,86 @@ enum class ActivitySortOption(@param:StringRes val labelRes: Int) {
     LONGEST_DISTANCE(R.string.sort_distance),
     LONGEST_DURATION(R.string.sort_duration),
 }
+
+fun DashboardUiState.toHomeUiState(): HomeUiState =
+    HomeUiState(
+        allActivities = allActivities,
+        bikes = bikes,
+        loadedActivityCount = loadedActivityCount,
+        visibleActivityCount = visibleActivityCount,
+        isInitialLoading = isInitialLoading,
+        isRefreshing = isRefreshing,
+        isSyncingCloudData = isSyncingCloudData,
+        isExportingActivitiesCsv = isExportingActivitiesCsv,
+        isExportingActivityDetailsCsv = isExportingActivityDetailsCsv,
+        syncLoadedActivityCount = syncLoadedActivityCount,
+        syncTotalActivityCount = syncTotalActivityCount,
+        lastCloudSyncSummary = lastCloudSyncSummary,
+        lastActivitiesCsvExport = lastActivitiesCsvExport,
+        lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
+    )
+
+fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =
+    ActivitiesUiState(
+        activities = activities,
+        activitySearchQuery = activitySearchQuery,
+        activityDateRangeFilter = activityDateRangeFilter,
+        activitySortOption = activitySortOption,
+        visibleActivityCount = visibleActivityCount,
+        loadedActivityCount = loadedActivityCount,
+        activityTotalCount = activityTotalCount,
+        isRefreshing = isRefreshing,
+        isLoadingMoreActivities = isLoadingMoreActivities,
+        canLoadMoreActivities = canLoadMoreActivities,
+    )
+
+fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
+    FunctionsUiState(
+        csvSeparator = csvSeparator,
+        loadedActivityCount = loadedActivityCount,
+        visibleActivityCount = visibleActivityCount,
+        activityTotalCount = activityTotalCount,
+        isInitialLoading = isInitialLoading,
+        isRefreshing = isRefreshing,
+        isExportingActivitiesCsv = isExportingActivitiesCsv,
+        isExportingActivityDetailsCsv = isExportingActivityDetailsCsv,
+        exportLoadedActivityCount = exportLoadedActivityCount,
+        exportTotalActivityCount = exportTotalActivityCount,
+        exportDetailedLoadedActivityCount = exportDetailedLoadedActivityCount,
+        exportDetailedTotalActivityCount = exportDetailedTotalActivityCount,
+        pendingActivitiesCsvExport = pendingActivitiesCsvExport,
+        pendingActivityDetailsCsvExport = pendingActivityDetailsCsvExport,
+        lastActivitiesCsvExport = lastActivitiesCsvExport,
+        lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
+    )
+
+fun DashboardUiState.toBikeListUiState(): BikeListUiState =
+    BikeListUiState(
+        bikes = bikes,
+        isRefreshing = isRefreshing,
+    )
+
+fun DashboardUiState.toActivityDetailScreenUiState(): ActivityDetailScreenUiState =
+    ActivityDetailScreenUiState(
+        selectedActivityDetail = selectedActivityDetail,
+        selectedActivityId = selectedActivityId,
+        isActivityDetailLoading = isActivityDetailLoading,
+        isActivityDetailRefreshing = isActivityDetailRefreshing,
+    )
+
+fun DashboardUiState.toTrackUiState(): TrackUiState =
+    TrackUiState(
+        selectedActivityDetail = selectedActivityDetail,
+        selectedActivityId = selectedActivityId,
+        isActivityDetailLoading = isActivityDetailLoading,
+        isActivityDetailRefreshing = isActivityDetailRefreshing,
+        csvSeparator = csvSeparator,
+    )
+
+fun DashboardUiState.toBikeDetailScreenUiState(): BikeDetailScreenUiState =
+    BikeDetailScreenUiState(
+        selectedBikeDetail = selectedBikeDetail,
+        selectedBikeId = selectedBikeId,
+        isBikeDetailLoading = isBikeDetailLoading,
+        isBikeDetailRefreshing = isBikeDetailRefreshing,
+    )

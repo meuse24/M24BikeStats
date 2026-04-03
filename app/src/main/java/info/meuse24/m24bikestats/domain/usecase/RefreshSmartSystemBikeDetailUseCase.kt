@@ -17,9 +17,9 @@ class RefreshSmartSystemBikeDetailUseCase(
             return Result.success(null)
         }
 
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-        return repository.getBikeDetail(token, bikeId).map { it }
+        return withValidAccessToken(authRepository) { token ->
+            repository.getBikeDetail(token, bikeId)
+        }
     }
 
     private companion object {

@@ -29,7 +29,7 @@ import info.meuse24.m24bikestats.domain.model.CsvSeparator
 
 @Composable
 fun FunctionsScreen(
-    uiState: DashboardUiState,
+    uiState: FunctionsUiState,
     onExportActivitiesCsv: () -> Unit,
     onExportActivityDetailsCsv: () -> Unit,
     onActivitiesCsvExportHandled: () -> Unit,

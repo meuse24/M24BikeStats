@@ -25,39 +25,40 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             return Result.failure(IllegalArgumentException("Keine Aktivitäten für den Detail-Export ausgewählt"))
         }
 
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
+        return withValidAccessToken(authRepository) { token ->
+            val detailRows = mutableListOf<String>()
+            var exportedPointCount = 0
+            val separator = appSettingsRepository.getSettings().csvSeparator.character.toString()
 
-        val detailRows = mutableListOf<String>()
-        var exportedPointCount = 0
-        val separator = appSettingsRepository.getSettings().csvSeparator.character.toString()
+            normalizedIds.forEachIndexed { index, activityId ->
+                val activity = repository.getCachedActivity(activityId)
+                    ?: return@withValidAccessToken Result.failure(
+                        IllegalStateException("Aktivität $activityId ist nicht im Cache verfügbar")
+                    )
 
-        normalizedIds.forEachIndexed { index, activityId ->
-            val activity = repository.getCachedActivity(activityId)
-                ?: return Result.failure(IllegalStateException("Aktivität $activityId ist nicht im Cache verfügbar"))
+                val detail = loadActivityDetail(token, activityId)
+                    .getOrElse { return@withValidAccessToken Result.failure(it) }
 
-            val detail = loadActivityDetail(token, activityId)
-                .getOrElse { return Result.failure(it) }
+                detailRows += buildRows(activity, detail, separator)
+                exportedPointCount += detail.points.size
+                onProgress(index + 1, normalizedIds.size)
+            }
 
-            detailRows += buildRows(activity, detail, separator)
-            exportedPointCount += detail.points.size
-            onProgress(index + 1, normalizedIds.size)
-        }
+            val timestamp = LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm", Locale.US))
 
-        val timestamp = LocalDateTime.now()
-            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm", Locale.US))
-
-        return Result.success(
-            BoschActivityDetailsCsvExport(
-                fileName = "bosch-activity-details-$timestamp.csv",
-                csvContent = buildString {
-                    appendLine(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
-                    detailRows.forEach(::appendLine)
-                },
-                activityCount = normalizedIds.size,
-                detailPointCount = exportedPointCount,
+            Result.success(
+                BoschActivityDetailsCsvExport(
+                    fileName = "bosch-activity-details-$timestamp.csv",
+                    csvContent = buildString {
+                        appendLine(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
+                        detailRows.forEach(::appendLine)
+                    },
+                    activityCount = normalizedIds.size,
+                    detailPointCount = exportedPointCount,
+                )
             )
-        )
+        }
     }
 
     private suspend fun loadActivityDetail(

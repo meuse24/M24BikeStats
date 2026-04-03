@@ -8,9 +8,8 @@ class GetSmartSystemActivitiesUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(limit: Int, offset: Int): Result<BoschActivityPage> {
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-        return repository.getActivities(token, limit = limit, offset = offset)
-    }
+    suspend operator fun invoke(limit: Int, offset: Int): Result<BoschActivityPage> =
+        withValidAccessToken(authRepository) { token ->
+            repository.getActivities(token, limit = limit, offset = offset)
+        }
 }

@@ -13,7 +13,7 @@ class TrackSharingAndroidTest {
     @Test
     fun createTrackCsvUri_writesCsvFile() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val uri = createTrackCsvUri(context, testActivityDetail())
+        val uri = createTrackCsvUri(context, testActivityDetail(), info.meuse24.m24bikestats.domain.model.CsvSeparator.COMMA)
 
         val content = readText(context, uri)
 

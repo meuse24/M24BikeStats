@@ -24,7 +24,7 @@ import info.meuse24.m24bikestats.R
 
 @Composable
 fun ActivitiesScreen(
-    uiState: DashboardUiState,
+    uiState: ActivitiesUiState,
     onActivitySearchQueryChanged: (String) -> Unit,
     onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,

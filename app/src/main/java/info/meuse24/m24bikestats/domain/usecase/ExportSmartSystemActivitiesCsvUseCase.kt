@@ -16,10 +16,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
 ) {
     suspend operator fun invoke(
         onProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
-    ): Result<BoschActivitiesCsvExport> {
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-
+    ): Result<BoschActivitiesCsvExport> = withValidAccessToken(authRepository) { token ->
         val activities = repository.getCachedActivities().toMutableList()
         var total = repository.getCachedActivityTotalCount()
         var offset = activities.size
@@ -29,7 +26,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
                 accessToken = token,
                 limit = EXPORT_PAGE_SIZE,
                 offset = 0,
-            ).getOrElse { return Result.failure(it) }
+            ).getOrElse { return@withValidAccessToken Result.failure(it) }
 
             total = firstPage.total
             activities += firstPage.items
@@ -48,7 +45,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
                 accessToken = token,
                 limit = EXPORT_PAGE_SIZE,
                 offset = offset,
-            ).getOrElse { return Result.failure(it) }
+            ).getOrElse { return@withValidAccessToken Result.failure(it) }
 
             totalCount = page.total
             if (page.items.isEmpty()) break
@@ -62,7 +59,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
         val timestamp = LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm", Locale.US))
 
-        return Result.success(
+        Result.success(
             BoschActivitiesCsvExport(
                 fileName = "bosch-activities-$timestamp.csv",
                 csvContent = buildCsv(

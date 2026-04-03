@@ -29,7 +29,7 @@ import info.meuse24.m24bikestats.R
 
 @Composable
 fun HomeScreen(
-    uiState: DashboardUiState,
+    uiState: HomeUiState,
     onSyncCloudData: () -> Unit,
     onNavigateToActivities: () -> Unit,
     modifier: Modifier = Modifier,

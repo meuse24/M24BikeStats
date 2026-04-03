@@ -10,12 +10,9 @@ class SyncSmartSystemCloudUseCase(
 ) {
     suspend operator fun invoke(
         onActivityProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
-    ): Result<SmartSystemCloudSyncSummary> {
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-
+    ): Result<SmartSystemCloudSyncSummary> = withValidAccessToken(authRepository) { token ->
         val bikes = repository.getBikes(token)
-            .getOrElse { return Result.failure(it) }
+            .getOrElse { return@withValidAccessToken Result.failure(it) }
 
         var loadedActivityCount = 0
         var totalActivityCount = 0
@@ -26,7 +23,7 @@ class SyncSmartSystemCloudUseCase(
                 accessToken = token,
                 limit = SYNC_PAGE_SIZE,
                 offset = offset,
-            ).getOrElse { return Result.failure(it) }
+            ).getOrElse { return@withValidAccessToken Result.failure(it) }
 
             totalActivityCount = page.total.coerceAtLeast(loadedActivityCount)
             if (page.items.isEmpty()) {
@@ -39,7 +36,7 @@ class SyncSmartSystemCloudUseCase(
             offset = page.offset + page.items.size
         } while (loadedActivityCount < totalActivityCount)
 
-        return Result.success(
+        Result.success(
             SmartSystemCloudSyncSummary(
                 activityCount = loadedActivityCount,
                 bikeCount = bikes.size,

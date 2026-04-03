@@ -176,7 +176,7 @@ fun DashboardScreen(
 
                     when (selectedTabIndex) {
                         0 -> ActivitiesScreen(
-                            uiState = uiState,
+                            uiState = uiState.toActivitiesUiState(),
                             onActivitySearchQueryChanged = onActivitySearchQueryChanged,
                             onActivityDateRangeFilterChanged = onActivityDateRangeFilterChanged,
                             onActivitySortOptionChanged = onActivitySortOptionChanged,
@@ -184,12 +184,11 @@ fun DashboardScreen(
                             onLoadMore = onLoadMoreActivities,
                         )
                         1 -> BikeListScreen(
-                            bikes = uiState.bikes,
-                            isRefreshing = uiState.isRefreshing,
+                            uiState = uiState.toBikeListUiState(),
                             onBikeClick = onNavigateToBikeDetail,
                         )
                         else -> FunctionsScreen(
-                            uiState = uiState,
+                            uiState = uiState.toFunctionsUiState(),
                             onExportActivitiesCsv = onExportActivitiesCsv,
                             onExportActivityDetailsCsv = onExportActivityDetailsCsv,
                             onActivitiesCsvExportHandled = onActivitiesCsvExportHandled,
@@ -392,7 +391,7 @@ internal fun FunctionsOverview(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ActivityDetailScreen(
-    uiState: DashboardUiState,
+    uiState: ActivityDetailScreenUiState,
     onLoadActivity: (String) -> Unit,
     onRefreshActivity: (String) -> Unit,
     activityId: String,
@@ -482,7 +481,7 @@ fun ActivityDetailScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackScreen(
-    uiState: DashboardUiState,
+    uiState: TrackUiState,
     onLoadActivity: (String) -> Unit,
     onRefreshActivity: (String) -> Unit,
     activityId: String,
@@ -749,7 +748,7 @@ private fun TrackMapActionButton(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BikeDetailScreen(
-    uiState: DashboardUiState,
+    uiState: BikeDetailScreenUiState,
     onLoadBike: (String) -> Unit,
     onRefreshBike: (String) -> Unit,
     bikeId: String,

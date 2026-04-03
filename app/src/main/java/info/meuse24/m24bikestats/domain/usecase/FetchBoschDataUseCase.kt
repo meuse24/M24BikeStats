@@ -13,9 +13,8 @@ class FetchBoschDataUseCase(
         return invoke(endpoint.toRequest())
     }
 
-    suspend operator fun invoke(request: BoschRequest): Result<String> {
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-        return boschRepository.fetch(request, token)
-    }
+    suspend operator fun invoke(request: BoschRequest): Result<String> =
+        withValidAccessToken(authRepository) { token ->
+            boschRepository.fetch(request, token)
+        }
 }

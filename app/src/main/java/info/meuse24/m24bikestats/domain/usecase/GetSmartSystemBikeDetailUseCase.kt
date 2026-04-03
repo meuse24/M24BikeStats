@@ -8,9 +8,8 @@ class GetSmartSystemBikeDetailUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(bikeId: String): Result<BoschBike> {
-        val token = authRepository.getValidAccessToken()
-            .getOrElse { return Result.failure(it) }
-        return repository.getBikeDetail(token, bikeId)
-    }
+    suspend operator fun invoke(bikeId: String): Result<BoschBike> =
+        withValidAccessToken(authRepository) { token ->
+            repository.getBikeDetail(token, bikeId)
+        }
 }
