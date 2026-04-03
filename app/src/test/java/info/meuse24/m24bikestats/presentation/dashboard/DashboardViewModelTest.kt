@@ -4,7 +4,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
@@ -24,7 +24,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -171,19 +171,19 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `csv separator changes propagate into ui state`() = runTest {
+    fun `csv export format changes propagate into ui state`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(emptyList(), totalCount = 0)
             setBikes(emptyList())
         }
-        val settingsRepository = FakeAppSettingsRepository(CsvSeparator.COMMA)
+        val settingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL)
         val viewModel = createViewModel(repository, settingsRepository)
         advanceUntilIdle()
 
-        viewModel.updateCsvSeparator(CsvSeparator.SEMICOLON)
+        viewModel.updateCsvExportFormat(CsvExportFormat.EXCEL_DE)
         advanceUntilIdle()
 
-        assertEquals(CsvSeparator.SEMICOLON, viewModel.uiState.value.csvSeparator)
+        assertEquals(CsvExportFormat.EXCEL_DE, viewModel.uiState.value.csvExportFormat)
     }
 
     @Test
@@ -242,7 +242,7 @@ class DashboardViewModelTest {
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
-                updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
+                updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
             ),

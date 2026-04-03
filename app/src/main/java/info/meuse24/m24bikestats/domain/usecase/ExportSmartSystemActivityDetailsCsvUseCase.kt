@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.domain.usecase
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailsCsvExport
+import info.meuse24.m24bikestats.domain.model.CsvDialect
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
@@ -15,6 +16,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
     private val authRepository: AuthRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val detailCacheTtlMillis: Long = DEFAULT_DETAIL_CACHE_TTL_MILLIS,
+    private val localeProvider: () -> Locale = Locale::getDefault,
 ) {
     suspend operator fun invoke(
         activityIds: List<String>,
@@ -28,7 +30,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
         return withValidAccessToken(authRepository) { token ->
             val detailRows = mutableListOf<String>()
             var exportedPointCount = 0
-            val separator = appSettingsRepository.getSettings().csvSeparator.character.toString()
+            val dialect = appSettingsRepository.getSettings().csvExportFormat.resolve(localeProvider())
 
             normalizedIds.forEachIndexed { index, activityId ->
                 val activity = repository.getCachedActivity(activityId)
@@ -39,7 +41,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
                 val detail = loadActivityDetail(token, activityId)
                     .getOrElse { return@withValidAccessToken Result.failure(it) }
 
-                detailRows += buildRows(activity, detail, separator)
+                detailRows += buildRows(activity, detail, dialect)
                 exportedPointCount += detail.points.size
                 onProgress(index + 1, normalizedIds.size)
             }
@@ -51,7 +53,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
                 BoschActivityDetailsCsvExport(
                     fileName = "bosch-activity-details-$timestamp.csv",
                     csvContent = buildString {
-                        appendLine(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
+                        appendLine(dialect.row(CSV_COLUMNS))
                         detailRows.forEach(::appendLine)
                     },
                     activityCount = normalizedIds.size,
@@ -83,32 +85,28 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
     private fun buildRows(
         activity: BoschActivity,
         detail: BoschActivityDetail,
-        separator: String,
+        dialect: CsvDialect,
     ): List<String> = detail.points.mapIndexed { index, point ->
-        listOf(
-            activity.id,
-            activity.title,
-            activity.startTime,
-            activity.endTime.orEmpty(),
-            activity.bikeId.orEmpty(),
-            index.toString(),
-            point.latitude?.toCsvNumber().orEmpty(),
-            point.longitude?.toCsvNumber().orEmpty(),
-            point.distanceMeters?.toCsvNumber().orEmpty(),
-            point.altitudeMeters?.toCsvNumber().orEmpty(),
-            point.speedKmh?.toCsvNumber().orEmpty(),
-            point.cadenceRpm?.toCsvNumber().orEmpty(),
-            point.riderPowerWatts?.toCsvNumber().orEmpty(),
-        ).joinToString(separator = separator) { it.escapeCsv() }
+        dialect.row(
+            listOf(
+                activity.id,
+                activity.title,
+                dialect.formatIsoDateTime(activity.startTime),
+                activity.endTime?.let(dialect::formatIsoDateTime).orEmpty(),
+                activity.bikeId.orEmpty(),
+                index.toString(),
+                point.latitude?.toCsvNumber(dialect).orEmpty(),
+                point.longitude?.toCsvNumber(dialect).orEmpty(),
+                point.distanceMeters?.toCsvNumber(dialect).orEmpty(),
+                point.altitudeMeters?.toCsvNumber(dialect).orEmpty(),
+                point.speedKmh?.toCsvNumber(dialect).orEmpty(),
+                point.cadenceRpm?.toCsvNumber(dialect).orEmpty(),
+                point.riderPowerWatts?.toCsvNumber(dialect).orEmpty(),
+            )
+        )
     }
 
-    private fun Double.toCsvNumber(): String =
-        String.format(Locale.US, "%.6f", this)
-
-    private fun String.escapeCsv(): String {
-        val escaped = replace("\"", "\"\"")
-        return "\"$escaped\""
-    }
+    private fun Double.toCsvNumber(dialect: CsvDialect): String = dialect.formatDecimal(this, 6)
 
     companion object {
         private const val DEFAULT_DETAIL_CACHE_TTL_MILLIS = 30 * 60 * 1000L

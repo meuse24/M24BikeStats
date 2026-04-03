@@ -20,12 +20,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import java.util.Locale
 
 @Composable
 fun SetupScreen(
-    csvSeparator: CsvSeparator,
-    onCsvSeparatorSelected: (CsvSeparator) -> Unit,
+    csvExportFormat: CsvExportFormat,
+    onCsvExportFormatSelected: (CsvExportFormat) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -81,12 +82,12 @@ fun SetupScreen(
                 }
             }
         }
-        items(CsvSeparator.entries) { separator ->
+        items(CsvExportFormat.entries) { format ->
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { onCsvSeparatorSelected(separator) },
+                onClick = { onCsvExportFormatSelected(format) },
                 colors = CardDefaults.cardColors(
-                    containerColor = if (separator == csvSeparator) {
+                    containerColor = if (format == csvExportFormat) {
                         MaterialTheme.colorScheme.secondaryContainer
                     } else {
                         MaterialTheme.colorScheme.surfaceContainerLow
@@ -106,24 +107,24 @@ fun SetupScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             Text(
-                                text = stringResource(separator.labelRes()),
+                                text = stringResource(format.labelRes()),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                text = stringResource(separator.descriptionRes()),
+                                text = stringResource(format.descriptionRes()),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = stringResource(R.string.setup_csv_example, sampleRow(separator)),
+                                text = stringResource(R.string.setup_csv_example, sampleRow(format)),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         RadioButton(
-                            selected = separator == csvSeparator,
-                            onClick = { onCsvSeparatorSelected(separator) },
+                            selected = format == csvExportFormat,
+                            onClick = { onCsvExportFormatSelected(format) },
                         )
                     }
                 }
@@ -132,15 +133,19 @@ fun SetupScreen(
     }
 }
 
-private fun sampleRow(separator: CsvSeparator): String =
-    listOf("datum", "titel", "distanz_km").joinToString(separator.character.toString())
-
-private fun CsvSeparator.labelRes(): Int = when (this) {
-    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_label
-    CsvSeparator.COMMA -> R.string.csv_separator_comma_label
+private fun sampleRow(format: CsvExportFormat): String {
+    val dialect = format.resolve(Locale.getDefault())
+    return dialect.row(listOf(dialect.formatIsoDate("2026-04-03"), "Morgenrunde", dialect.formatDecimal(12.34, 2)))
 }
 
-private fun CsvSeparator.descriptionRes(): Int = when (this) {
-    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_description
-    CsvSeparator.COMMA -> R.string.csv_separator_comma_description
+private fun CsvExportFormat.labelRes(): Int = when (this) {
+    CsvExportFormat.SYSTEM_DEFAULT -> R.string.csv_export_format_system_default_label
+    CsvExportFormat.EXCEL_DE -> R.string.csv_export_format_excel_de_label
+    CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_label
+}
+
+private fun CsvExportFormat.descriptionRes(): Int = when (this) {
+    CsvExportFormat.SYSTEM_DEFAULT -> R.string.csv_export_format_system_default_description
+    CsvExportFormat.EXCEL_DE -> R.string.csv_export_format_excel_de_description
+    CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_description
 }

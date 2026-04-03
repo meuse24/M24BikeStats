@@ -25,7 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 
 @Composable
 fun FunctionsScreen(
@@ -107,7 +107,7 @@ fun FunctionsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow(stringResource(R.string.functions_label_csv_separator), stringResource(uiState.csvSeparator.labelRes()))
+                        OptionalRow(stringResource(R.string.functions_label_csv_format), stringResource(uiState.csvExportFormat.labelRes()))
                     }
                     uiState.lastActivitiesCsvExport?.let { exportSummary ->
                         SectionSurface {
@@ -186,7 +186,7 @@ fun FunctionsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow(stringResource(R.string.functions_label_csv_separator), stringResource(uiState.csvSeparator.labelRes()))
+                        OptionalRow(stringResource(R.string.functions_label_csv_format), stringResource(uiState.csvExportFormat.labelRes()))
                         OptionalRow(stringResource(R.string.functions_label_visible_activities), uiState.visibleActivityCount.toString())
                         OptionalRow(stringResource(R.string.functions_label_loaded_activities), uiState.loadedActivityCount.toString())
                     }
@@ -249,7 +249,8 @@ fun FunctionsScreen(
     }
 }
 
-private fun CsvSeparator.labelRes(): Int = when (this) {
-    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_label
-    CsvSeparator.COMMA -> R.string.csv_separator_comma_label
+private fun CsvExportFormat.labelRes(): Int = when (this) {
+    CsvExportFormat.SYSTEM_DEFAULT -> R.string.csv_export_format_system_default_label
+    CsvExportFormat.EXCEL_DE -> R.string.csv_export_format_excel_de_label
+    CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_label
 }

@@ -3,7 +3,8 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvDialect
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import java.io.File
 import java.time.Instant
 import java.time.ZoneOffset
@@ -27,11 +28,11 @@ fun createTrackGpxUri(
 fun createTrackCsvUri(
     context: Context,
     activity: ActivityDetailUiModel,
-    separator: CsvSeparator,
+    format: CsvExportFormat,
 ): Uri = createSharedTrackFileUri(
     context,
     "${sanitizeTrackFileName(activity.title)}.csv",
-    buildTrackCsv(activity, separator),
+    buildTrackCsv(activity, format),
 )
 
 fun buildTrackGpx(activity: ActivityDetailUiModel): String {
@@ -64,19 +65,22 @@ fun buildTrackGpx(activity: ActivityDetailUiModel): String {
 
 fun buildTrackCsv(
     activity: ActivityDetailUiModel,
-    separator: CsvSeparator = CsvSeparator.COMMA,
+    format: CsvExportFormat = CsvExportFormat.STANDARD_INTERNATIONAL,
+    locale: Locale = Locale.getDefault(),
 ): String {
-    val separatorValue = separator.character.toString()
-    val header = listOf(
-        "point_index",
-        "latitude",
-        "longitude",
-        "distance_meters",
-        "altitude_meters",
-        "speed_kmh",
-        "cadence_rpm",
-        "rider_power_watts",
-    ).joinToString(separatorValue)
+    val dialect = format.resolve(locale)
+    val header = dialect.row(
+        listOf(
+            "point_index",
+            "latitude",
+            "longitude",
+            "distance_meters",
+            "altitude_meters",
+            "speed_kmh",
+            "cadence_rpm",
+            "rider_power_watts",
+        )
+    )
 
     val rows = activity.trackPoints.mapIndexed { index, point ->
         val profilePoint = point.distanceMeters?.let { distance ->
@@ -85,16 +89,18 @@ fun buildTrackCsv(
             }
         }
 
-        listOf(
-            index.toString(),
-            point.latitude.toCsvValue(),
-            point.longitude.toCsvValue(),
-            point.distanceMeters.toCsvValue(),
-            point.altitudeMeters.toCsvValue(),
-            profilePoint?.speedKmh.toCsvValue(),
-            profilePoint?.cadenceRpm.toCsvValue(),
-            profilePoint?.riderPowerWatts.toCsvValue(),
-        ).joinToString(separatorValue)
+        dialect.row(
+            listOf(
+                index.toString(),
+                point.latitude.toCsvValue(dialect),
+                point.longitude.toCsvValue(dialect),
+                point.distanceMeters.toCsvValue(dialect),
+                point.altitudeMeters.toCsvValue(dialect),
+                profilePoint?.speedKmh.toCsvValue(dialect),
+                profilePoint?.cadenceRpm.toCsvValue(dialect),
+                profilePoint?.riderPowerWatts.toCsvValue(dialect),
+            )
+        )
     }
 
     return buildString {
@@ -186,8 +192,8 @@ private fun createSharedTrackFileUri(
     )
 }
 
-private fun Double?.toCsvValue(): String = when {
+private fun Double?.toCsvValue(dialect: CsvDialect): String = when {
     this == null -> ""
     this.isNaN() -> ""
-    else -> String.format(Locale.US, "%.6f", this)
+    else -> dialect.formatDecimal(this, 6)
 }

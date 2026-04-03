@@ -34,7 +34,7 @@ fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =
 
 fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
     FunctionsUiState(
-        csvSeparator = csvSeparator,
+        csvExportFormat = csvExportFormat,
         loadedActivityCount = loadedActivityCount,
         visibleActivityCount = visibleActivityCount,
         activityTotalCount = activityTotalCount,
@@ -72,7 +72,7 @@ fun DashboardUiState.toTrackUiState(): TrackUiState =
         selectedActivityId = selectedActivityId,
         isActivityDetailLoading = isActivityDetailLoading,
         isActivityDetailRefreshing = isActivityDetailRefreshing,
-        csvSeparator = csvSeparator,
+        csvExportFormat = csvExportFormat,
     )
 
 fun DashboardUiState.toBikeDetailScreenUiState(): BikeDetailScreenUiState =

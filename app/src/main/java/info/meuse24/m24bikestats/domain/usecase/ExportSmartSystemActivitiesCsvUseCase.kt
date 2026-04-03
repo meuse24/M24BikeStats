@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.BoschActivitiesCsvExport
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.CsvDialect
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
@@ -13,6 +14,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
     private val appSettingsRepository: AppSettingsRepository,
+    private val localeProvider: () -> Locale = Locale::getDefault,
 ) {
     suspend operator fun invoke(
         onProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
@@ -64,7 +66,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
                 fileName = "bosch-activities-$timestamp.csv",
                 csvContent = buildCsv(
                     activities = activities,
-                    separator = appSettingsRepository.getSettings().csvSeparator.character.toString(),
+                    dialect = appSettingsRepository.getSettings().csvExportFormat.resolve(localeProvider()),
                 ),
                 activityCount = activities.size,
             )
@@ -73,32 +75,34 @@ class ExportSmartSystemActivitiesCsvUseCase(
 
     private fun buildCsv(
         activities: List<BoschActivity>,
-        separator: String,
+        dialect: CsvDialect,
     ): String {
         val rows = buildList {
-            add(CSV_COLUMNS.joinToString(separator = separator) { it.escapeCsv() })
+            add(dialect.row(CSV_COLUMNS))
             activities.forEach { activity ->
                 add(
-                    listOf(
-                        activity.id,
-                        activity.title,
-                        activity.startTime,
-                        activity.endTime.orEmpty(),
-                        activity.timeZone.orEmpty(),
-                        activity.durationWithoutStopsSeconds.toString(),
-                        activity.bikeId.orEmpty(),
-                        activity.startOdometerMeters?.toString().orEmpty(),
-                        activity.distanceMeters.toString(),
-                        activity.averageSpeedKmh?.toCsvNumber().orEmpty(),
-                        activity.maxSpeedKmh?.toCsvNumber().orEmpty(),
-                        activity.averageCadenceRpm?.toCsvNumber().orEmpty(),
-                        activity.maxCadenceRpm?.toCsvNumber().orEmpty(),
-                        activity.averageRiderPowerWatts?.toCsvNumber().orEmpty(),
-                        activity.maxRiderPowerWatts?.toCsvNumber().orEmpty(),
-                        activity.elevationGainMeters?.toString().orEmpty(),
-                        activity.elevationLossMeters?.toString().orEmpty(),
-                        activity.caloriesBurned?.toCsvNumber().orEmpty(),
-                    ).joinToString(separator = separator) { it.escapeCsv() }
+                    dialect.row(
+                        listOf(
+                            activity.id,
+                            activity.title,
+                            dialect.formatIsoDateTime(activity.startTime),
+                            activity.endTime?.let(dialect::formatIsoDateTime).orEmpty(),
+                            activity.timeZone.orEmpty(),
+                            activity.durationWithoutStopsSeconds.toString(),
+                            activity.bikeId.orEmpty(),
+                            activity.startOdometerMeters?.toString().orEmpty(),
+                            activity.distanceMeters.toString(),
+                            activity.averageSpeedKmh?.toCsvNumber(dialect).orEmpty(),
+                            activity.maxSpeedKmh?.toCsvNumber(dialect).orEmpty(),
+                            activity.averageCadenceRpm?.toCsvNumber(dialect).orEmpty(),
+                            activity.maxCadenceRpm?.toCsvNumber(dialect).orEmpty(),
+                            activity.averageRiderPowerWatts?.toCsvNumber(dialect).orEmpty(),
+                            activity.maxRiderPowerWatts?.toCsvNumber(dialect).orEmpty(),
+                            activity.elevationGainMeters?.toString().orEmpty(),
+                            activity.elevationLossMeters?.toString().orEmpty(),
+                            activity.caloriesBurned?.toCsvNumber(dialect).orEmpty(),
+                        )
+                    )
                 )
             }
         }
@@ -106,12 +110,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
         return rows.joinToString(separator = "\n")
     }
 
-    private fun Double.toCsvNumber(): String = String.format(Locale.US, "%.2f", this)
-
-    private fun String.escapeCsv(): String {
-        val escaped = replace("\"", "\"\"")
-        return "\"$escaped\""
-    }
+    private fun Double.toCsvNumber(dialect: CsvDialect): String = dialect.formatDecimal(this, 2)
 
     companion object {
         private const val EXPORT_PAGE_SIZE = 100

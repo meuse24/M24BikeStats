@@ -2,14 +2,14 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
@@ -22,7 +22,7 @@ class DashboardFeedHandler(
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
-    private val updateCsvSeparatorUseCase: UpdateCsvSeparatorUseCase,
+    private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
 ) {
@@ -79,7 +79,7 @@ class DashboardFeedHandler(
         scope.launch {
             observeAppSettings().collectLatest { settings ->
                 updateState { current ->
-                    current.copy(csvSeparator = settings.csvSeparator)
+                    current.copy(csvExportFormat = settings.csvExportFormat)
                 }
             }
         }
@@ -241,14 +241,14 @@ class DashboardFeedHandler(
         }
     }
 
-    fun updateCsvSeparator(
+    fun updateCsvExportFormat(
         scope: CoroutineScope,
         currentState: () -> DashboardUiState,
-        separator: CsvSeparator,
+        format: CsvExportFormat,
     ) {
-        if (currentState().csvSeparator == separator) return
+        if (currentState().csvExportFormat == format) return
         scope.launch {
-            updateCsvSeparatorUseCase(separator)
+            updateCsvExportFormatUseCase(format)
         }
     }
 

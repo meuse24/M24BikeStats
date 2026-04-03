@@ -2,7 +2,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -88,11 +88,11 @@ class DashboardViewModel(
         operationsHandler.onActivityDetailsCsvExportHandled(_uiState::update)
     }
 
-    fun updateCsvSeparator(separator: CsvSeparator) {
-        feedHandler.updateCsvSeparator(
+    fun updateCsvExportFormat(format: CsvExportFormat) {
+        feedHandler.updateCsvExportFormat(
             scope = viewModelScope,
             currentState = _uiState::value,
-            separator = separator,
+            format = format,
         )
     }
 

@@ -12,14 +12,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -29,13 +32,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
@@ -181,6 +191,7 @@ fun DashboardScreen(
                             onActivityDateRangeFilterChanged = onActivityDateRangeFilterChanged,
                             onActivitySortOptionChanged = onActivitySortOptionChanged,
                             onActivityClick = onNavigateToActivityDetail,
+                            onActivityMapClick = {},
                             onLoadMore = onLoadMoreActivities,
                         )
                         1 -> BikeListScreen(
@@ -534,7 +545,7 @@ fun TrackScreen(
                         trackBounds = trackBounds,
                         modifier = Modifier.fillMaxSize(),
                         onShare = { shareTrackGpx(context, activity) },
-                        onShareCsv = { shareTrackCsv(context, activity, uiState.csvSeparator) },
+                        onShareCsv = { shareTrackCsv(context, activity, uiState.csvExportFormat) },
                         onCopyGpx = {
                             copyTrackGpxToClipboard(context, activity)
                             Toast.makeText(context, context.getString(R.string.track_gpx_copied), Toast.LENGTH_SHORT).show()
@@ -953,72 +964,177 @@ internal fun ActivityFilterSection(
     onDateRangeSelected: (ActivityDateRangeFilter) -> Unit,
     onSortOptionSelected: (ActivitySortOption) -> Unit,
 ) {
+    var isSearchVisible by rememberSaveable { mutableStateOf(searchQuery.isNotBlank()) }
+
+    LaunchedEffect(searchQuery) {
+        if (searchQuery.isNotBlank()) {
+            isSearchVisible = true
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.filter_section_title),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChanged,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                label = { Text(stringResource(R.string.filter_search_label)) },
-                placeholder = { Text(stringResource(R.string.filter_search_placeholder)) },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = null)
-                },
-                trailingIcon = if (searchQuery.isNotBlank()) {
-                    {
-                        IconButton(onClick = { onSearchQueryChanged("") }) {
-                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_search_clear))
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.filter_section_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                FilledTonalIconButton(
+                    onClick = {
+                        if (isSearchVisible && searchQuery.isBlank()) {
+                            isSearchVisible = false
+                        } else {
+                            isSearchVisible = true
                         }
+                    },
+                ) {
+                    Icon(
+                        imageVector = if (isSearchVisible && searchQuery.isBlank()) Icons.Default.Close else Icons.Default.Search,
+                        contentDescription = if (isSearchVisible && searchQuery.isBlank()) {
+                            stringResource(R.string.filter_search_clear)
+                        } else {
+                            stringResource(R.string.filter_search_label)
+                        },
+                    )
+                }
+            }
+
+            if (isSearchVisible || searchQuery.isNotBlank()) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChanged,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    placeholder = { Text(stringResource(R.string.filter_search_placeholder)) },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = null)
+                    },
+                    trailingIcon = if (searchQuery.isNotBlank()) {
+                        {
+                            IconButton(onClick = { onSearchQueryChanged("") }) {
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_search_clear))
+                            }
+                        }
+                    } else {
+                        null
+                    },
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                CompactFilterDropdown(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.filter_date_range),
+                    selectedLabel = stringResource(selectedDateRange.labelRes),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.DateRange,
+                            contentDescription = null,
+                        )
+                    },
+                ) { dismiss ->
+                    ActivityDateRangeFilter.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.labelRes)) },
+                            onClick = {
+                                onDateRangeSelected(option)
+                                dismiss()
+                            },
+                        )
                     }
-                } else {
-                    null
-                },
+                }
+
+                CompactFilterDropdown(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(R.string.filter_sorting),
+                    selectedLabel = stringResource(selectedSortOption.labelRes),
+                    icon = {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Sort,
+                            contentDescription = null,
+                        )
+                    },
+                ) { dismiss ->
+                    ActivitySortOption.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(stringResource(option.labelRes)) },
+                            onClick = {
+                                onSortOptionSelected(option)
+                                dismiss()
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompactFilterDropdown(
+    label: String,
+    selectedLabel: String,
+    modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
+    content: @Composable ((dismiss: () -> Unit) -> Unit),
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        OutlinedButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(14.dp),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+        ) {
+            icon()
+            Spacer(modifier = Modifier.width(8.dp))
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+                Text(
+                    text = selectedLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                imageVector = Icons.Default.ArrowDropDown,
+                contentDescription = null,
             )
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.filter_date_range),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(ActivityDateRangeFilter.entries) { option ->
-                        FilterChip(
-                            selected = option == selectedDateRange,
-                            onClick = { onDateRangeSelected(option) },
-                            label = { Text(stringResource(option.labelRes)) },
-                        )
-                    }
-                }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.filter_sorting),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(ActivitySortOption.entries) { option ->
-                        FilterChip(
-                            selected = option == selectedSortOption,
-                            onClick = { onSortOptionSelected(option) },
-                            label = { Text(stringResource(option.labelRes)) },
-                        )
-                    }
-                }
-            }
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+        ) {
+            content { expanded = false }
         }
     }
 }
@@ -1117,24 +1233,43 @@ internal fun HeroCard(
 internal fun ActivityCard(
     activity: ActivityCardUiModel,
     onClick: () -> Unit,
+    onMapClick: (() -> Unit)? = null,
+    onShareClick: (() -> Unit)? = null,
+    primaryActionLabel: String? = null,
 ) {
+    val detailActionLabel = primaryActionLabel ?: stringResource(R.string.dashboard_activity_detail_button)
+    val metricSummary = buildList {
+        add(stringResource(R.string.dashboard_card_speed) to activity.speedLabel.withLineBreakBeforeMax())
+        activity.powerLabel?.let { add(stringResource(R.string.dashboard_card_power) to it.withLineBreakBeforeMax()) }
+        activity.elevationLabel?.let { add(stringResource(R.string.dashboard_label_elevation) to it) }
+        activity.caloriesLabel?.let { add(stringResource(R.string.dashboard_label_calories) to it) }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
                         text = activity.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -1142,29 +1277,152 @@ internal fun ActivityCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = activity.dateLabel,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                StatusBadge(activity.distanceLabel)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    StatusBadge(activity.durationLabel)
+                    StatusBadge(activity.distanceLabel)
+                }
             }
 
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { MetricPill(stringResource(R.string.dashboard_label_duration), activity.durationLabel) }
-                item { MetricPill(stringResource(R.string.dashboard_card_speed), activity.speedLabel) }
-                activity.powerLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_power), it) } }
-            }
+            ActivityMetricGrid(
+                summary = metricSummary,
+            )
 
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OptionalRow(stringResource(R.string.dashboard_label_elevation), activity.elevationLabel)
-                OptionalRow(stringResource(R.string.dashboard_label_calories), activity.caloriesLabel)
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ActivityCardActionButton(
+                        label = detailActionLabel,
+                        icon = Icons.AutoMirrored.Filled.ArrowForward,
+                        onClick = onClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    onMapClick?.let { navigateToMap ->
+                        ActivityCardActionButton(
+                            label = stringResource(R.string.dashboard_activity_map_button),
+                            icon = Icons.Default.Map,
+                            onClick = navigateToMap,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    onShareClick?.let { share ->
+                        ActivityCardActionButton(
+                            label = stringResource(R.string.dashboard_activity_share_button),
+                            icon = Icons.Default.Share,
+                            onClick = share,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun ActivityMetricGrid(
+    summary: List<Pair<String, String>>,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        summary.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowItems.forEach { (label, value) ->
+                    ActivityMetricTile(
+                        label = label,
+                        value = value,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                }
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityMetricTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActivityCardActionButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = label,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+private fun String.withLineBreakBeforeMax(): String =
+    replace(" • max ", "\nmax ")
+        .replace(", max ", "\nmax ")
 
 @Composable
 internal fun BikeOverviewCard(
@@ -1176,34 +1434,83 @@ internal fun BikeOverviewCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
         Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = bike.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            bike.subtitle?.let {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                 Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = bike.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
                 )
+                bike.subtitle?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                bike.odometerLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_odometer), it) } }
-                bike.assistSpeedLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_assist), it) } }
+            SummaryChipRow(
+                summary = buildList {
+                    bike.odometerLabel?.let { add(stringResource(R.string.dashboard_card_odometer) to it) }
+                    bike.assistSpeedLabel?.let { add(stringResource(R.string.dashboard_card_assist) to it) }
+                },
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                itemContent = { label, value ->
+                    CompactMetricPill(label = label, value = value)
+                },
+            )
+            bike.batterySummary?.let { batterySummary ->
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surface,
+                    tonalElevation = 1.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.dashboard_battery_fallback_title),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = batterySummary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                        )
+                    }
+                }
             }
-            SectionSurface {
-                OptionalRow(stringResource(R.string.dashboard_battery_fallback_title), bike.batterySummary)
+            Button(
+                onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                    contentDescription = null,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
                 Text(
-                    text = stringResource(R.string.dashboard_bike_detail_hint),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    text = stringResource(R.string.dashboard_bike_detail_button),
+                    fontWeight = FontWeight.Medium,
                 )
             }
         }
@@ -1807,9 +2114,9 @@ private fun copyTrackGpxToClipboard(
 private fun shareTrackCsv(
     context: Context,
     activity: ActivityDetailUiModel,
-    separator: info.meuse24.m24bikestats.domain.model.CsvSeparator,
+    format: info.meuse24.m24bikestats.domain.model.CsvExportFormat,
 ) {
-    val csvUri = createTrackCsvUri(context, activity, separator)
+    val csvUri = createTrackCsvUri(context, activity, format)
     val shareIntent = Intent(Intent.ACTION_SEND).apply {
         type = "text/csv"
         putExtra(Intent.EXTRA_STREAM, csvUri)
@@ -1968,13 +2275,16 @@ internal fun SummaryChipRow(
     summary: List<Pair<String, String>>,
     modifier: Modifier = Modifier,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(8.dp),
+    itemContent: @Composable (label: String, value: String) -> Unit = { label, value ->
+        MetricPill(label = label, value = value)
+    },
 ) {
     LazyRow(
         modifier = modifier,
         horizontalArrangement = horizontalArrangement,
     ) {
         items(summary) { (label, value) ->
-            MetricPill(label = label, value = value)
+            itemContent(label, value)
         }
     }
 }
@@ -2002,6 +2312,36 @@ internal fun MetricPill(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun CompactMetricPill(
+    label: String,
+    value: String,
+) {
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
             )

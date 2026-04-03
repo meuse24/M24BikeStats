@@ -150,6 +150,7 @@ fun HomeScreen(
                     ActivityCard(
                         activity = latestActivity,
                         onClick = onNavigateToActivities,
+                        primaryActionLabel = stringResource(R.string.home_latest_tour_button),
                     )
                 }
             } else {

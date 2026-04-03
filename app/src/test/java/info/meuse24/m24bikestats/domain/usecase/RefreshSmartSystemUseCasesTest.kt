@@ -4,11 +4,13 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.Locale
 
 class RefreshSmartSystemUseCasesTest {
 
@@ -219,6 +221,48 @@ class RefreshSmartSystemUseCasesTest {
         assertTrue(result.isSuccess)
         assertTrue(repository.getActivitiesCalls.isEmpty())
         assertEquals(1, result.getOrNull()?.activityCount)
+    }
+
+    @Test
+    fun `csv export uses german excel preset for decimal numbers`() {
+        val repository = FakeBoschSmartSystemRepository().apply {
+            cachedActivities = listOf(
+                BoschActivity(
+                    id = "a1",
+                    title = "Ride",
+                    startTime = "2026-04-03T10:00:00Z",
+                    endTime = null,
+                    timeZone = null,
+                    durationWithoutStopsSeconds = 1200,
+                    bikeId = null,
+                    startOdometerMeters = null,
+                    distanceMeters = 1234,
+                    averageSpeedKmh = 24.5,
+                    maxSpeedKmh = null,
+                    averageCadenceRpm = null,
+                    maxCadenceRpm = null,
+                    averageRiderPowerWatts = null,
+                    maxRiderPowerWatts = null,
+                    elevationGainMeters = null,
+                    elevationLossMeters = null,
+                    caloriesBurned = 321.9,
+                )
+            )
+            cachedActivityTotalCount = 1
+        }
+        val useCase = ExportSmartSystemActivitiesCsvUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.EXCEL_DE),
+            localeProvider = { Locale.GERMAN },
+        )
+
+        val result = kotlinx.coroutines.runBlocking { useCase() }
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrNull()!!.csvContent.contains("\"03.04.2026 10:00:00\""))
+        assertTrue(result.getOrNull()!!.csvContent.contains("\"24,50\""))
+        assertTrue(result.getOrNull()!!.csvContent.contains("\"321,90\""))
     }
 
     @Test

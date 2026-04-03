@@ -38,7 +38,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardDetailActionHandler
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardFeedHandler
@@ -93,7 +93,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { ObserveAppSettingsUseCase(get()) }
-    factory { UpdateCsvSeparatorUseCase(get()) }
+    factory { UpdateCsvExportFormatUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }

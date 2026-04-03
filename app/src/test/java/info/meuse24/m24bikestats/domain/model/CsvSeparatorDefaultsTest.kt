@@ -4,15 +4,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import java.util.Locale
 
-class CsvSeparatorDefaultsTest {
+class CsvExportFormatDefaultsTest {
 
     @Test
-    fun `uses semicolon for locales with decimal comma`() {
-        assertEquals(CsvSeparator.SEMICOLON, CsvSeparatorDefaults.forLocale(Locale.GERMAN))
+    fun `uses system default preset for settings`() {
+        assertEquals(CsvExportFormat.SYSTEM_DEFAULT, AppSettings().csvExportFormat)
     }
 
     @Test
-    fun `uses comma for locales with decimal point`() {
-        assertEquals(CsvSeparator.COMMA, CsvSeparatorDefaults.forLocale(Locale.ENGLISH))
+    fun `uses excel de for locales with decimal comma`() {
+        assertEquals(CsvExportFormat.EXCEL_DE, CsvExportFormatDefaults.forLocale(Locale.GERMAN))
+    }
+
+    @Test
+    fun `uses standard international for locales with decimal point`() {
+        assertEquals(CsvExportFormat.STANDARD_INTERNATIONAL, CsvExportFormatDefaults.forLocale(Locale.ENGLISH))
     }
 }

@@ -27,13 +27,15 @@
 
     <string name="setup_title">Setup</string>
     <string name="setup_subtitle">Hier liegen App-Einstellungen, die sich direkt auf Export und Bedienung auswirken.</string>
-    <string name="setup_csv_title">CSV-Trennzeichen</string>
-    <string name="setup_csv_subtitle">Der initiale Wert richtet sich nach der Systemsprache. Du kannst ihn hier dauerhaft überschreiben.</string>
+    <string name="setup_csv_title">CSV-Format</string>
+    <string name="setup_csv_subtitle">Lege fest, ob CSV-Exporte dem Systemstandard oder einem festen Export-Preset folgen.</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
-    <string name="csv_separator_semicolon_label">Semikolon (;)</string>
-    <string name="csv_separator_semicolon_description">Typisch für Sprachen mit Dezimalkomma, z. B. Deutsch.</string>
-    <string name="csv_separator_comma_label">Komma (,)</string>
-    <string name="csv_separator_comma_description">Typisch für Sprachen mit Dezimalpunkt, z. B. Englisch.</string>
+    <string name="csv_export_format_system_default_label">Systemstandard</string>
+    <string name="csv_export_format_system_default_description">Verwendet die Sprachkonventionen des Geräts, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
+    <string name="csv_export_format_excel_de_label">Excel/Deutsch</string>
+    <string name="csv_export_format_excel_de_description">Semikolon als Trennzeichen mit Dezimalkomma und konsistenten Anführungszeichen.</string>
+    <string name="csv_export_format_standard_international_label">Standard/International</string>
+    <string name="csv_export_format_standard_international_description">Komma als Trennzeichen mit Dezimalpunkt und konsistenten Anführungszeichen.</string>
 
     <string name="help_title">Hilfe</string>
     <string name="help_subtitle">Kurzübersicht zu Navigation, Datenfluss und Diagnose.</string>
@@ -44,7 +46,7 @@
     <string name="help_bike_label">Bike</string>
     <string name="help_bike_text">Der Bike-Bereich zeigt Bosch Smart System Komponenten, Batterien und Detailinformationen ebenfalls cache-first aus Room.</string>
     <string name="help_functions_label">Funktionen</string>
-    <string name="help_functions_text">CSV-Exporte greifen auf den sichtbaren Aktivitätssatz oder den kompletten Abruf zurück und öffnen anschließend das Android-Share-Sheet.</string>
+    <string name="help_functions_text">CSV-Exporte greifen auf den sichtbaren Aktivitätssatz oder den kompletten Abruf zurück und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
     <string name="help_diagnostics_label">Diagnose</string>
     <string name="help_diagnostics_text">Der API-Test-Screen bleibt als Diagnosewerkzeug verfügbar und ist bewusst nicht Teil der primären Navigation.</string>
 
@@ -170,7 +172,7 @@
     <string name="functions_label_activities">Aktivitäten</string>
     <string name="functions_label_detail_points">Detailpunkte</string>
     <string name="functions_label_exported_at">Zeitpunkt</string>
-    <string name="functions_label_csv_separator">CSV-Trennzeichen</string>
+    <string name="functions_label_csv_format">CSV-Format</string>
     <string name="functions_label_visible_activities">Sichtbare Aktivitäten</string>
     <string name="functions_label_loaded_activities">Geladene Aktivitäten</string>
     <string name="functions_last_exported">Zuletzt exportiert</string>
@@ -324,7 +326,14 @@
     <string name="dashboard_card_power">Leistung</string>
     <string name="dashboard_card_odometer">Kilometer</string>
     <string name="dashboard_card_assist">Assist</string>
-    <string name="dashboard_bike_detail_hint">Tippe für Komponenten-, Batterie- und Head-Unit-Details.</string>
+    <string name="dashboard_activity_detail_button">Details</string>
+    <string name="dashboard_activity_map_button">Karte</string>
+    <string name="dashboard_activity_share_button">Teilen</string>
+    <string name="dashboard_activity_share_chooser">Aktivität teilen</string>
+    <string name="dashboard_bike_summary_title">Bike-Überblick</string>
+    <string name="dashboard_bike_detail_button">Bike-Details anzeigen</string>
+    <string name="dashboard_bike_detail_hint">Öffnet den Detailscreen mit Komponenten-, Batterie- und Head-Unit-Informationen.</string>
+    <string name="home_latest_tour_button">Zu Aktivitäten</string>
     <string name="track_tab_map">Karte</string>
     <string name="track_tab_profiles">Profile</string>
     <string name="track_tab_gpx">GPX</string>

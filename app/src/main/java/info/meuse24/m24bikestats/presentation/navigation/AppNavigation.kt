@@ -187,6 +187,9 @@ fun AppNavigation() {
                             onActivityClick = { activityId ->
                                 shellNavController.navigate("activity/$activityId")
                             },
+                            onActivityMapClick = { activityId ->
+                                shellNavController.navigate("activity/$activityId/track")
+                            },
                             onLoadMore = dashboardViewModel::loadMoreActivities,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
@@ -219,8 +222,8 @@ fun AppNavigation() {
 
                     composable(DrawerDestination.SETUP.route!!) {
                         SetupScreen(
-                            csvSeparator = dashboardUiState.csvSeparator,
-                            onCsvSeparatorSelected = dashboardViewModel::updateCsvSeparator,
+                            csvExportFormat = dashboardUiState.csvExportFormat,
+                            onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }

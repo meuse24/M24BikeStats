@@ -1,6 +1,6 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 
 data class DashboardUiState(
     val isInitialLoading: Boolean = false,
@@ -38,7 +38,7 @@ data class DashboardUiState(
     val isBikeDetailLoading: Boolean = false,
     val isBikeDetailRefreshing: Boolean = false,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
-    val csvSeparator: CsvSeparator = CsvSeparator.COMMA,
+    val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     val error: String? = null,
 )
 
@@ -73,7 +73,7 @@ data class ActivitiesUiState(
 )
 
 data class FunctionsUiState(
-    val csvSeparator: CsvSeparator,
+    val csvExportFormat: CsvExportFormat,
     val loadedActivityCount: Int,
     val visibleActivityCount: Int,
     val activityTotalCount: Int,
@@ -108,7 +108,7 @@ data class TrackUiState(
     val selectedActivityId: String?,
     val isActivityDetailLoading: Boolean,
     val isActivityDetailRefreshing: Boolean,
-    val csvSeparator: CsvSeparator,
+    val csvExportFormat: CsvExportFormat,
 )
 
 data class BikeDetailScreenUiState(

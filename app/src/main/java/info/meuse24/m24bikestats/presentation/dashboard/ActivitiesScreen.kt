@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -7,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -17,6 +18,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -29,9 +31,12 @@ fun ActivitiesScreen(
     onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onActivityClick: (String) -> Unit,
+    onActivityMapClick: (String) -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -43,32 +48,22 @@ fun ActivitiesScreen(
                 title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
                 subtitle = stringResource(R.string.activities_hero_subtitle),
             ) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        MetricPill(
-                            label = stringResource(R.string.activities_metric_visible),
-                            value = uiState.visibleActivityCount.toString(),
-                        )
-                    }
-                    item {
-                        MetricPill(
-                            label = stringResource(R.string.activities_metric_loaded),
-                            value = uiState.loadedActivityCount.toString(),
-                        )
-                    }
-                    item {
-                        MetricPill(
-                            label = stringResource(R.string.activities_metric_total),
-                            value = uiState.activityTotalCount.toString(),
-                        )
-                    }
-                    item {
-                        MetricPill(
-                            label = stringResource(R.string.activities_metric_status),
-                            value = if (uiState.isRefreshing) stringResource(R.string.activities_status_refreshing) else stringResource(R.string.activities_status_ready),
-                        )
-                    }
-                }
+                SummaryChipRow(
+                    summary = listOf(
+                        stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
+                        stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
+                        stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
+                        stringResource(R.string.activities_metric_status) to if (uiState.isRefreshing) {
+                            stringResource(R.string.activities_status_refreshing)
+                        } else {
+                            stringResource(R.string.activities_status_ready)
+                        },
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    itemContent = { label, value ->
+                        CompactMetricPill(label = label, value = value)
+                    },
+                )
             }
         }
 
@@ -115,6 +110,8 @@ fun ActivitiesScreen(
             ActivityCard(
                 activity = activity,
                 onClick = { onActivityClick(activity.id) },
+                onMapClick = { onActivityMapClick(activity.id) },
+                onShareClick = { shareActivitySummary(context, activity) },
             )
         }
 
@@ -140,4 +137,33 @@ fun ActivitiesScreen(
             }
         }
     }
+}
+
+private fun shareActivitySummary(
+    context: Context,
+    activity: ActivityCardUiModel,
+) {
+    val shareText = buildList {
+        add(activity.title)
+        add(activity.dateLabel)
+        add("${context.getString(R.string.dashboard_label_distance)}: ${activity.distanceLabel}")
+        add("${context.getString(R.string.dashboard_label_duration)}: ${activity.durationLabel}")
+        add("${context.getString(R.string.dashboard_card_speed)}: ${activity.speedLabel}")
+        activity.powerLabel?.let { add("${context.getString(R.string.dashboard_card_power)}: $it") }
+        activity.elevationLabel?.let { add("${context.getString(R.string.dashboard_label_elevation)}: $it") }
+        activity.caloriesLabel?.let { add("${context.getString(R.string.dashboard_label_calories)}: $it") }
+    }.joinToString(separator = "\n")
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, activity.title)
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+
+    context.startActivity(
+        Intent.createChooser(
+            shareIntent,
+            context.getString(R.string.dashboard_activity_share_chooser),
+        )
+    )
 }

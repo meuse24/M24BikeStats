@@ -3,7 +3,7 @@ package info.meuse24.m24bikestats.domain.usecase
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
-import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -33,7 +33,7 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
         val useCase = ExportSmartSystemActivityDetailsCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
-            appSettingsRepository = FakeAppSettingsRepository(CsvSeparator.COMMA),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL),
         )
 
         val export = useCase(listOf("a1", "a2")) { processed, total ->
@@ -65,13 +65,15 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
         val export = ExportSmartSystemActivityDetailsCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
-            appSettingsRepository = FakeAppSettingsRepository(CsvSeparator.SEMICOLON),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.EXCEL_DE),
         )(listOf("a1")).getOrThrow()
 
         assertEquals(listOf("a1"), repository.getActivityDetailCalls)
         assertEquals(1, export.activityCount)
         assertEquals(1, export.detailPointCount)
         assertTrue(export.csvContent.contains("\"activity_id\";\"activity_title\""))
+        assertTrue(export.csvContent.contains("\"03.04.2026 10:00:00\""))
+        assertTrue(export.csvContent.contains("\"47,100000\";\"9,100000\";\"100,000000\""))
     }
 
     private fun activity(id: String, title: String) = BoschActivity(
