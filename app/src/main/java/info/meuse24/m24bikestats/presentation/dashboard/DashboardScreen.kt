@@ -409,6 +409,9 @@ fun ActivityDetailScreen(
     onNavigateToTrack: (String) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val selectedActivity = uiState.selectedActivityDetail?.takeIf { uiState.selectedActivityId == activityId }
+
     LaunchedEffect(activityId) {
         onLoadActivity(activityId)
     }
@@ -416,13 +419,21 @@ fun ActivityDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.selectedActivityDetail?.title ?: stringResource(R.string.activity_detail_fallback_title)) },
+                title = { Text(selectedActivity?.title ?: stringResource(R.string.activity_detail_fallback_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
                     }
                 },
                 actions = {
+                    selectedActivity?.let { activity ->
+                        IconButton(onClick = { shareActivityDetail(context, activity) }) {
+                            Icon(
+                                Icons.Default.Share,
+                                contentDescription = stringResource(R.string.activity_detail_share),
+                            )
+                        }
+                    }
                     IconButton(onClick = { onRefreshActivity(activityId) }) {
                         Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.activity_detail_refresh))
                     }
@@ -457,15 +468,6 @@ fun ActivityDetailScreen(
                             )
                         }
                     }
-                    item {
-                        HeroCard(
-                            eyebrow = stringResource(R.string.activity_detail_eyebrow),
-                            title = activity.title,
-                            subtitle = activity.subtitle ?: stringResource(R.string.activity_detail_subtitle),
-                        ) {
-                            SummaryChipRow(activity.summary)
-                        }
-                    }
                     items(activity.sections) { section ->
                         DetailSectionCard(
                             section = section,
@@ -487,6 +489,39 @@ fun ActivityDetailScreen(
             }
         }
     }
+}
+
+private fun shareActivityDetail(
+    context: Context,
+    activity: ActivityDetailUiModel,
+) {
+    val shareText = buildString {
+        appendLine(activity.title)
+        activity.subtitle?.takeIf { it.isNotBlank() }?.let {
+            appendLine(it)
+        }
+
+        activity.sections.forEach { section ->
+            appendLine()
+            appendLine(section.title)
+            section.rows.forEach { (label, value) ->
+                appendLine("$label: $value")
+            }
+        }
+    }.trim()
+
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, activity.title)
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+
+    context.startActivity(
+        Intent.createChooser(
+            shareIntent,
+            context.getString(R.string.activity_detail_share_chooser),
+        )
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1529,23 +1564,55 @@ private fun DetailSectionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
-        Column(modifier = Modifier.padding(18.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             Text(
                 section.title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Spacer(modifier = Modifier.height(10.dp))
-            section.rows.forEach { (label, value) ->
-                DetailRow(label = label, value = value)
+            section.rows.chunked(2).forEach { rowItems ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Min),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowItems.forEach { (label, value) ->
+                        DetailValueTile(
+                            label = label,
+                            value = value,
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                        )
+                    }
+                    if (rowItems.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
             if (section.actions.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     section.actions.forEach { action ->
-                        OutlinedButton(
+                        ActivityCardActionButton(
+                            label = action.label,
+                            icon = when (action.type) {
+                                DetailSectionActionType.SHARE -> Icons.Default.Share
+                                DetailSectionActionType.MAP -> Icons.Default.Map
+                            },
                             onClick = {
                                 when (action.type) {
                                     DetailSectionActionType.SHARE -> {
@@ -1555,10 +1622,9 @@ private fun DetailSectionCard(
                                         activity?.let { onNavigateToTrack(it.id) }
                                     }
                                 }
-                            }
-                        ) {
-                            Text(action.label)
-                        }
+                            },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -1576,6 +1642,35 @@ private fun DetailSectionCard(
                 Toast.makeText(context, context.getString(R.string.track_gpx_copied), Toast.LENGTH_SHORT).show()
             },
         )
+    }
+}
+
+@Composable
+private fun DetailValueTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
+        }
     }
 }
 

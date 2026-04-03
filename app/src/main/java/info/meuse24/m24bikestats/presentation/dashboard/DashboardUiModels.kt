@@ -23,6 +23,7 @@ data class ActivityDetailUiModel(
     val id: String,
     val title: String,
     val subtitle: String?,
+    val overview: ActivityCardUiModel,
     val summary: List<Pair<String, String>>,
     val sections: List<DetailSectionUiModel>,
     val trackPoints: List<ActivityTrackPointUiModel>,

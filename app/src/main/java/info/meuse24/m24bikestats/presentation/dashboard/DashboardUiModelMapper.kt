@@ -82,6 +82,7 @@ class DashboardUiModelMapper(
             id = activity.id,
             title = activity.title,
             subtitle = s(R.string.dashboard_detail_subtitle, detail.points.size, geoPoints.size),
+            overview = toActivityCardUiModel(activity),
             summary = buildList {
                 add(s(R.string.dashboard_label_start) to activity.startTime.toReadableDateTime())
                 add(s(R.string.dashboard_label_distance) to activity.distanceMeters.toKilometerText())

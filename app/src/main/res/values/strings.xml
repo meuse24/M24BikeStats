@@ -203,6 +203,8 @@
     <string name="activity_detail_fallback_title">Activity</string>
     <string name="activity_detail_back">Back</string>
     <string name="activity_detail_refresh">Refresh activity details</string>
+    <string name="activity_detail_share">Share activity details</string>
+    <string name="activity_detail_share_chooser">Share activity details</string>
     <string name="activity_detail_eyebrow">Activity</string>
     <string name="activity_detail_subtitle">Detail data from Bosch Smart System</string>
     <string name="activity_detail_not_found">Activity not found</string>
