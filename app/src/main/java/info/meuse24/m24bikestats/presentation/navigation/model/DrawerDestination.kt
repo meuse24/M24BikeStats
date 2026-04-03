@@ -8,7 +8,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class DrawerDestination(
-    val route: String,
+    val route: String?,
     val label: String,
     val icon: ImageVector,
 ) {
@@ -28,8 +28,12 @@ enum class DrawerDestination(
         icon = Icons.Default.BugReport,
     ),
     LOGOUT(
-        route = "logout",
+        route = null,
         label = "Logout",
         icon = Icons.AutoMirrored.Filled.ExitToApp,
     ),
+    ;
+
+    val isNavigationDestination: Boolean
+        get() = route != null
 }

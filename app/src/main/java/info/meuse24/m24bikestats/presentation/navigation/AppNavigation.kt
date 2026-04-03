@@ -44,7 +44,8 @@ private const val ROOT_MAIN_ROUTE = "main"
 fun AppNavigation() {
     val rootNavController = rememberNavController()
     val loginViewModel: LoginViewModel = koinViewModel()
-    val isAuthenticated = loginViewModel.status is LoginStatus.Authenticated
+    val loginStatus by loginViewModel.status.collectAsStateWithLifecycle()
+    val isAuthenticated = loginStatus is LoginStatus.Authenticated
     val logoutLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult(),
     ) {
@@ -62,7 +63,7 @@ fun AppNavigation() {
     ) {
         composable(ROOT_LOGIN_ROUTE) {
             LoginScreen(
-                status = loginViewModel.status,
+                status = loginStatus,
                 onBuildAuthIntent = loginViewModel::buildAuthIntent,
                 onAuthResult = loginViewModel::handleAuthResult,
                 onAuthenticated = {
@@ -121,7 +122,7 @@ fun AppNavigation() {
                         }
 
                         else -> {
-                            shellNavController.navigate(destination.route) {
+                            shellNavController.navigate(destination.route!!) {
                                 launchSingleTop = true
                             }
                         }
@@ -193,15 +194,15 @@ fun AppNavigation() {
                         )
                     }
 
-                    composable(DrawerDestination.HELP.route) {
+                    composable(DrawerDestination.HELP.route!!) {
                         HelpScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
                     }
 
-                    composable(DrawerDestination.INFO.route) {
+                    composable(DrawerDestination.INFO.route!!) {
                         InfoScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
                     }
 
-                    composable(DrawerDestination.API_TEST.route) {
+                    composable(DrawerDestination.API_TEST.route!!) {
                         val apiTestViewModel: ApiTestViewModel = koinViewModel()
                         val apiTestUiState by apiTestViewModel.uiState.collectAsStateWithLifecycle()
                         ApiTestContent(
@@ -262,18 +263,8 @@ fun AppNavigation() {
     }
 }
 
-internal fun String?.toMainDestination(): MainDestination = when {
-    this == MainDestination.ACTIVITIES.route || this?.startsWith("activity/") == true ->
-        MainDestination.ACTIVITIES
-
-    this == MainDestination.BIKE.route || this?.startsWith("bike/") == true ->
-        MainDestination.BIKE
-
-    this == MainDestination.FUNCTIONS.route ->
-        MainDestination.FUNCTIONS
-
-    else -> MainDestination.HOME
-}
+internal fun String?.toMainDestination(): MainDestination =
+    MainDestination.fromRoute(this) ?: MainDestination.HOME
 
 internal fun String?.toTopBarTitle(): String = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.label

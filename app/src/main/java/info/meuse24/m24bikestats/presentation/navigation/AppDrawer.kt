@@ -16,6 +16,7 @@ import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 
 @Composable
 fun AppDrawer(
+    currentRoute: String?,
     onDestinationClicked: (DrawerDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -35,7 +36,7 @@ fun AppDrawer(
             DrawerDestination.entries.forEach { destination ->
                 NavigationDrawerItem(
                     label = { Text(destination.label) },
-                    selected = false,
+                    selected = destination.route != null && currentRoute == destination.route,
                     onClick = { onDestinationClicked(destination) },
                     icon = {
                         Icon(

@@ -10,6 +10,16 @@ import org.junit.Test
 class AppNavigationRoutingTest {
 
     @Test
+    fun `null route maps to home destination`() {
+        assertEquals(MainDestination.HOME, null.toMainDestination())
+    }
+
+    @Test
+    fun `unknown route maps to home destination`() {
+        assertEquals(MainDestination.HOME, "foobar".toMainDestination())
+    }
+
+    @Test
     fun `activity detail route maps to activities destination`() {
         assertEquals(
             MainDestination.ACTIVITIES,
@@ -41,6 +51,7 @@ class AppNavigationRoutingTest {
     fun `detail routes hide shell top bar`() {
         assertFalse("activity/abc".shouldShowShellTopBar())
         assertFalse("bike/bike-1".shouldShowShellTopBar())
+        assertTrue(null.shouldShowShellTopBar())
         assertTrue(MainDestination.HOME.route.shouldShowShellTopBar())
     }
 
@@ -51,5 +62,11 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.BIKE.route.shouldShowRefreshAction())
         assertFalse(MainDestination.FUNCTIONS.route.shouldShowRefreshAction())
         assertFalse(DrawerDestination.INFO.route.shouldShowRefreshAction())
+    }
+
+    @Test
+    fun `logout is an action and not a navigation route`() {
+        assertEquals(null, DrawerDestination.LOGOUT.route)
+        assertFalse(DrawerDestination.LOGOUT.isNavigationDestination)
     }
 }

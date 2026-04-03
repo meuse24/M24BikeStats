@@ -51,6 +51,7 @@ fun MainShell(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val adaptiveInfo = currentWindowAdaptiveInfo()
+    val isDrawerRoute = isDrawerDestinationRoute(currentRoute)
     val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
         WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
     )
@@ -83,7 +84,7 @@ fun MainShell(
                         TopAppBar(
                             title = { Text(topBarTitle) },
                             navigationIcon = {
-                                if (isCompact) {
+                                if (isCompact && !isDrawerRoute) {
                                     IconButton(
                                         onClick = {
                                             coroutineScope.launch {
@@ -141,11 +142,12 @@ fun MainShell(
         }
     }
 
-    if (isCompact && !isDrawerDestinationRoute(currentRoute)) {
+    if (isCompact && !isDrawerRoute) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
                 AppDrawer(
+                    currentRoute = currentRoute,
                     onDestinationClicked = { destination ->
                         coroutineScope.launch {
                             drawerState.close()
@@ -164,5 +166,6 @@ fun MainShell(
 
 private fun isDrawerDestinationRoute(route: String?): Boolean =
     DrawerDestination.entries.any { destination ->
-        route == destination.route || route?.startsWith("${destination.route}/") == true
+        destination.route != null &&
+            (route == destination.route || route?.startsWith("${destination.route}/") == true)
     }

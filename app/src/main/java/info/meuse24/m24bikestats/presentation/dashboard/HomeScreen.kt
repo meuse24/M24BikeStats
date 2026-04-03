@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,7 +26,9 @@ fun HomeScreen(
     onNavigateToBike: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val latestActivity = uiState.allActivities.maxByOrNull { it.startedAtEpochMillis ?: Long.MIN_VALUE }
+    val latestActivity = remember(uiState.allActivities) {
+        uiState.allActivities.maxByOrNull { it.startedAtEpochMillis ?: Long.MIN_VALUE }
+    }
     val primaryBike = uiState.bikes.firstOrNull()
 
     LazyColumn(
@@ -54,7 +58,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
             ) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
@@ -81,7 +85,7 @@ fun HomeScreen(
         }
         item {
             if (latestActivity != null) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
@@ -101,7 +105,7 @@ fun HomeScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                     ),
                 ) {
-                    androidx.compose.foundation.layout.Column(
+                    Column(
                         modifier = Modifier.padding(20.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
@@ -126,7 +130,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
             ) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -158,7 +162,7 @@ fun HomeScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                 ),
             ) {
-                androidx.compose.foundation.layout.Column(
+                Column(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {

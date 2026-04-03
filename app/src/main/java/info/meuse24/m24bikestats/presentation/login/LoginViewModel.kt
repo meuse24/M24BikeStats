@@ -2,31 +2,31 @@ package info.meuse24.m24bikestats.presentation.login
 
 import android.app.Activity
 import android.content.Intent
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import info.meuse24.m24bikestats.auth.LoginRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class LoginViewModel(private val authRepo: LoginRepository) : ViewModel() {
 
-    var status: LoginStatus by mutableStateOf(
+    private val _status = MutableStateFlow<LoginStatus>(
         if (authRepo.isAuthenticated()) LoginStatus.Authenticated else LoginStatus.Idle
     )
-        private set
+    val status: StateFlow<LoginStatus> = _status.asStateFlow()
 
     fun buildAuthIntent(): Intent = authRepo.buildAuthIntent()
 
     fun handleAuthResult(resultCode: Int, data: Intent?) {
         if (resultCode != Activity.RESULT_OK || data == null) {
-            status = LoginStatus.Error("Anmeldung abgebrochen")
+            _status.value = LoginStatus.Error("Anmeldung abgebrochen")
             return
         }
-        status = LoginStatus.Loading
+        _status.value = LoginStatus.Loading
         authRepo.handleAuthResponse(
             intent = data,
-            onSuccess = { status = LoginStatus.Authenticated },
-            onError = { status = LoginStatus.Error(it) }
+            onSuccess = { _status.value = LoginStatus.Authenticated },
+            onError = { _status.value = LoginStatus.Error(it) }
         )
     }
 
@@ -35,23 +35,23 @@ class LoginViewModel(private val authRepo: LoginRepository) : ViewModel() {
     fun handleLogoutResult(resultCode: Int, data: Intent?) {
         if (resultCode != Activity.RESULT_OK) {
             authRepo.clearTokens()
-            status = LoginStatus.Idle
+            _status.value = LoginStatus.Idle
             return
         }
 
         authRepo.handleLogoutResponse(
             intent = data,
-            onComplete = { status = LoginStatus.Idle },
+            onComplete = { _status.value = LoginStatus.Idle },
             onError = {
                 authRepo.clearTokens()
-                status = LoginStatus.Idle
+                _status.value = LoginStatus.Idle
             }
         )
     }
 
     fun logoutLocally() {
         authRepo.clearTokens()
-        status = LoginStatus.Idle
+        _status.value = LoginStatus.Idle
     }
     // onCleared() entfernt: AuthManager ist Koin-Singleton und darf nicht
     // vom ViewModel disposed werden – Lifecycle-Mismatch vermieden.
