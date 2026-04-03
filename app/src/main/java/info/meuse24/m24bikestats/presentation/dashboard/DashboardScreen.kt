@@ -1,5 +1,8 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.Canvas
@@ -63,9 +66,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -303,8 +304,6 @@ fun TrackScreen(
             }
             uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
                 val activity = uiState.selectedActivityDetail
-                var showExportDialog by rememberSaveable(activity.id) { mutableStateOf(false) }
-                val clipboardManager = LocalClipboardManager.current
                 val context = LocalContext.current
                 val trackBounds = remember(activity.trackPoints) { calculateTrackBounds(activity.trackPoints) }
 
@@ -314,29 +313,12 @@ fun TrackScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    onShare = { showExportDialog = true },
+                    onShare = { shareTrackGpx(context, activity) },
+                    onCopyGpx = {
+                        copyTrackGpxToClipboard(context, activity)
+                        Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+                    },
                 )
-
-                if (showExportDialog) {
-                    TrackExportDialog(
-                        activity = activity,
-                        onDismiss = { showExportDialog = false },
-                        onShare = {
-                            val gpxUri = createTrackGpxUri(context, activity)
-                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                                type = "application/gpx+xml"
-                                putExtra(Intent.EXTRA_STREAM, gpxUri)
-                                putExtra(Intent.EXTRA_SUBJECT, activity.title)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
-                        },
-                        onCopyGpx = {
-                            clipboardManager.setText(AnnotatedString(buildTrackGpx(activity)))
-                            Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
-                        },
-                    )
-                }
             }
             else -> {
                 Box(
@@ -358,9 +340,11 @@ private fun TrackMapFullScreen(
     trackBounds: TrackBounds,
     modifier: Modifier = Modifier,
     onShare: () -> Unit,
+    onCopyGpx: () -> Unit,
 ) {
     var autoFitRequestId by rememberSaveable(activity.id) { mutableIntStateOf(0) }
     val density = LocalDensity.current
+    val context = LocalContext.current
     val trackSourceData = remember(activity.id, activity.trackPoints.size) {
         GeoJsonData.JsonString(buildTrackGeoJson(activity))
     }
@@ -421,12 +405,20 @@ private fun TrackMapFullScreen(
             )
         }
 
+        TrackMarkerLegend(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(16.dp),
+        )
+
         TrackMapBottomBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             onShare = onShare,
+            onCopyGpx = onCopyGpx,
             onAutoFit = {
                 autoFitRequestId += 1
                 cameraState.position = autoFitPosition
+                Toast.makeText(context, "Karte auf den Track ausgerichtet", Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -436,6 +428,7 @@ private fun TrackMapFullScreen(
 private fun TrackMapBottomBar(
     modifier: Modifier = Modifier,
     onShare: () -> Unit,
+    onCopyGpx: () -> Unit,
     onAutoFit: () -> Unit,
 ) {
     Surface(
@@ -455,6 +448,12 @@ private fun TrackMapBottomBar(
                 modifier = Modifier.weight(1f),
             ) {
                 Text("Teilen")
+            }
+            OutlinedButton(
+                onClick = onCopyGpx,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("GPX kopieren")
             }
             OutlinedButton(
                 onClick = onAutoFit,
@@ -787,7 +786,6 @@ private fun DetailSectionCard(
 ) {
     var showExportDialog by rememberSaveable(activity?.id, section.title) { mutableStateOf(false) }
     val context = LocalContext.current
-    val clipboardManager = LocalClipboardManager.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -832,19 +830,61 @@ private fun DetailSectionCard(
             activity = activity,
             onDismiss = { showExportDialog = false },
             onShare = {
-                val gpxUri = createTrackGpxUri(context, activity)
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "application/gpx+xml"
-                    putExtra(Intent.EXTRA_STREAM, gpxUri)
-                    putExtra(Intent.EXTRA_SUBJECT, activity.title)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
+                shareTrackGpx(context, activity)
             },
             onCopyGpx = {
-                clipboardManager.setText(AnnotatedString(buildTrackGpx(activity)))
+                copyTrackGpxToClipboard(context, activity)
                 Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
             },
+        )
+    }
+}
+
+@Composable
+private fun TrackMarkerLegend(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.92f),
+        tonalElevation = 6.dp,
+        shadowElevation = 6.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            LegendItem(
+                color = MaterialTheme.colorScheme.secondary,
+                label = "Start",
+            )
+            LegendItem(
+                color = MaterialTheme.colorScheme.tertiary,
+                label = "Ziel",
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegendItem(
+    color: Color,
+    label: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .width(10.dp)
+                .height(10.dp)
+                .clip(CircleShape)
+                .background(color),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
         )
     }
 }
@@ -1239,6 +1279,30 @@ private fun buildSingleTrackPointGeoJson(
 ): String = """
     {"type":"FeatureCollection","features":[{"type":"Feature","properties":{"kind":"$kind"},"geometry":{"type":"Point","coordinates":[${point.longitude},${point.latitude}]}}]}
 """.trimIndent()
+
+private fun shareTrackGpx(
+    context: Context,
+    activity: ActivityDetailUiModel,
+) {
+    val gpxUri = createTrackGpxUri(context, activity)
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "application/gpx+xml"
+        putExtra(Intent.EXTRA_STREAM, gpxUri)
+        putExtra(Intent.EXTRA_SUBJECT, activity.title)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
+}
+
+private fun copyTrackGpxToClipboard(
+    context: Context,
+    activity: ActivityDetailUiModel,
+) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    clipboard.setPrimaryClip(
+        ClipData.newPlainText("track.gpx", buildTrackGpx(activity))
+    )
+}
 
 @Composable
 private fun ProfileChartCard(
