@@ -7,7 +7,7 @@ import info.meuse24.m24bikestats.data.local.entity.ActivityCacheStateEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeCacheStateEntity
 import info.meuse24.m24bikestats.data.local.mapper.*
 import info.meuse24.m24bikestats.data.local.model.CachedBike
-import info.meuse24.m24bikestats.data.remote.BoschApiClient
+import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
@@ -26,7 +26,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 class BoschSmartSystemRepositoryImpl(
-    private val apiClient: BoschApiClient,
+    private val apiClient: BoschApiDataSource,
     private val activityDao: ActivityDao,
     private val activityDetailDao: ActivityDetailDao,
     private val bikeDao: BikeDao,

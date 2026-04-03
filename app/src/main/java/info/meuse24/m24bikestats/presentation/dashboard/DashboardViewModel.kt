@@ -54,10 +54,9 @@ class DashboardViewModel(
     private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
+    private val _uiState = MutableStateFlow(DashboardUiState(isInitialLoading = true))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    private var cachedActivities: List<BoschActivity> = emptyList()
     private var activityOffset: Int = 0
     private var activityTotalCount: Int = 0
     private var activityDetailObservationJob: Job? = null
@@ -72,9 +71,9 @@ class DashboardViewModel(
     private fun observeActivities() {
         viewModelScope.launch {
             observeCachedActivities().collectLatest { activities ->
-                cachedActivities = activities
-                val presentedActivities = buildPresentedActivities(
-                    activities = activities,
+                val allActivities = activities.map(::toActivityCardUiModel)
+                val presentedActivities = filterPresentedActivities(
+                    activities = allActivities,
                     searchQuery = _uiState.value.activitySearchQuery,
                     dateRangeFilter = _uiState.value.activityDateRangeFilter,
                     sortOption = _uiState.value.activitySortOption,
@@ -88,7 +87,8 @@ class DashboardViewModel(
                     activityOffset = activities.size
                     val hasInitialContent = activities.isNotEmpty() || current.bikes.isNotEmpty()
                     current.copy(
-                        isLoading = current.isLoading && !hasInitialContent,
+                        isInitialLoading = current.isInitialLoading && !hasInitialContent,
+                        allActivities = allActivities,
                         activities = presentedActivities,
                         loadedActivityCount = activities.size,
                         visibleActivityCount = presentedActivities.size,
@@ -104,9 +104,9 @@ class DashboardViewModel(
         viewModelScope.launch {
             observeCachedBikes().collectLatest { bikes ->
                 _uiState.update { current ->
-                    val hasInitialContent = current.activities.isNotEmpty() || bikes.isNotEmpty()
+                    val hasInitialContent = current.allActivities.isNotEmpty() || bikes.isNotEmpty()
                     current.copy(
-                        isLoading = current.isLoading && !hasInitialContent,
+                        isInitialLoading = current.isInitialLoading && !hasInitialContent,
                         bikes = bikes.map(::toBikeCardUiModel),
                     )
                 }
@@ -119,7 +119,7 @@ class DashboardViewModel(
             val hasContent = _uiState.value.activities.isNotEmpty() || _uiState.value.bikes.isNotEmpty()
             _uiState.update {
                 it.copy(
-                    isLoading = !hasContent,
+                    isInitialLoading = !hasContent,
                     isRefreshing = hasContent,
                     error = null,
                 )
@@ -136,7 +136,7 @@ class DashboardViewModel(
             val activityPage = activitiesResult.getOrElse { error ->
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
+                        isInitialLoading = false,
                         isRefreshing = false,
                         error = error.message ?: "Aktivitäten konnten nicht geladen werden",
                     )
@@ -147,7 +147,7 @@ class DashboardViewModel(
             bikesResult.getOrElse { error ->
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
+                        isInitialLoading = false,
                         isRefreshing = false,
                         error = error.message ?: "Bikes konnten nicht geladen werden",
                     )
@@ -159,12 +159,12 @@ class DashboardViewModel(
                 activityOffset = activityPage.offset + activityPage.items.size
                 activityTotalCount = activityPage.total
             } else {
-                activityOffset = cachedActivities.size
+                activityOffset = _uiState.value.loadedActivityCount
             }
 
             _uiState.update {
                 it.copy(
-                    isLoading = false,
+                    isInitialLoading = false,
                     isRefreshing = false,
                     isLoadingMoreActivities = false,
                     activityTotalCount = activityPage?.total ?: activityTotalCount,
@@ -176,7 +176,7 @@ class DashboardViewModel(
 
     fun loadMoreActivities() {
         val state = _uiState.value
-        if (state.isLoading || state.isRefreshing || state.isLoadingMoreActivities || !state.canLoadMoreActivities) return
+        if (state.isInitialLoading || state.isRefreshing || state.isLoadingMoreActivities || !state.canLoadMoreActivities) return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoadingMoreActivities = true, error = null) }
@@ -206,7 +206,7 @@ class DashboardViewModel(
 
     fun exportAllActivitiesCsv() {
         val state = _uiState.value
-        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
+        if (state.isInitialLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
 
         viewModelScope.launch {
             _uiState.update {
@@ -262,7 +262,7 @@ class DashboardViewModel(
 
     fun exportVisibleActivityDetailsCsv() {
         val state = _uiState.value
-        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
+        if (state.isInitialLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
 
         val activityIds = state.activities.map { it.id }.distinct()
         if (activityIds.isEmpty()) {
@@ -325,8 +325,8 @@ class DashboardViewModel(
 
     fun updateActivityDateRangeFilter(filter: ActivityDateRangeFilter) {
         _uiState.update { current ->
-            val presentedActivities = buildPresentedActivities(
-                activities = cachedActivities,
+            val presentedActivities = filterPresentedActivities(
+                activities = current.allActivities,
                 searchQuery = current.activitySearchQuery,
                 dateRangeFilter = filter,
                 sortOption = current.activitySortOption,
@@ -341,8 +341,8 @@ class DashboardViewModel(
 
     fun updateActivitySortOption(sortOption: ActivitySortOption) {
         _uiState.update { current ->
-            val presentedActivities = buildPresentedActivities(
-                activities = cachedActivities,
+            val presentedActivities = filterPresentedActivities(
+                activities = current.allActivities,
                 searchQuery = current.activitySearchQuery,
                 dateRangeFilter = current.activityDateRangeFilter,
                 sortOption = sortOption,
@@ -357,8 +357,8 @@ class DashboardViewModel(
 
     fun updateActivitySearchQuery(searchQuery: String) {
         _uiState.update { current ->
-            val presentedActivities = buildPresentedActivities(
-                activities = cachedActivities,
+            val presentedActivities = filterPresentedActivities(
+                activities = current.allActivities,
                 searchQuery = searchQuery,
                 dateRangeFilter = current.activityDateRangeFilter,
                 sortOption = current.activitySortOption,
@@ -838,13 +838,13 @@ class DashboardViewModel(
         return latitude != 0.0 || longitude != 0.0
     }
 
-    private fun buildPresentedActivities(
-        activities: List<BoschActivity>,
+    private fun filterPresentedActivities(
+        activities: List<ActivityCardUiModel>,
         searchQuery: String,
         dateRangeFilter: ActivityDateRangeFilter,
         sortOption: ActivitySortOption,
     ): List<ActivityCardUiModel> = filterAndSortActivities(
-        activities = activities.map(::toActivityCardUiModel),
+        activities = activities,
         searchQuery = searchQuery,
         dateRangeFilter = dateRangeFilter,
         sortOption = sortOption,

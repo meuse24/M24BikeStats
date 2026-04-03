@@ -9,14 +9,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
-class BoschApiClient {
+class BoschApiClient : BoschApiDataSource {
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    suspend fun get(request: BoschRequest, accessToken: String): String =
+    override suspend fun get(request: BoschRequest, accessToken: String): String =
         withContext(Dispatchers.IO) {
             // TOKEN_INFO: kein HTTP-Call, Token lokal dekodieren
             if (request.isLocalOnly) {

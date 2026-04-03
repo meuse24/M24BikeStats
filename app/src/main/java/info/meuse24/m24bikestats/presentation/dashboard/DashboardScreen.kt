@@ -183,7 +183,7 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (uiState.isLoading) {
+            if (uiState.isInitialLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -307,7 +307,7 @@ private fun FunctionsOverview(
                         onClick = onExportActivitiesCsv,
                         enabled = !uiState.isExportingActivitiesCsv &&
                             !uiState.isExportingActivityDetailsCsv &&
-                            !uiState.isLoading &&
+                            !uiState.isInitialLoading &&
                             !uiState.isRefreshing,
                     ) {
                         if (uiState.isExportingActivitiesCsv) {
@@ -389,7 +389,7 @@ private fun FunctionsOverview(
                         enabled = uiState.visibleActivityCount > 0 &&
                             !uiState.isExportingActivitiesCsv &&
                             !uiState.isExportingActivityDetailsCsv &&
-                            !uiState.isLoading &&
+                            !uiState.isInitialLoading &&
                             !uiState.isRefreshing,
                     ) {
                         if (uiState.isExportingActivityDetailsCsv) {

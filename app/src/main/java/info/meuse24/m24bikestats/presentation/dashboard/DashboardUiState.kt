@@ -1,7 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 data class DashboardUiState(
-    val isLoading: Boolean = false,
+    val isInitialLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val isLoadingMoreActivities: Boolean = false,
     val isExportingActivitiesCsv: Boolean = false,
@@ -17,6 +17,7 @@ data class DashboardUiState(
     val activitySearchQuery: String = "",
     val activityDateRangeFilter: ActivityDateRangeFilter = ActivityDateRangeFilter.ALL,
     val activitySortOption: ActivitySortOption = ActivitySortOption.NEWEST_FIRST,
+    val allActivities: List<ActivityCardUiModel> = emptyList(),
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
     val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel? = null,

@@ -5,6 +5,7 @@ import info.meuse24.m24bikestats.auth.AuthManager
 import info.meuse24.m24bikestats.auth.LoginRepository
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
+import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
@@ -39,7 +40,7 @@ import org.koin.dsl.module
 val appModule = module {
 
     // --- Data ---
-    single { BoschApiClient() }
+    single<BoschApiDataSource> { BoschApiClient() }
     single { AuthManager(androidContext()) }
     single {
         Room.databaseBuilder(
