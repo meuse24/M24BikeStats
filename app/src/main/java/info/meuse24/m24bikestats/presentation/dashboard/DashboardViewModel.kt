@@ -255,6 +255,17 @@ class DashboardViewModel(
     }
 
     fun loadBikeDetail(bikeId: String) {
+        loadBikeDetailInternal(bikeId = bikeId, force = false)
+    }
+
+    fun refreshBikeDetail(bikeId: String) {
+        loadBikeDetailInternal(bikeId = bikeId, force = true)
+    }
+
+    private fun loadBikeDetailInternal(
+        bikeId: String,
+        force: Boolean,
+    ) {
         bikeDetailObservationJob?.cancel()
         viewModelScope.launch {
             val cachedBike = getCachedBike(bikeId)
@@ -280,7 +291,7 @@ class DashboardViewModel(
                 }
             }
 
-            val result = refreshBikeDetailUseCase(bikeId, force = false).getOrElse { error ->
+            refreshBikeDetailUseCase(bikeId, force = force).getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isBikeDetailLoading = false,
@@ -303,6 +314,17 @@ class DashboardViewModel(
     }
 
     fun loadActivityDetail(activityId: String) {
+        loadActivityDetailInternal(activityId = activityId, force = false)
+    }
+
+    fun refreshActivityDetail(activityId: String) {
+        loadActivityDetailInternal(activityId = activityId, force = true)
+    }
+
+    private fun loadActivityDetailInternal(
+        activityId: String,
+        force: Boolean,
+    ) {
         activityDetailObservationJob?.cancel()
         viewModelScope.launch {
             val activity = getCachedActivity(activityId)
@@ -335,7 +357,7 @@ class DashboardViewModel(
                 }
             }
 
-            refreshActivityDetailUseCase(activityId, force = false).getOrElse { error ->
+            refreshActivityDetailUseCase(activityId, force = force).getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isActivityDetailLoading = false,

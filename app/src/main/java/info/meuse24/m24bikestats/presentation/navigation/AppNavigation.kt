@@ -92,6 +92,7 @@ fun AppNavigation() {
             ActivityDetailScreen(
                 uiState = uiState,
                 onLoadActivity = dashboardViewModel::loadActivityDetail,
+                onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                 activityId = activityId,
                 onNavigateToTrack = { navController.navigate("activity/$activityId/track") },
                 onNavigateBack = { navController.popBackStack() },
@@ -107,6 +108,7 @@ fun AppNavigation() {
             TrackScreen(
                 uiState = uiState,
                 onLoadActivity = dashboardViewModel::loadActivityDetail,
+                onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                 activityId = activityId,
                 onNavigateBack = { navController.popBackStack() },
             )
@@ -121,6 +123,7 @@ fun AppNavigation() {
             BikeDetailScreen(
                 uiState = uiState,
                 onLoadBike = dashboardViewModel::loadBikeDetail,
+                onRefreshBike = dashboardViewModel::refreshBikeDetail,
                 bikeId = bikeId,
                 onNavigateBack = { navController.popBackStack() },
             )

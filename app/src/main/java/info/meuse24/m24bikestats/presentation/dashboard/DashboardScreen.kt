@@ -292,6 +292,7 @@ private fun FunctionsOverview(
 fun ActivityDetailScreen(
     uiState: DashboardUiState,
     onLoadActivity: (String) -> Unit,
+    onRefreshActivity: (String) -> Unit,
     activityId: String,
     onNavigateToTrack: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -307,6 +308,11 @@ fun ActivityDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onRefreshActivity(activityId) }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Aktivitätsdetails aktualisieren")
                     }
                 }
             )
@@ -376,6 +382,7 @@ fun ActivityDetailScreen(
 fun TrackScreen(
     uiState: DashboardUiState,
     onLoadActivity: (String) -> Unit,
+    onRefreshActivity: (String) -> Unit,
     activityId: String,
     onNavigateBack: () -> Unit,
 ) {
@@ -390,6 +397,11 @@ fun TrackScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onRefreshActivity(activityId) }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Track aktualisieren")
                     }
                 }
             )
@@ -622,6 +634,7 @@ private fun TrackMapActionButton(
 fun BikeDetailScreen(
     uiState: DashboardUiState,
     onLoadBike: (String) -> Unit,
+    onRefreshBike: (String) -> Unit,
     bikeId: String,
     onNavigateBack: () -> Unit,
 ) {
@@ -636,6 +649,11 @@ fun BikeDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { onRefreshBike(bikeId) }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Bike-Details aktualisieren")
                     }
                 }
             )
