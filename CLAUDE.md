@@ -1,191 +1,129 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Arbeitsnotizen für Agenten in diesem Repository.
 
-## Build & Run
+## Projekt
+
+Single-Module Android-App mit Jetpack Compose, Room, Koin und AppAuth.
+
+- Package: `info.meuse24.m24bikestats`
+- `minSdk`: 29
+- `targetSdk`: 36
+- Kotlin: `2.2.10`
+
+## Standard-Checks
 
 ```bash
-# Debug-Build
-./gradlew assembleDebug
-
-# Release-Build
-./gradlew assembleRelease
-
-# Unit-Tests
 ./gradlew test
-
-# Einzelnen Test ausführen
-./gradlew :app:test --tests "info.meuse24.m24bikestats.ExampleUnitTest"
-
-# Instrumented Tests (Gerät/Emulator erforderlich)
-./gradlew connectedAndroidTest
-
-# Lint
 ./gradlew lint
+./gradlew build
+```
+
+Optional:
+
+```bash
+./gradlew assembleDebug
+./gradlew assembleRelease
+./gradlew connectedAndroidTest
 ```
 
 ## Architektur
 
-Single-Module Android-App mit **Clean Architecture** und **Jetpack Compose**.
+```text
+domain/
+  model/       Bosch- und App-Modelle
+  repository/  Interfaces
+  usecase/     fachliche Anwendungsfälle
 
-**Package:** `info.meuse24.m24bikestats` | **minSdk:** 29 | **targetSdk:** 36 | **Kotlin:** 2.2.10
+data/
+  remote/      Bosch API Zugriff
+  local/       Room, Mapper, Cache-State
+  repository/  Repository-Implementierungen
 
-### Schichtenmodell
+auth/
+  AuthManager
+  LoginRepository
+  OAuthConfig
 
-```
-domain/          ← reines Kotlin, kein Android-Framework
-  model/         ← BoschEndpoint (Enum mit baseUrl + path)
-  repository/    ← AuthRepository, BoschRepository (Interfaces)
-  usecase/       ← FetchBoschDataUseCase, Smart-System-UseCases
+presentation/
+  login/
+  apitest/
+  dashboard/
+  navigation/
 
-data/            ← implementiert Domain-Interfaces
-  remote/        ← BoschApiClient, BoschApiDataSource (OkHttp, JWT-Decoder)
-  repository/    ← BoschRepositoryImpl, BoschSmartSystemRepositoryImpl
-
-auth/            ← OAuth2-Brücke (plattformspezifisch)
-  AuthManager    ← implementiert LoginRepository (extends AuthRepository)
-  LoginRepository← Interface mit Android-Intent-Methoden
-  OAuthConfig    ← Endpunkte, Client-ID, Scopes
-
-presentation/    ← stateless Screens, ViewModels, Navigation
-  login/         ← LoginViewModel, LoginScreen, LoginStatus
-  apitest/       ← ApiTestViewModel (StateFlow), ApiTestScreen, ApiTestUiState
-  dashboard/     ← DashboardViewModel, Home/Activities/Bike/Functions, Detail-Screens
-  navigation/    ← AppNavigation + MainShell (adaptive Navigation)
-
-di/              ← AppModule (Koin)
-M24BikeStatsApp  ← Application, startet Koin
+di/
+  AppModule
 ```
 
-### Abhängigkeitsregeln
+Regeln:
 
-```
-presentation → domain, auth
-data         → domain
-auth         → domain (AuthRepository), Android SDK
-domain       → (nichts)
-```
+- `domain` bleibt Android-frei
+- `data` hängt nur an `domain`
+- `presentation` hängt an `domain` und `auth`
+- ViewModels exponieren `StateFlow`
+- Screens sind stateless und bekommen `UiState` plus Callbacks
 
-### Dependency Injection
+## Navigation
 
-Koin (`AppModule`):
-- `AuthManager` als Singleton; über `AuthRepository` und `LoginRepository` gebunden
-- `BoschApiClient` als `BoschApiDataSource` gebunden
-- `BoschRepositoryImpl` als Singleton (über `BoschRepository`)
-- `BoschSmartSystemRepositoryImpl` als Singleton (über `BoschSmartSystemRepository`)
-- `FetchBoschDataUseCase` als Factory
-- ViewModels via `viewModelOf`
+- Root-Level: `login` und `main`
+- Authentifizierter Bereich läuft in `MainShell`
+- Primärnavigation: `home`, `activities`, `bike_list`, `functions`
+- Sekundärnavigation: `setup`, `help`, `info`, `api_test`, `logout`
+- Compact: `ModalNavigationDrawer`
+- größere Breiten: Overflow-Menü in der `TopAppBar`
 
-### Auth-Flow (OAuth2 + PKCE)
+## Wichtige Features
 
-Öffentlicher Client – kein Client Secret. AppAuth generiert Code-Verifier automatisch.
+- OAuth2 Authorization Code + PKCE
+- Token-Speicherung via `EncryptedSharedPreferences`
+- cache-first Aktivitäten-, Detail- und Bike-Flows
+- Vollsync vom Home-Screen für Room gegen Bosch-Cloud
+- CSV-Export für Aktivitäten, Details und Tracks
+- CSV-Trennzeichen persistent konfigurierbar
+- Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
 
-1. `LoginViewModel.buildAuthIntent()` → `AppNavigation` → `LoginScreen` launcht Browser
-2. Bosch-Login → Redirect auf `m24bikestats://oauth-callback`
-3. `RedirectUriReceiverActivity` fängt Callback ab, liefert Result zurück
-4. `LoginViewModel.handleAuthResult()` → Token-Austausch → Token in `EncryptedSharedPreferences`
-5. Navigation → `home` innerhalb der authentifizierten Main-Shell
-6. Logout versucht zusätzlich einen OIDC-End-Session-Flow gegen Bosch, bevor die App lokal auf `login` zurückkehrt
+## Bosch API
 
-### Compose-Muster
+Bestätigte Endpunkte:
 
-- Screens sind **stateless**: nehmen nur `UiState`-Datenklassen + Callbacks
-- `AppNavigation` ist die einzige Stelle, die ViewModels kennt
-- `StateFlow` + `collectAsStateWithLifecycle()` für reaktive UI-Updates
-- `LaunchedEffect` für Navigations-Seiteneffekte
-
-### Credentials
-
-Client-ID ist in `OAuthConfig.kt` hart kodiert (kein Geheimnis bei public clients).
-`secrets.properties` wird nicht benötigt.
-
----
-
-## Bosch eBike API – bestätigte Erkenntnisse
-
-### Token-Eigenschaften (aus JWT-Analyse)
-
-| Claim | Wert | Bedeutung |
-|---|---|---|
-| `aud` | `api-bosch-ebike` | Token gilt für `api.bosch-ebike.com` |
-| `scope` | `euda:read ...` | EU Data Act Lesezugriff – automatisch erteilt |
-| `ebike-rider-id` | UUID | Rider-ID für Detailabfragen |
-| Lebensdauer | 3600 s | Refresh Token vorhanden |
-
-### API-Endpunkte (Quelle: open-ebike/open-ebike-backend)
-
-**Base URL:** `https://api.bosch-ebike.com`
-
-```
-# Smart System / BES3 (Flow-App, live bestätigt am 2026-04-02)
-GET /activity/smart-system/v1/activities?limit=20&offset=0     -> HTTP 200
-GET /bike-profile/smart-system/v1/bikes                        -> HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}/details  -> HTTP 200
-GET /bike-profile/smart-system/v1/bikes/{bikeId}               -> HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}/track    -> HTTP 404
-
-# OIDC – live bestätigt HTTP 200
+```text
+GET /activity/smart-system/v1/activities?limit=20&offset=0
+GET /activity/smart-system/v1/activities/{activityId}/details
+GET /bike-profile/smart-system/v1/bikes
+GET /bike-profile/smart-system/v1/bikes/{bikeId}
+GET /activity/smart-system/v1/activities/{activityId}/track   -> aktuell 404
 GET https://p9.authz.bosch.com/.../userinfo
 GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ```
 
-`BoschEndpoint.kt` enthält alle Varianten inkl. TOKEN_INFO (lokaler JWT-Decoder) und OIDC_DISCOVERY.
+## Dependency Injection
 
-### Verifizierte Datenformen
+`AppModule` bindet unter anderem:
 
-- `activities` liefert `pagination` und `activitySummaries[]` mit Fahrdaten, Leistungswerten und `bikeId`
-- `activities/{activityId}/details` liefert `activityDetails[]` mit Distanz-, Höhen-, GPS-, Speed-, Kadenz- und Rider-Power-Punkten
-- `bikes` und `bikes/{bikeId}` liefern Komponenten-, Batterie- und Drive-Unit-Informationen
-- JWT-Claims enthalten `aud=api-bosch-ebike`, `scope=euda:read`, `bosch-id`, `ebike-rider-id`
+- `AuthManager` als `AuthRepository` und `LoginRepository`
+- `BoschApiClient` als `BoschApiDataSource`
+- `BoschRepositoryImpl`
+- `BoschSmartSystemRepositoryImpl`
+- `AppSettingsRepositoryImpl`
+- alle UseCases
+- `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
 
-### Aktueller UI-Stand
+## Hinweise für Änderungen
 
-- Startziel nach Login ist `home`
-- Die Hauptnavigation nutzt `NavigationSuiteScaffold` adaptiv für Home, Aktivitäten, Bike und Funktionen
-- Auf Compact-Geräten liegen Hilfe, Info, API-Test und Logout im `ModalNavigationDrawer`
-- Auf größeren Breiten liegen Setup, Hilfe, Info, API-Test und Logout im Overflow-Menü der `TopAppBar`
-- Der Setup-Screen verwaltet App-Einstellungen wie das CSV-Trennzeichen
-- Aktivitäten werden paginiert über `limit`/`offset` geladen
-- Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
-- Aktivitätenlisten-UI arbeitet ohne separate Domain-In-Memory-Kopie; Filter/Sortierung basieren auf `allActivities` im UiState
-- Room nutzt echte Migrationen für die bekannten Cache-Schema-Stände ab Version 2
-- Aktivitätenliste unterstützt Datumsfilter, Sortierung und freie Textsuche im eigenen Activities-Screen
-- Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
-- Aktivitätsdetails und Trackpunkte werden in Room gecacht und cache-first geladen
-- Aktivitätsdetail- und Bike-Detail-Screens beobachten Room direkt per Flow
-- Remote-Refresh für Listen und Details läuft nur bei veraltetem Cache oder explizitem Refresh
-- Aktivitätsdetails können den vollständigen Track als GPX teilen
-- Aktivitätsdetails können die vollständigen Detailpunkte zusätzlich als CSV exportieren
-- Der Track-Screen kann den aktuell geöffneten Track zusätzlich direkt als CSV exportieren
-- Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
-- Der Track-Screen enthält zusätzlich eine MapLibre/OpenFreeMap-Kartenansicht mit Track-Overlay
-- Der Track-Screen ist eine fullscreen Kartenansicht mit Top-Bar und Action-Bottom-Bar
-- Der Track-Screen zeigt zusätzlich Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit
-- Bike-Liste und Bike-Details kommen cache-first aus Room
-- Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
-- Der Functions-Screen enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
-- Der Functions-Screen enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
-- Das CSV-Trennzeichen ist persistent konfigurierbar und wird standardmäßig aus der Systemsprache abgeleitet
-- Der Functions-Screen zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
-- Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
-- Repository-, Mapper-, ViewModel-, Room-, Migrations- und Exportpfade sind testseitig abgedeckt
+- Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
+- Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
+- Bei Cache-/Sync-Änderungen auf Room-State und Paging-Verhalten achten
+- Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
 
-### Teststand
+## Testfokus
 
-- Unit-Tests:
-  - Mapper (`data/local/mapper/*Test.kt`)
-  - Präsentationslogik (`ActivityPresentationTest`)
-  - Dashboard-ViewModel
-  - UseCases inkl. Cache-/Refresh-Logik
-- Android-Tests:
-  - Room-DAO- und Relationstests
-  - Room-Migrationstests
-  - Repository-Integrationstests `remote -> db -> cache-flow`
-  - GPX-/CSV-Exporttests mit `FileProvider`
+- UseCases mit Fakes
+- Dashboard-ViewModel
+- Routing/Navigations-Mapping
+- Repository/Cache-Verhalten
+- GPX-/CSV-Exportpfade
 
----
+## Offene Baustellen
 
-## Offene Punkte
-
-- Alternative Pfade für Activity-Detail und Activity-Track recherchieren
-- Log-Ausgaben für produktive Nutzung datensparsam machen
+- Bosch `track`-Endpoint weiter verifizieren
+- Logging für produktive Nutzung schlank halten
