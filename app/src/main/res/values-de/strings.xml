@@ -320,4 +320,25 @@
     <string name="dashboard_assist_mode_range">%1$s (%2$s km)</string>
     <string name="dashboard_duration_hours_minutes">%1$dh %2$dm</string>
     <string name="dashboard_duration_minutes">%1$d min</string>
+    <string name="dashboard_card_speed">Tempo</string>
+    <string name="dashboard_card_power">Leistung</string>
+    <string name="dashboard_card_odometer">Kilometer</string>
+    <string name="dashboard_card_assist">Assist</string>
+    <string name="dashboard_bike_detail_hint">Tippe für Komponenten-, Batterie- und Head-Unit-Details.</string>
+    <string name="track_tab_map">Karte</string>
+    <string name="track_tab_profiles">Profile</string>
+    <string name="track_tab_gpx">GPX</string>
+    <string name="track_gpx_preview_title">GPX-Vorschau</string>
+    <string name="track_gpx_preview_subtitle">Der Export enthält den vollständigen Track als GPX 1.1 mit Höhen- und Distanzpunkten.</string>
+    <string name="track_map_tiles_title">Kartenkacheln</string>
+    <string name="track_map_fit_label">Fit</string>
+    <string name="track_map_fit_value">Auto auf Track-Bounds</string>
+    <string name="track_map_start_value">Sekundärfarbe</string>
+    <string name="track_map_end_value">Tertiärfarbe</string>
+    <string name="track_map_tiles_subtitle">OpenFreeMap-Kacheln mit live gerendertem Bosch-Track und getrennten Start-/Zielmarkern.</string>
+    <string name="track_canvas_title">Vollständiger Track</string>
+    <string name="track_not_enough_gps_points">Zu wenige GPS-Punkte für eine Trackansicht</string>
+    <string name="track_profile_not_enough_points">Zu wenige Datenpunkte für dieses Profil</string>
+    <string name="track_profile_max_label">Max</string>
+    <string name="track_profile_end_label">Ende</string>
 </resources>

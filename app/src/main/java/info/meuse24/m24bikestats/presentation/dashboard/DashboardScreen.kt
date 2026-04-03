@@ -1154,14 +1154,14 @@ internal fun ActivityCard(
             }
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                item { MetricPill("Dauer", activity.durationLabel) }
-                item { MetricPill("Tempo", activity.speedLabel) }
-                activity.powerLabel?.let { item { MetricPill("Leistung", it) } }
+                item { MetricPill(stringResource(R.string.dashboard_label_duration), activity.durationLabel) }
+                item { MetricPill(stringResource(R.string.dashboard_card_speed), activity.speedLabel) }
+                activity.powerLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_power), it) } }
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                OptionalRow("Höhenmeter", activity.elevationLabel)
-                OptionalRow("Kalorien", activity.caloriesLabel)
+                OptionalRow(stringResource(R.string.dashboard_label_elevation), activity.elevationLabel)
+                OptionalRow(stringResource(R.string.dashboard_label_calories), activity.caloriesLabel)
             }
         }
     }
@@ -1196,13 +1196,13 @@ internal fun BikeOverviewCard(
                 )
             }
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                bike.odometerLabel?.let { item { MetricPill("Kilometer", it) } }
-                bike.assistSpeedLabel?.let { item { MetricPill("Assist", it) } }
+                bike.odometerLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_odometer), it) } }
+                bike.assistSpeedLabel?.let { item { MetricPill(stringResource(R.string.dashboard_card_assist), it) } }
             }
             SectionSurface {
-                OptionalRow("Batterie", bike.batterySummary)
+                OptionalRow(stringResource(R.string.dashboard_battery_fallback_title), bike.batterySummary)
                 Text(
-                    text = "Tippe für Komponenten-, Batterie- und Head-Unit-Details.",
+                    text = stringResource(R.string.dashboard_bike_detail_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1289,11 +1289,11 @@ private fun TrackMarkerLegend(modifier: Modifier = Modifier) {
         ) {
             LegendItem(
                 color = MaterialTheme.colorScheme.secondary,
-                label = "Start",
+                label = stringResource(R.string.track_export_label_start),
             )
             LegendItem(
                 color = MaterialTheme.colorScheme.tertiary,
-                label = "Ziel",
+                label = stringResource(R.string.track_export_label_end),
             )
         }
     }
@@ -1370,7 +1370,11 @@ private fun TrackModeSelector(
     selectedTabIndex: Int,
     onTabSelected: (Int) -> Unit,
 ) {
-    val tabs = listOf("Karte", "Profile", "GPX")
+    val tabs = listOf(
+        stringResource(R.string.track_tab_map),
+        stringResource(R.string.track_tab_profiles),
+        stringResource(R.string.track_tab_gpx),
+    )
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
@@ -1405,12 +1409,12 @@ private fun GpxPreviewCard(activity: ActivityDetailUiModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "GPX-Vorschau",
+                text = stringResource(R.string.track_gpx_preview_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = "Der Export enthält den vollständigen Track als GPX 1.1 mit Höhen- und Distanzpunkten.",
+                text = stringResource(R.string.track_gpx_preview_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1468,7 +1472,7 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "Kartenkacheln",
+                text = stringResource(R.string.track_map_tiles_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -1512,12 +1516,12 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                MetricPill("Fit", "Auto auf Track-Bounds")
-                MetricPill("Start", "Sekundärfarbe")
-                MetricPill("Ziel", "Tertiärfarbe")
+                MetricPill(stringResource(R.string.track_map_fit_label), stringResource(R.string.track_map_fit_value))
+                MetricPill(stringResource(R.string.track_export_label_start), stringResource(R.string.track_map_start_value))
+                MetricPill(stringResource(R.string.track_export_label_end), stringResource(R.string.track_map_end_value))
             }
             Text(
-                text = "OpenFreeMap-Kacheln mit live gerendertem Bosch-Track und getrennten Start-/Zielmarkern.",
+                text = stringResource(R.string.track_map_tiles_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -1538,7 +1542,7 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                text = "Vollständiger Track",
+                text = stringResource(R.string.track_canvas_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -1552,7 +1556,7 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
             ) {
                 if (trackPoints.size < 2) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("Zu wenige GPS-Punkte für eine Trackansicht")
+                        Text(stringResource(R.string.track_not_enough_gps_points))
                     }
                 } else {
                     Canvas(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -1861,7 +1865,7 @@ private fun ProfileChartCard(
             ) {
                 if (chartPoints.size < 2) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("Zu wenige Datenpunkte für dieses Profil")
+                        Text(stringResource(R.string.track_profile_not_enough_points))
                     }
                 } else {
                     val axisColor = MaterialTheme.colorScheme.outlineVariant
@@ -1921,15 +1925,15 @@ private fun ProfileChartCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 MetricPill(
-                    label = "Start",
+                    label = stringResource(R.string.track_export_label_start),
                     value = valueFormatter(chartPoints.firstOrNull()?.second ?: 0.0),
                 )
                 MetricPill(
-                    label = "Max",
+                    label = stringResource(R.string.track_profile_max_label),
                     value = valueFormatter(chartPoints.maxOfOrNull { it.second } ?: 0.0),
                 )
                 MetricPill(
-                    label = "Ende",
+                    label = stringResource(R.string.track_profile_end_label),
                     value = valueFormatter(chartPoints.lastOrNull()?.second ?: 0.0),
                 )
             }
@@ -2073,8 +2077,8 @@ private fun List<ActivityProfilePointUiModel>.metricSummary(
     unit: String,
 ): String {
     val values = mapNotNull { selector(it) }
-    if (values.isEmpty()) return "Keine Messwerte"
+    if (values.isEmpty()) return ""
     val average = values.average()
     val maximum = values.maxOrNull() ?: average
-    return "Ø ${String.format("%.1f", average)} $unit • max ${String.format("%.1f", maximum)} $unit"
+    return "avg ${String.format("%.1f", average)} $unit • max ${String.format("%.1f", maximum)} $unit"
 }
