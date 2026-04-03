@@ -5,6 +5,8 @@ data class DashboardUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMoreActivities: Boolean = false,
     val isExportingActivitiesCsv: Boolean = false,
+    val exportLoadedActivityCount: Int = 0,
+    val exportTotalActivityCount: Int = 0,
     val activityTotalCount: Int = 0,
     val loadedActivityCount: Int = 0,
     val canLoadMoreActivities: Boolean = false,

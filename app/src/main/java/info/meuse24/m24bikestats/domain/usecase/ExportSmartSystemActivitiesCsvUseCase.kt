@@ -12,7 +12,9 @@ class ExportSmartSystemActivitiesCsvUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
 ) {
-    suspend operator fun invoke(): Result<BoschActivitiesCsvExport> {
+    suspend operator fun invoke(
+        onProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
+    ): Result<BoschActivitiesCsvExport> {
         val token = authRepository.getValidAccessToken()
             .getOrElse { return Result.failure(it) }
 
@@ -31,6 +33,7 @@ class ExportSmartSystemActivitiesCsvUseCase(
             if (page.items.isEmpty()) break
 
             activities += page.items
+            onProgress(activities.size, total)
             offset = page.offset + page.items.size
         }
 

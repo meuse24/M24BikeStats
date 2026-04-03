@@ -148,15 +148,26 @@ class DashboardViewModel(
             _uiState.update {
                 it.copy(
                     isExportingActivitiesCsv = true,
+                    exportLoadedActivityCount = 0,
+                    exportTotalActivityCount = 0,
                     pendingActivitiesCsvExport = null,
                     error = null,
                 )
             }
 
-            val export = exportActivitiesCsv().getOrElse { error ->
+            val export = exportActivitiesCsv { loadedCount, totalCount ->
+                _uiState.update {
+                    it.copy(
+                        exportLoadedActivityCount = loadedCount,
+                        exportTotalActivityCount = totalCount,
+                    )
+                }
+            }.getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isExportingActivitiesCsv = false,
+                        exportLoadedActivityCount = 0,
+                        exportTotalActivityCount = 0,
                         error = error.message ?: "CSV-Export konnte nicht erstellt werden",
                     )
                 }
@@ -166,6 +177,8 @@ class DashboardViewModel(
             _uiState.update {
                 it.copy(
                     isExportingActivitiesCsv = false,
+                    exportLoadedActivityCount = export.activityCount,
+                    exportTotalActivityCount = export.activityCount,
                     pendingActivitiesCsvExport = ActivitiesCsvExportUiModel(
                         fileName = export.fileName,
                         csvContent = export.csvContent,
@@ -178,7 +191,13 @@ class DashboardViewModel(
     }
 
     fun onActivitiesCsvExportHandled() {
-        _uiState.update { it.copy(pendingActivitiesCsvExport = null) }
+        _uiState.update {
+            it.copy(
+                pendingActivitiesCsvExport = null,
+                exportLoadedActivityCount = 0,
+                exportTotalActivityCount = 0,
+            )
+        }
     }
 
     fun loadBikeDetail(bikeId: String) {

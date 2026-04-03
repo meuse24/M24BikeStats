@@ -38,6 +38,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -244,6 +245,25 @@ private fun FunctionsOverview(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (uiState.isExportingActivitiesCsv) {
+                        val totalCount = uiState.exportTotalActivityCount
+                        val loadedCount = uiState.exportLoadedActivityCount
+                        val progress = if (totalCount > 0) {
+                            loadedCount.toFloat() / totalCount.toFloat()
+                        } else {
+                            0f
+                        }
+
+                        Text(
+                            text = "$loadedCount von $totalCount Aktivitäten geladen",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        LinearProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                     Button(
                         onClick = onExportActivitiesCsv,
                         enabled = !uiState.isExportingActivitiesCsv && !uiState.isLoading && !uiState.isRefreshing,
