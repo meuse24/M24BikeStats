@@ -1,7 +1,9 @@
 package info.meuse24.m24bikestats.di
 
+import androidx.room.Room
 import info.meuse24.m24bikestats.auth.AuthManager
 import info.meuse24.m24bikestats.auth.LoginRepository
+import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
@@ -14,6 +16,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
@@ -26,14 +29,23 @@ val appModule = module {
     // --- Data ---
     single { BoschApiClient() }
     single { AuthManager(androidContext()) }
+    single {
+        Room.databaseBuilder(
+            androidContext(),
+            BoschDatabase::class.java,
+            "bosch_cache.db",
+        ).build()
+    }
+    single { get<BoschDatabase>().activityDao() }
     single<BoschRepository> { BoschRepositoryImpl(get()) }
-    single<BoschSmartSystemRepository> { BoschSmartSystemRepositoryImpl(get()) }
+    single<BoschSmartSystemRepository> { BoschSmartSystemRepositoryImpl(get(), get()) }
     single<AuthRepository> { get<AuthManager>() }
     single<LoginRepository> { get<AuthManager>() }
 
     // --- Domain ---
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
+    factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }

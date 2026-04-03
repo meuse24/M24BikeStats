@@ -14,7 +14,9 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -26,6 +28,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 class DashboardViewModel(
+    private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
@@ -43,7 +46,30 @@ class DashboardViewModel(
     private var activityTotalCount: Int = 0
 
     init {
+        observeActivities()
         refresh()
+    }
+
+    private fun observeActivities() {
+        viewModelScope.launch {
+            observeCachedActivities().collectLatest { activities ->
+                cachedActivities = activities
+                _uiState.update { current ->
+                    val resolvedTotal = when {
+                        current.activityTotalCount > 0 -> maxOf(current.activityTotalCount, activities.size)
+                        activityTotalCount > 0 -> maxOf(activityTotalCount, activities.size)
+                        else -> activities.size
+                    }
+                    current.copy(
+                        isLoading = current.isLoading && activities.isEmpty(),
+                        activities = activities.map(::toActivityCardUiModel),
+                        loadedActivityCount = activities.size,
+                        activityTotalCount = resolvedTotal,
+                        canLoadMoreActivities = activities.size < resolvedTotal,
+                    )
+                }
+            }
+        }
     }
 
     fun refresh() {
@@ -85,7 +111,6 @@ class DashboardViewModel(
                 return@launch
             }
 
-            cachedActivities = activityPage.items
             cachedBikes = bikes
             activityOffset = activityPage.offset + activityPage.items.size
             activityTotalCount = activityPage.total
@@ -96,9 +121,8 @@ class DashboardViewModel(
                     isRefreshing = false,
                     isLoadingMoreActivities = false,
                     activityTotalCount = activityPage.total,
-                    loadedActivityCount = cachedActivities.size,
-                    canLoadMoreActivities = cachedActivities.size < activityPage.total,
-                    activities = cachedActivities.map(::toActivityCardUiModel),
+                    loadedActivityCount = maxOf(cachedActivities.size, activityPage.items.size),
+                    canLoadMoreActivities = maxOf(cachedActivities.size, activityPage.items.size) < activityPage.total,
                     bikes = bikes.map(::toBikeCardUiModel),
                     error = null,
                 )
@@ -120,11 +144,10 @@ class DashboardViewModel(
                             isLoadingMoreActivities = false,
                             error = error.message ?: "Weitere Aktivitäten konnten nicht geladen werden",
                         )
-                    }
-                    return@launch
                 }
+                return@launch
+            }
 
-            cachedActivities = cachedActivities + nextPage.items
             activityOffset = nextPage.offset + nextPage.items.size
             activityTotalCount = nextPage.total
 
@@ -132,9 +155,8 @@ class DashboardViewModel(
                 it.copy(
                     isLoadingMoreActivities = false,
                     activityTotalCount = activityTotalCount,
-                    loadedActivityCount = cachedActivities.size,
-                    canLoadMoreActivities = cachedActivities.size < activityTotalCount,
-                    activities = cachedActivities.map(::toActivityCardUiModel),
+                    loadedActivityCount = maxOf(cachedActivities.size, activityOffset),
+                    canLoadMoreActivities = maxOf(cachedActivities.size, activityOffset) < activityTotalCount,
                 )
             }
         }

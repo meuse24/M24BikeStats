@@ -1,5 +1,8 @@
 package info.meuse24.m24bikestats.data.repository
 
+import info.meuse24.m24bikestats.data.local.dao.ActivityDao
+import info.meuse24.m24bikestats.data.local.mapper.toDomain
+import info.meuse24.m24bikestats.data.local.mapper.toEntity
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
@@ -13,12 +16,18 @@ import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
 
 class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
+    private val activityDao: ActivityDao,
 ) : BoschSmartSystemRepository {
+
+    override fun observeCachedActivities(): Flow<List<BoschActivity>> =
+        activityDao.observeAll().map { activities -> activities.map { it.toDomain() } }
 
     override suspend fun getActivities(
         accessToken: String,
@@ -43,7 +52,13 @@ class BoschSmartSystemRepositoryImpl(
                 offset = pagination?.optInt("offset") ?: offset,
                 limit = pagination?.optInt("limit") ?: limit,
                 items = items.mapObjects(::parseActivity),
-            )
+            ).also { page ->
+                if (offset == 0) {
+                    activityDao.replaceAll(page.items.map { it.toEntity() })
+                } else {
+                    activityDao.upsertAll(page.items.map { it.toEntity() })
+                }
+            }
         }
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> =
