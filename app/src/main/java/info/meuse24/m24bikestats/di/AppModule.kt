@@ -33,6 +33,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
@@ -86,6 +87,7 @@ val appModule = module {
     factory { RefreshSmartSystemActivityDetailUseCase(get(), get()) }
     factory { RefreshSmartSystemBikesUseCase(get(), get()) }
     factory { RefreshSmartSystemBikeDetailUseCase(get(), get()) }
+    factory { SyncSmartSystemCloudUseCase(get(), get()) }
 
     // --- Presentation ---
     viewModelOf(::LoginViewModel)

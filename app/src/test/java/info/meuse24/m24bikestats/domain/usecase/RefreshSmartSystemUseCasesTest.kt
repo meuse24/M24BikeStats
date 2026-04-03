@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
+import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import org.junit.Assert.assertEquals
@@ -219,4 +220,76 @@ class RefreshSmartSystemUseCasesTest {
         assertTrue(repository.getActivitiesCalls.isEmpty())
         assertEquals(1, result.getOrNull()?.activityCount)
     }
+
+    @Test
+    fun `cloud sync fetches all pages and bikes`() {
+        val repository = FakeBoschSmartSystemRepository().apply {
+            bikesResult = Result.success(
+                listOf(
+                    BoschBike(
+                        id = "bike-1",
+                        createdAt = null,
+                        language = null,
+                        driveUnit = null,
+                        remoteControl = null,
+                        headUnit = null,
+                        batteries = emptyList(),
+                    )
+                )
+            )
+            activityResultsByOffset[0] = Result.success(
+                BoschActivityPage(
+                    total = 3,
+                    offset = 0,
+                    limit = 100,
+                    items = listOf(activity("a1"), activity("a2")),
+                )
+            )
+            activityResultsByOffset[2] = Result.success(
+                BoschActivityPage(
+                    total = 3,
+                    offset = 2,
+                    limit = 100,
+                    items = listOf(activity("a3")),
+                )
+            )
+        }
+        val progressEvents = mutableListOf<Pair<Int, Int>>()
+        val useCase = SyncSmartSystemCloudUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+        )
+
+        val result = kotlinx.coroutines.runBlocking {
+            useCase { loaded, total -> progressEvents += loaded to total }
+        }
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf(100 to 0, 100 to 2), repository.getActivitiesCalls)
+        assertEquals(1, repository.getBikesCalls)
+        assertEquals(listOf(2 to 3, 3 to 3), progressEvents)
+        assertEquals(3, result.getOrNull()?.activityCount)
+        assertEquals(1, result.getOrNull()?.bikeCount)
+    }
+
+    private fun activity(id: String) = BoschActivity(
+        id = id,
+        title = "Ride $id",
+        startTime = "2026-04-03T10:00:00Z",
+        endTime = null,
+        timeZone = null,
+        durationWithoutStopsSeconds = 1200,
+        bikeId = null,
+        startOdometerMeters = null,
+        distanceMeters = 1234,
+        averageSpeedKmh = null,
+        maxSpeedKmh = null,
+        averageCadenceRpm = null,
+        maxCadenceRpm = null,
+        averageRiderPowerWatts = null,
+        maxRiderPowerWatts = null,
+        elevationGainMeters = null,
+        elevationLossMeters = null,
+        caloriesBurned = null,
+    )
 }

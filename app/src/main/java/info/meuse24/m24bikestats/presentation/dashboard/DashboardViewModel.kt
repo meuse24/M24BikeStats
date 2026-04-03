@@ -25,6 +25,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import kotlinx.coroutines.async
 import kotlinx.coroutines.Job
@@ -55,6 +56,7 @@ class DashboardViewModel(
     private val refreshActivityDetailUseCase: RefreshSmartSystemActivityDetailUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
     private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
+    private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val observeAppSettings: ObserveAppSettingsUseCase,
     private val updateCsvSeparatorUseCase: UpdateCsvSeparatorUseCase,
 ) : ViewModel() {
@@ -222,7 +224,13 @@ class DashboardViewModel(
 
     fun exportAllActivitiesCsv() {
         val state = _uiState.value
-        if (state.isInitialLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
+        if (
+            state.isInitialLoading ||
+            state.isRefreshing ||
+            state.isSyncingCloudData ||
+            state.isExportingActivitiesCsv ||
+            state.isExportingActivityDetailsCsv
+        ) return
 
         viewModelScope.launch {
             _uiState.update {
@@ -278,7 +286,13 @@ class DashboardViewModel(
 
     fun exportVisibleActivityDetailsCsv() {
         val state = _uiState.value
-        if (state.isInitialLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
+        if (
+            state.isInitialLoading ||
+            state.isRefreshing ||
+            state.isSyncingCloudData ||
+            state.isExportingActivitiesCsv ||
+            state.isExportingActivityDetailsCsv
+        ) return
 
         val activityIds = state.activities.map { it.id }.distinct()
         if (activityIds.isEmpty()) {
@@ -411,6 +425,61 @@ class DashboardViewModel(
         if (_uiState.value.csvSeparator == separator) return
         viewModelScope.launch {
             updateCsvSeparatorUseCase(separator)
+        }
+    }
+
+    fun syncCloudData() {
+        val state = _uiState.value
+        if (
+            state.isInitialLoading ||
+            state.isRefreshing ||
+            state.isSyncingCloudData ||
+            state.isExportingActivitiesCsv ||
+            state.isExportingActivityDetailsCsv
+        ) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isSyncingCloudData = true,
+                    syncLoadedActivityCount = 0,
+                    syncTotalActivityCount = 0,
+                    error = null,
+                )
+            }
+
+            val summary = syncSmartSystemCloudUseCase { loadedCount, totalCount ->
+                _uiState.update {
+                    it.copy(
+                        syncLoadedActivityCount = loadedCount,
+                        syncTotalActivityCount = totalCount,
+                    )
+                }
+            }.getOrElse { error ->
+                _uiState.update {
+                    it.copy(
+                        isSyncingCloudData = false,
+                        syncLoadedActivityCount = 0,
+                        syncTotalActivityCount = 0,
+                        error = error.message ?: "Cloud-Abgleich konnte nicht durchgeführt werden",
+                    )
+                }
+                return@launch
+            }
+
+            _uiState.update {
+                it.copy(
+                    isSyncingCloudData = false,
+                    syncLoadedActivityCount = summary.activityCount,
+                    syncTotalActivityCount = summary.activityCount,
+                    lastCloudSyncSummary = CloudSyncSummaryUiModel(
+                        activityCount = summary.activityCount,
+                        bikeCount = summary.bikeCount,
+                        syncedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
+                    ),
+                    error = null,
+                )
+            }
         }
     }
 

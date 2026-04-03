@@ -159,6 +159,7 @@ fun AppNavigation() {
                     composable(MainDestination.HOME.route) {
                         HomeScreen(
                             uiState = dashboardUiState,
+                            onSyncCloudData = dashboardViewModel::syncCloudData,
                             onNavigateToActivities = {
                                 shellNavController.navigate(MainDestination.ACTIVITIES.route) {
                                     launchSingleTop = true

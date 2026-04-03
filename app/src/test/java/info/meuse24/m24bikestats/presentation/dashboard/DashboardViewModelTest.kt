@@ -23,6 +23,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -185,6 +186,43 @@ class DashboardViewModelTest {
         assertEquals(CsvSeparator.SEMICOLON, viewModel.uiState.value.csvSeparator)
     }
 
+    @Test
+    fun `cloud sync stores last sync summary`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                listOf(
+                    testActivity(id = "a1", title = "Morgenrunde"),
+                    testActivity(id = "a2", title = "Abendrunde"),
+                ),
+                totalCount = 2,
+            )
+            setBikes(
+                listOf(
+                    info.meuse24.m24bikestats.domain.model.BoschBike(
+                        id = "bike-1",
+                        createdAt = null,
+                        language = null,
+                        driveUnit = null,
+                        remoteControl = null,
+                        headUnit = null,
+                        batteries = emptyList(),
+                    )
+                )
+            )
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.syncCloudData()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.lastCloudSyncSummary)
+        assertEquals(2, state.lastCloudSyncSummary?.activityCount)
+        assertEquals(1, state.lastCloudSyncSummary?.bikeCount)
+        assertEquals(false, state.isSyncingCloudData)
+    }
+
     private fun createViewModel(
         repository: DashboardFakeRepository,
         settingsRepository: FakeAppSettingsRepository = FakeAppSettingsRepository(),
@@ -211,6 +249,7 @@ class DashboardViewModelTest {
             refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, authRepository),
             refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
             refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, authRepository),
+            syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, authRepository),
             observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
             updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
         )

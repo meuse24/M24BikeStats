@@ -5,13 +5,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -22,6 +27,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun HomeScreen(
     uiState: DashboardUiState,
+    onSyncCloudData: () -> Unit,
     onNavigateToActivities: () -> Unit,
     onNavigateToBike: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -67,6 +73,62 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
+                    Text(
+                        text = "Der Cloud-Abgleich lädt alle Aktivitätsseiten und die Bike-Liste erneut in den Room-Cache.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    uiState.lastCloudSyncSummary?.let { summary ->
+                        SectionSurface {
+                            OptionalRow("Letzter Abgleich", summary.syncedAtLabel)
+                            OptionalRow("Aktivitäten", summary.activityCount.toString())
+                            OptionalRow("Bikes", summary.bikeCount.toString())
+                        }
+                    }
+                    if (uiState.isSyncingCloudData) {
+                        val totalCount = uiState.syncTotalActivityCount
+                        val loadedCount = uiState.syncLoadedActivityCount
+                        val progress = if (totalCount > 0) {
+                            loadedCount.toFloat() / totalCount.toFloat()
+                        } else {
+                            0f
+                        }
+                        Text(
+                            text = if (totalCount > 0) {
+                                "$loadedCount von $totalCount Aktivitäten synchronisiert"
+                            } else {
+                                "Synchronisierung gestartet"
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        LinearProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Button(
+                        onClick = onSyncCloudData,
+                        enabled = !uiState.isSyncingCloudData &&
+                            !uiState.isRefreshing &&
+                            !uiState.isInitialLoading &&
+                            !uiState.isExportingActivitiesCsv &&
+                            !uiState.isExportingActivityDetailsCsv,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        if (uiState.isSyncingCloudData) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .width(18.dp)
+                                    .height(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Cloud-Abgleich läuft")
+                        } else {
+                            Text("Cloud-Daten neu einlesen")
+                        }
+                    }
                     Button(
                         onClick = onNavigateToActivities,
                         modifier = Modifier.fillMaxWidth(),

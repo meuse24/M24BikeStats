@@ -6,8 +6,11 @@ data class DashboardUiState(
     val isInitialLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val isLoadingMoreActivities: Boolean = false,
+    val isSyncingCloudData: Boolean = false,
     val isExportingActivitiesCsv: Boolean = false,
     val isExportingActivityDetailsCsv: Boolean = false,
+    val syncLoadedActivityCount: Int = 0,
+    val syncTotalActivityCount: Int = 0,
     val exportLoadedActivityCount: Int = 0,
     val exportTotalActivityCount: Int = 0,
     val exportDetailedLoadedActivityCount: Int = 0,
@@ -34,6 +37,7 @@ data class DashboardUiState(
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,
     val isBikeDetailRefreshing: Boolean = false,
+    val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
     val csvSeparator: CsvSeparator = CsvSeparator.COMMA,
     val error: String? = null,
 )
@@ -134,6 +138,12 @@ data class ActivityDetailsCsvExportSummaryUiModel(
     val activityCount: Int,
     val detailPointCount: Int,
     val exportedAtLabel: String,
+)
+
+data class CloudSyncSummaryUiModel(
+    val activityCount: Int,
+    val bikeCount: Int,
+    val syncedAtLabel: String,
 )
 
 enum class ActivityDateRangeFilter(val label: String) {
