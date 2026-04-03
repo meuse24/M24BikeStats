@@ -29,7 +29,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.window.core.layout.WindowSizeClass
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
 import kotlinx.coroutines.launch
@@ -72,10 +74,10 @@ fun MainShell(
                         icon = {
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = destination.label,
+                                contentDescription = stringResource(destination.labelRes),
                             )
                         },
-                        label = { Text(destination.label) },
+                        label = { Text(stringResource(destination.labelRes)) },
                         selected = currentMainDestination == destination,
                         onClick = { onMainDestinationSelected(destination) },
                     )
@@ -99,7 +101,7 @@ fun MainShell(
                                         ) {
                                             Icon(
                                                 imageVector = Icons.AutoMirrored.Filled.MenuOpen,
-                                                contentDescription = "Menü öffnen",
+                                                contentDescription = stringResource(R.string.cd_open_menu),
                                             )
                                         }
                                     }
@@ -108,7 +110,7 @@ fun MainShell(
                                         IconButton(onClick = onNavigateToOverview) {
                                             Icon(
                                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Zur Übersicht",
+                                                contentDescription = stringResource(R.string.cd_navigate_overview),
                                             )
                                         }
                                     }
@@ -120,7 +122,7 @@ fun MainShell(
                                     IconButton(onClick = { overflowExpanded = true }) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.MenuOpen,
-                                            contentDescription = "Weitere Ziele",
+                                            contentDescription = stringResource(R.string.cd_more_destinations),
                                         )
                                     }
                                     DropdownMenu(
@@ -129,7 +131,7 @@ fun MainShell(
                                     ) {
                                         DrawerDestination.entries.forEach { destination ->
                                             DropdownMenuItem(
-                                                text = { Text(destination.label) },
+                                                text = { Text(stringResource(destination.labelRes)) },
                                                 onClick = {
                                                     overflowExpanded = false
                                                     onDrawerDestinationSelected(destination)
@@ -137,7 +139,7 @@ fun MainShell(
                                                 leadingIcon = {
                                                     Icon(
                                                         imageVector = destination.icon,
-                                                        contentDescription = destination.label,
+                                                        contentDescription = stringResource(destination.labelRes),
                                                     )
                                                 },
                                             )

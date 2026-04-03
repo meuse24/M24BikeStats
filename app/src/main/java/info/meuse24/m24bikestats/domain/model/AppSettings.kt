@@ -9,18 +9,12 @@ data class AppSettings(
 
 enum class CsvSeparator(
     val character: Char,
-    val label: String,
-    val description: String,
 ) {
     SEMICOLON(
         character = ';',
-        label = "Semikolon (;)",
-        description = "Typisch für Sprachen mit Dezimalkomma, z. B. Deutsch.",
     ),
     COMMA(
         character = ',',
-        label = "Komma (,)",
-        description = "Typisch für Sprachen mit Dezimalpunkt, z. B. Englisch.",
     ),
     ;
 

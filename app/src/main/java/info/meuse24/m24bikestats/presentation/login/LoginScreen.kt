@@ -20,8 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 
 /**
  * Stateless Login-Screen. Kein ViewModel-Zugriff – nur [LoginStatus] + Callbacks.
@@ -53,7 +55,7 @@ fun LoginScreen(
         Text(text = "M24 Bike Stats", style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Bosch eBike Daten",
+            text = stringResource(R.string.login_subtitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -65,7 +67,7 @@ fun LoginScreen(
             is LoginStatus.Loading -> {
                 CircularProgressIndicator(modifier = Modifier.size(48.dp))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Anmeldung läuft…")
+                Text(stringResource(R.string.login_loading))
             }
             is LoginStatus.Error -> {
                 Text(
@@ -85,7 +87,7 @@ fun LoginScreen(
 @Composable
 private fun LoginButton(onClick: () -> Unit) {
     Button(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
-        Text("Mit Bosch anmelden")
+        Text(stringResource(R.string.login_button))
     }
 }
 
@@ -94,12 +96,12 @@ private fun SingleKeyHint() {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
-                text = "Anmeldung mit Bosch SingleKey ID",
+                text = stringResource(R.string.login_hint_title),
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Melde dich hier mit deiner Bosch SingleKey ID an, aehnlich wie bei der eBike Flow App. Wenn du bereits eine SingleKey ID hast, kannst du sie direkt verwenden.",
+                text = stringResource(R.string.login_hint_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

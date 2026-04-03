@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
 import org.junit.Assert.assertEquals
@@ -42,21 +43,26 @@ class AppNavigationRoutingTest {
             DrawerDestination.SETUP.route.toMainDestination(),
         )
         assertEquals(
-            DrawerDestination.SETUP.label,
-            DrawerDestination.SETUP.route.toTopBarTitle(),
+            DrawerDestination.SETUP.labelRes,
+            DrawerDestination.SETUP.route.toTopBarTitleRes(),
         )
         assertEquals(
             null,
             DrawerDestination.HELP.route.toMainDestination(),
         )
         assertEquals(
-            DrawerDestination.HELP.label,
-            DrawerDestination.HELP.route.toTopBarTitle(),
+            DrawerDestination.HELP.labelRes,
+            DrawerDestination.HELP.route.toTopBarTitleRes(),
         )
         assertEquals(
-            DrawerDestination.API_TEST.label,
-            DrawerDestination.API_TEST.route.toTopBarTitle(),
+            DrawerDestination.API_TEST.labelRes,
+            DrawerDestination.API_TEST.route.toTopBarTitleRes(),
         )
+    }
+
+    @Test
+    fun `unknown route falls back to home top bar title resource`() {
+        assertEquals(R.string.nav_home, "foobar".toTopBarTitleRes())
     }
 
     @Test

@@ -16,8 +16,10 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvSeparator
 
 @Composable
@@ -43,12 +45,12 @@ fun SetupScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = "Setup",
+                        text = stringResource(R.string.setup_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Hier liegen App-Einstellungen, die sich direkt auf Export und Bedienung auswirken.",
+                        text = stringResource(R.string.setup_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
                     )
@@ -67,12 +69,12 @@ fun SetupScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "CSV-Trennzeichen",
+                        text = stringResource(R.string.setup_csv_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Der initiale Wert richtet sich nach der Systemsprache. Du kannst ihn hier dauerhaft überschreiben.",
+                        text = stringResource(R.string.setup_csv_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -104,17 +106,17 @@ fun SetupScreen(
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             Text(
-                                text = separator.label,
+                                text = stringResource(separator.labelRes()),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Medium,
                             )
                             Text(
-                                text = separator.description,
+                                text = stringResource(separator.descriptionRes()),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = "Beispiel: ${sampleRow(separator)}",
+                                text = stringResource(R.string.setup_csv_example, sampleRow(separator)),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -132,3 +134,13 @@ fun SetupScreen(
 
 private fun sampleRow(separator: CsvSeparator): String =
     listOf("datum", "titel", "distanz_km").joinToString(separator.character.toString())
+
+private fun CsvSeparator.labelRes(): Int = when (this) {
+    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_label
+    CsvSeparator.COMMA -> R.string.csv_separator_comma_label
+}
+
+private fun CsvSeparator.descriptionRes(): Int = when (this) {
+    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_description
+    CsvSeparator.COMMA -> R.string.csv_separator_comma_description
+}

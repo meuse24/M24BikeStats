@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,9 +20,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 
 @Composable
 fun HomeScreen(
@@ -42,17 +46,20 @@ fun HomeScreen(
     ) {
         item {
             HeroCard(
-                eyebrow = "Home",
-                title = "Übersicht für Touren, Bike und Exporte",
-                subtitle = "Die Startseite bündelt den letzten Fahrtdatensatz, Bike-Status und die letzten Exportergebnisse.",
+                eyebrow = "",
+                title = "",
+                subtitle = stringResource(R.string.home_hero_subtitle),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                SummaryChipRow(
-                    listOf(
-                        "Touren" to uiState.loadedActivityCount.toString(),
-                        "Bikes" to uiState.bikes.size.toString(),
-                        "Sichtbar" to uiState.visibleActivityCount.toString(),
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    SummaryChipRow(
+                        summary = listOf(
+                            stringResource(R.string.home_metric_tours) to uiState.loadedActivityCount.toString(),
+                            stringResource(R.string.home_metric_bikes) to uiState.bikes.size.toString(),
+                            stringResource(R.string.home_metric_visible) to uiState.visibleActivityCount.toString(),
+                        ),
                     )
-                )
+                }
             }
         }
         item {
@@ -67,20 +74,20 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Cloud-Abgleich",
+                        text = stringResource(R.string.home_sync_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Der Cloud-Abgleich lädt alle Aktivitätsseiten und die Bike-Liste erneut in den Room-Cache.",
+                        text = stringResource(R.string.home_sync_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     uiState.lastCloudSyncSummary?.let { summary ->
                         SectionSurface {
-                            OptionalRow("Letzter Abgleich", summary.syncedAtLabel)
-                            OptionalRow("Aktivitäten", summary.activityCount.toString())
-                            OptionalRow("Bikes", summary.bikeCount.toString())
+                            OptionalRow(stringResource(R.string.home_sync_last_sync), summary.syncedAtLabel)
+                            OptionalRow(stringResource(R.string.home_sync_activities), summary.activityCount.toString())
+                            OptionalRow(stringResource(R.string.home_sync_bikes), summary.bikeCount.toString())
                         }
                     }
                     if (uiState.isSyncingCloudData) {
@@ -93,9 +100,9 @@ fun HomeScreen(
                         }
                         Text(
                             text = if (totalCount > 0) {
-                                "$loadedCount von $totalCount Aktivitäten synchronisiert"
+                                stringResource(R.string.home_sync_progress, loadedCount, totalCount)
                             } else {
-                                "Synchronisierung gestartet"
+                                stringResource(R.string.home_sync_starting)
                             },
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -122,9 +129,9 @@ fun HomeScreen(
                                 strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Cloud-Abgleich läuft")
+                            Text(stringResource(R.string.home_sync_running))
                         } else {
-                            Text("Cloud-Daten neu einlesen")
+                            Text(stringResource(R.string.home_sync_button))
                         }
                     }
                 }
@@ -136,7 +143,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Letzte Tour",
+                        text = stringResource(R.string.home_latest_tour),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -157,12 +164,12 @@ fun HomeScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Noch keine Tourdaten verfügbar",
+                            text = stringResource(R.string.home_no_tours_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Nach dem ersten erfolgreichen Sync erscheinen hier die zuletzt geladene Aktivität und Schnellzugriffe.",
+                            text = stringResource(R.string.home_no_tours_text),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -182,20 +189,20 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Bike-Status",
+                        text = stringResource(R.string.home_bike_status),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     primaryBike?.let { bike ->
                         SectionSurface {
-                            OptionalRow("Bike", bike.title)
-                            OptionalRow("Head Unit", bike.subtitle)
-                            OptionalRow("Kilometerstand", bike.odometerLabel)
-                            OptionalRow("Assist-Limit", bike.assistSpeedLabel)
-                            OptionalRow("Batterie", bike.batterySummary)
+                            OptionalRow(stringResource(R.string.nav_bike), bike.title)
+                            OptionalRow(stringResource(R.string.home_head_unit), bike.subtitle)
+                            OptionalRow(stringResource(R.string.home_odometer), bike.odometerLabel)
+                            OptionalRow(stringResource(R.string.home_assist_limit), bike.assistSpeedLabel)
+                            OptionalRow(stringResource(R.string.home_battery), bike.batterySummary)
                         }
                     } ?: Text(
-                        text = "Noch keine Bike-Daten im Cache.",
+                        text = stringResource(R.string.home_no_bike_data),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -214,24 +221,24 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        text = "Letzte Exporte",
+                        text = stringResource(R.string.home_recent_exports),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     SectionSurface {
                         OptionalRow(
-                            "Aktivitäten-CSV",
-                            uiState.lastActivitiesCsvExport?.fileName ?: "Noch kein Export",
+                            stringResource(R.string.home_export_activities_csv),
+                            uiState.lastActivitiesCsvExport?.fileName ?: stringResource(R.string.home_export_none),
                         )
                         OptionalRow(
-                            "Details-CSV",
-                            uiState.lastActivityDetailsCsvExport?.fileName ?: "Noch kein Export",
+                            stringResource(R.string.home_export_details_csv),
+                            uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none),
                         )
                         OptionalRow(
-                            "Zuletzt exportiert",
+                            stringResource(R.string.home_export_last_time),
                             uiState.lastActivityDetailsCsvExport?.exportedAtLabel
                                 ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
-                                ?: "Noch kein Export",
+                                ?: stringResource(R.string.home_export_none),
                         )
                     }
                 }

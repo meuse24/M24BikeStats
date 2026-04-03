@@ -5,31 +5,33 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsBike
 import androidx.compose.material.icons.filled.ElectricBike
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Home
+import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.R
 import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class MainDestination(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
     HOME(
         route = "home",
-        label = "Home",
+        labelRes = R.string.nav_home,
         icon = Icons.Default.Home,
     ),
     ACTIVITIES(
         route = "activities",
-        label = "Aktivitäten",
+        labelRes = R.string.nav_activities,
         icon = Icons.AutoMirrored.Filled.DirectionsBike,
     ),
     BIKE(
         route = "bike_list",
-        label = "Bike",
+        labelRes = R.string.nav_bike,
         icon = Icons.Default.ElectricBike,
     ),
     FUNCTIONS(
         route = "functions",
-        label = "Funktionen",
+        labelRes = R.string.nav_functions,
         icon = Icons.Default.FileDownload,
     ),
     ;

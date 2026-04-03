@@ -14,23 +14,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.BuildConfig
+import info.meuse24.m24bikestats.R
 
 @Composable
 fun HelpScreen(modifier: Modifier = Modifier) {
     val sections = listOf(
-        "Login" to "Die Anmeldung nutzt Bosch SingleKey ID und den Bosch eBike Data Act Zugriff. Nach erfolgreichem Login landet die App in der Hauptnavigation.",
-        "Aktivitäten" to "Die Tourenliste lädt lokal gecachte Aktivitäten zuerst und aktualisiert danach bei Bedarf im Hintergrund. Filter, Sortierung und Suche wirken direkt auf die geladene Liste.",
-        "Bike" to "Der Bike-Bereich zeigt Bosch Smart System Komponenten, Batterien und Detailinformationen ebenfalls cache-first aus Room.",
-        "Funktionen" to "CSV-Exporte greifen auf den sichtbaren Aktivitätssatz oder den kompletten Abruf zurück und öffnen anschließend das Android-Share-Sheet.",
-        "Diagnose" to "Der API-Test-Screen bleibt als Diagnosewerkzeug verfügbar und ist bewusst nicht Teil der primären Navigation.",
+        stringResource(R.string.help_login_label) to stringResource(R.string.help_login_text),
+        stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text),
+        stringResource(R.string.help_bike_label) to stringResource(R.string.help_bike_text),
+        stringResource(R.string.help_functions_label) to stringResource(R.string.help_functions_text),
+        stringResource(R.string.help_diagnostics_label) to stringResource(R.string.help_diagnostics_text),
     )
     InfoListScreen(
-        title = "Hilfe",
-        subtitle = "Kurzübersicht zu Navigation, Datenfluss und Diagnose.",
+        title = stringResource(R.string.help_title),
+        subtitle = stringResource(R.string.help_subtitle),
         items = sections,
         modifier = modifier,
     )
@@ -39,13 +41,13 @@ fun HelpScreen(modifier: Modifier = Modifier) {
 @Composable
 fun InfoScreen(modifier: Modifier = Modifier) {
     val appInfo = listOf(
-        "App" to "M24 Bike Stats",
-        "Version" to BuildConfig.VERSION_NAME,
-        "Build-Typ" to BuildConfig.BUILD_TYPE,
-        "Application ID" to BuildConfig.APPLICATION_ID,
-        "Lizenz" to "MIT",
-        "Copyright" to "(c) 2026 meuse24, Author: Guenther Meusburger",
-        "Repository" to "https://github.com/meuse24/M24BikeStats",
+        stringResource(R.string.info_app_label) to "M24 Bike Stats",
+        stringResource(R.string.info_version_label) to BuildConfig.VERSION_NAME,
+        stringResource(R.string.info_build_type_label) to BuildConfig.BUILD_TYPE,
+        stringResource(R.string.info_application_id_label) to BuildConfig.APPLICATION_ID,
+        stringResource(R.string.info_license_label) to "MIT",
+        stringResource(R.string.info_copyright_label) to stringResource(R.string.info_copyright_value),
+        stringResource(R.string.info_repository_label) to "https://github.com/meuse24/M24BikeStats",
     )
     val libraries = listOf(
         "Kotlin" to "2.2.10",
@@ -64,19 +66,19 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         "MapLibre Compose" to "0.12.1",
     )
     val credits = listOf(
-        "BOSCH" to "Bosch eBike Systems liefert das Smart System, die zugehoerigen Cloud-Schnittstellen und damit die technische Grundlage fuer die in dieser App angezeigten Fahr- und Bike-Daten.",
-        "EU Data Act" to "Die EU-Datenverordnung, Regulation (EU) 2023/2854, definiert harmonisierte Regeln fuer fairen Zugang zu und faire Nutzung von Produkt- und Servicedaten und bildet damit den regulatorischen Rahmen fuer solche Datenzugriffe.",
-        "OpenAI Codex" to "Codex von OpenAI ist ein agentischer Software-Engineering-Assistent, der Codebasen lesen, aendern, testen und Aufgaben in isolierten Umgebungen ausfuehren kann.",
-        "Anthropic Claude Code" to "Claude Code von Anthropic ist ein agentisches Coding-System fuer Terminal, IDE und Web, das projektweit planen, Dateien aendern, Tests ausfuehren und Entwicklungswerkzeuge direkt nutzen kann.",
-        "Google Gemini CLI" to "Gemini CLI von Google ist ein quelloffener KI-Agent fuer das Terminal, der Gemini direkt in die Kommandozeile bringt und fuer Coding, Recherche, Automatisierung und Problemloesung ausgelegt ist.",
+        "BOSCH" to stringResource(R.string.info_credit_bosch),
+        "EU Data Act" to stringResource(R.string.info_credit_data_act),
+        "OpenAI Codex" to stringResource(R.string.info_credit_codex),
+        "Anthropic Claude Code" to stringResource(R.string.info_credit_claude_code),
+        "Google Gemini CLI" to stringResource(R.string.info_credit_gemini_cli),
     )
     InfoSectionScreen(
-        title = "Info",
-        subtitle = "Versions-, Lizenz-, Bibliotheks- und Credit-Informationen zur App.",
+        title = stringResource(R.string.info_title),
+        subtitle = stringResource(R.string.info_subtitle),
         sections = listOf(
-            "Projekt" to appInfo,
-            "Bibliotheken" to libraries,
-            "Credits" to credits,
+            stringResource(R.string.info_section_project) to appInfo,
+            stringResource(R.string.info_section_libraries) to libraries,
+            stringResource(R.string.info_section_credits) to credits,
         ),
         modifier = modifier,
     )

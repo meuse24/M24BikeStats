@@ -21,8 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.CsvSeparator
 
 @Composable
 fun FunctionsScreen(
@@ -104,7 +107,7 @@ fun FunctionsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow("CSV-Trennzeichen", uiState.csvSeparator.label)
+                        OptionalRow("CSV-Trennzeichen", stringResource(uiState.csvSeparator.labelRes()))
                     }
                     uiState.lastActivitiesCsvExport?.let { exportSummary ->
                         SectionSurface {
@@ -183,7 +186,7 @@ fun FunctionsScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow("CSV-Trennzeichen", uiState.csvSeparator.label)
+                        OptionalRow("CSV-Trennzeichen", stringResource(uiState.csvSeparator.labelRes()))
                         OptionalRow("Sichtbare Aktivitäten", uiState.visibleActivityCount.toString())
                         OptionalRow("Geladene Aktivitäten", uiState.loadedActivityCount.toString())
                     }
@@ -244,4 +247,9 @@ fun FunctionsScreen(
             }
         }
     }
+}
+
+private fun CsvSeparator.labelRes(): Int = when (this) {
+    CsvSeparator.SEMICOLON -> R.string.csv_separator_semicolon_label
+    CsvSeparator.COMMA -> R.string.csv_separator_comma_label
 }

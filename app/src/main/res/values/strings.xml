@@ -1,3 +1,108 @@
 <resources>
     <string name="app_name">M24 Bike Stats</string>
+
+    <string name="nav_home">Home</string>
+    <string name="nav_activities">Activities</string>
+    <string name="nav_bike">Bike</string>
+    <string name="nav_functions">Functions</string>
+    <string name="nav_setup">Setup</string>
+    <string name="nav_help">Help</string>
+    <string name="nav_info">Info</string>
+    <string name="nav_api_test">API Test</string>
+    <string name="nav_logout">Logout</string>
+
+    <string name="drawer_title">M24 Bike Stats</string>
+    <string name="drawer_subtitle">Setup, help, info and diagnostic tools</string>
+    <string name="cd_open_menu">Open menu</string>
+    <string name="cd_navigate_overview">Back to overview</string>
+    <string name="cd_more_destinations">More destinations</string>
+    <string name="cd_refresh">Refresh</string>
+
+    <string name="login_subtitle">Bosch eBike data</string>
+    <string name="login_loading">Signing in…</string>
+    <string name="login_button">Sign in with Bosch</string>
+    <string name="login_hint_title">Sign in with Bosch SingleKey ID</string>
+    <string name="login_hint_body">Sign in here with your Bosch SingleKey ID, similar to the eBike Flow app. If you already have a SingleKey ID, you can use it directly.</string>
+
+    <string name="setup_title">Setup</string>
+    <string name="setup_subtitle">This is where app settings live that directly affect export and usage.</string>
+    <string name="setup_csv_title">CSV separator</string>
+    <string name="setup_csv_subtitle">The initial value depends on the system language. You can override it here permanently.</string>
+    <string name="setup_csv_example">Example: %1$s</string>
+    <string name="csv_separator_semicolon_label">Semicolon (;)</string>
+    <string name="csv_separator_semicolon_description">Typical for languages with decimal commas, e.g. German.</string>
+    <string name="csv_separator_comma_label">Comma (,)</string>
+    <string name="csv_separator_comma_description">Typical for languages with decimal points, e.g. English.</string>
+
+    <string name="help_title">Help</string>
+    <string name="help_subtitle">Quick overview of navigation, data flow and diagnostics.</string>
+    <string name="help_login_label">Login</string>
+    <string name="help_login_text">Sign-in uses Bosch SingleKey ID and Bosch eBike Data Act access. After successful sign-in, the app opens the main navigation.</string>
+    <string name="help_activities_label">Activities</string>
+    <string name="help_activities_text">The tour list loads locally cached activities first and refreshes in the background when needed. Filters, sorting and search operate directly on the loaded list.</string>
+    <string name="help_bike_label">Bike</string>
+    <string name="help_bike_text">The bike area also shows Bosch Smart System components, batteries and detail information cache-first from Room.</string>
+    <string name="help_functions_label">Functions</string>
+    <string name="help_functions_text">CSV exports use either the visible activity set or the full fetch and then open the Android share sheet.</string>
+    <string name="help_diagnostics_label">Diagnostics</string>
+    <string name="help_diagnostics_text">The API test screen remains available as a diagnostic tool and is intentionally not part of the primary navigation.</string>
+
+    <string name="info_title">Info</string>
+    <string name="info_subtitle">Version, license, library and credit information for the app.</string>
+    <string name="info_section_project">Project</string>
+    <string name="info_section_libraries">Libraries</string>
+    <string name="info_section_credits">Credits</string>
+    <string name="info_app_label">App</string>
+    <string name="info_version_label">Version</string>
+    <string name="info_build_type_label">Build type</string>
+    <string name="info_application_id_label">Application ID</string>
+    <string name="info_license_label">License</string>
+    <string name="info_copyright_label">Copyright</string>
+    <string name="info_repository_label">Repository</string>
+    <string name="info_copyright_value">(c) 2026 meuse24, Author: Guenther Meusburger</string>
+    <string name="info_credit_bosch">Bosch eBike Systems provides the Smart System, the related cloud interfaces and thus the technical foundation for the ride and bike data shown in this app.</string>
+    <string name="info_credit_data_act">The EU Data Act, Regulation (EU) 2023/2854, defines harmonised rules for fair access to and fair use of product and service data and therefore forms the regulatory framework for data access of this kind.</string>
+    <string name="info_credit_codex">Codex by OpenAI is an agentic software engineering assistant that can read codebases, make changes, run tests and execute tasks in isolated environments.</string>
+    <string name="info_credit_claude_code">Claude Code by Anthropic is an agentic coding system for terminal, IDE and web that can plan across projects, edit files, run tests and use development tools directly.</string>
+    <string name="info_credit_gemini_cli">Gemini CLI by Google is an open source AI agent for the terminal that brings Gemini into the command line for coding, research, automation and problem solving.</string>
+
+    <string name="home_hero_subtitle">The start page bundles the latest ride dataset, bike status and recent export results.</string>
+    <string name="home_metric_tours">Tours</string>
+    <string name="home_metric_bikes">Bikes</string>
+    <string name="home_metric_visible">Visible</string>
+    <string name="home_sync_title">Cloud sync</string>
+    <string name="home_sync_subtitle">Cloud sync reloads all activity pages and the bike list into the Room cache.</string>
+    <string name="home_sync_last_sync">Last sync</string>
+    <string name="home_sync_activities">Activities</string>
+    <string name="home_sync_bikes">Bikes</string>
+    <string name="home_sync_running">Cloud sync in progress</string>
+    <string name="home_sync_starting">Synchronization started</string>
+    <string name="home_sync_progress">%1$d of %2$d activities synchronized</string>
+    <string name="home_sync_button">Reload cloud data</string>
+    <string name="home_latest_tour">Latest ride</string>
+    <string name="home_no_tours_title">No ride data available yet</string>
+    <string name="home_no_tours_text">After the first successful sync, the latest loaded activity appears here.</string>
+    <string name="home_bike_status">Bike status</string>
+    <string name="home_head_unit">Head unit</string>
+    <string name="home_odometer">Odometer</string>
+    <string name="home_assist_limit">Assist limit</string>
+    <string name="home_battery">Battery</string>
+    <string name="home_no_bike_data">No bike data in cache yet.</string>
+    <string name="home_recent_exports">Recent exports</string>
+    <string name="home_export_activities_csv">Activities CSV</string>
+    <string name="home_export_details_csv">Details CSV</string>
+    <string name="home_export_last_time">Last exported</string>
+    <string name="home_export_none">No export yet</string>
+
+    <string name="api_test_title">API Test</string>
+    <string name="api_test_fetch">Fetch</string>
+    <string name="api_test_run_all">Run all</string>
+    <string name="api_test_share_json">Share JSON</string>
+    <string name="api_test_share">Share</string>
+    <string name="api_test_clear_output">Clear output</string>
+    <string name="api_test_raw_data">Raw data</string>
+    <string name="api_test_endpoint">Endpoint</string>
+    <string name="api_test_readable_view">Readable view</string>
+    <string name="api_test_bikes_count">Bikes (%1$d)</string>
+    <string name="api_test_no_result">– no result yet –</string>
 </resources>

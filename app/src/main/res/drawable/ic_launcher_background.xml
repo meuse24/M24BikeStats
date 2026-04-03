@@ -26,24 +26,7 @@
     </path>
     <path
         android:fillColor="#00000000"
-        android:pathData="M54,54m-39,0a39,39 0,1 1,78 0a39,39 0,1 1,-78 0"
-        android:strokeColor="#14000000"
-        android:strokeWidth="6" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M54,54m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0"
-        android:strokeColor="#FF9DF4CC"
-        android:strokeWidth="10" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M21,54a33,33 0,0 1,66 0"
-        android:strokeColor="#4DDBFFE6"
-        android:strokeLineCap="round"
-        android:strokeWidth="5" />
-    <path
-        android:fillColor="#00000000"
-        android:pathData="M32,79C39.06,75.89 46.48,74.3 54,74.3C61.52,74.3 68.94,75.89 76,79"
-        android:strokeColor="#16000000"
-        android:strokeLineCap="round"
-        android:strokeWidth="4" />
+        android:pathData="M54,54m-33,0a33,33 0,1 1,66 0a33,33 0,1 1,-66 0"
+        android:strokeColor="#4D9DF4CC"
+        android:strokeWidth="1" />
 </vector>

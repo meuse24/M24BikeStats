@@ -43,10 +43,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 
 /**
@@ -65,10 +67,10 @@ fun ApiTestScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("API Test") },
+                title = { Text(stringResource(R.string.api_test_title)) },
                 actions = {
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Abmelden")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.nav_logout))
                     }
                 }
             )
@@ -123,11 +125,11 @@ fun ApiTestContent(
         val context = LocalContext.current
         Row(verticalAlignment = Alignment.CenterVertically) {
             Button(onClick = onFetch, enabled = !uiState.isLoading) {
-                Text("Abrufen")
+                Text(stringResource(R.string.api_test_fetch))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = onRunAll, enabled = !uiState.isLoading) {
-                Text("Alle testen")
+                Text(stringResource(R.string.api_test_run_all))
             }
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -137,15 +139,15 @@ fun ApiTestContent(
                         putExtra(Intent.EXTRA_SUBJECT, uiState.selectedEndpoint.label)
                         putExtra(Intent.EXTRA_TEXT, uiState.jsonOutput)
                     }
-                    context.startActivity(Intent.createChooser(intent, "JSON teilen"))
+                    context.startActivity(Intent.createChooser(intent, context.getString(R.string.api_test_share_json)))
                 },
                 enabled = uiState.jsonOutput.isNotEmpty(),
             ) {
-                Icon(Icons.Default.Share, contentDescription = "Teilen")
+                Icon(Icons.Default.Share, contentDescription = stringResource(R.string.api_test_share))
             }
             Spacer(modifier = Modifier.width(4.dp))
             IconButton(onClick = onClear, enabled = uiState.jsonOutput.isNotEmpty()) {
-                Icon(Icons.Default.Clear, contentDescription = "Ausgabe leeren")
+                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.api_test_clear_output))
             }
             if (uiState.isLoading) {
                 Spacer(modifier = Modifier.width(12.dp))
@@ -160,7 +162,7 @@ fun ApiTestContent(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Text("Rohdaten", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.api_test_raw_data), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         JsonOutputBox(json = uiState.jsonOutput)
     }
@@ -183,7 +185,7 @@ private fun EndpointDropdown(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
-            label = { Text("Endpunkt") },
+            label = { Text(stringResource(R.string.api_test_endpoint)) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
                 .fillMaxWidth()
@@ -209,7 +211,7 @@ private fun EndpointDropdown(
 @Composable
 private fun ReadableResultSection(result: BoschReadableResult) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Verständliche Ansicht", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.api_test_readable_view), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
 
         when (result) {
@@ -275,7 +277,7 @@ private fun ActivitiesSection(result: BoschReadableResult.Activities) {
 
 @Composable
 private fun BikeListSection(result: BoschReadableResult.BikeList) {
-    Text("Bikes (${result.bikes.size})", style = MaterialTheme.typography.titleMedium)
+    Text(stringResource(R.string.api_test_bikes_count, result.bikes.size), style = MaterialTheme.typography.titleMedium)
     Spacer(modifier = Modifier.height(8.dp))
     result.bikes.forEach { bike ->
         BikeCard(bike)
@@ -368,7 +370,7 @@ private fun JsonOutputBox(
                 .padding(12.dp)
         ) {
             Text(
-                text = json.ifEmpty { "– noch kein Ergebnis –" },
+                text = json.ifEmpty { stringResource(R.string.api_test_no_result) },
                 fontFamily = FontFamily.Monospace,
                 fontSize = 12.sp,
                 color = if (json.isEmpty())

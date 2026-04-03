@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -20,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.ActivitiesScreen
@@ -146,7 +148,7 @@ fun AppNavigation() {
                         IconButton(onClick = dashboardViewModel::refresh) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
-                                contentDescription = "Aktualisieren",
+                                contentDescription = stringResource(R.string.cd_refresh),
                             )
                         }
                     }
@@ -285,16 +287,19 @@ fun AppNavigation() {
 internal fun String?.toMainDestination(): MainDestination? =
     MainDestination.fromRoute(this)
 
-internal fun String?.toTopBarTitle(): String = when {
-    this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.label
-    this == MainDestination.BIKE.route -> MainDestination.BIKE.label
-    this == MainDestination.FUNCTIONS.route -> MainDestination.FUNCTIONS.label
-    this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.label
-    this == DrawerDestination.HELP.route -> DrawerDestination.HELP.label
-    this == DrawerDestination.INFO.route -> DrawerDestination.INFO.label
-    this == DrawerDestination.API_TEST.route -> DrawerDestination.API_TEST.label
-    else -> MainDestination.HOME.label
+internal fun String?.toTopBarTitleRes(): Int = when {
+    this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.labelRes
+    this == MainDestination.BIKE.route -> MainDestination.BIKE.labelRes
+    this == MainDestination.FUNCTIONS.route -> MainDestination.FUNCTIONS.labelRes
+    this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.labelRes
+    this == DrawerDestination.HELP.route -> DrawerDestination.HELP.labelRes
+    this == DrawerDestination.INFO.route -> DrawerDestination.INFO.labelRes
+    this == DrawerDestination.API_TEST.route -> DrawerDestination.API_TEST.labelRes
+    else -> MainDestination.HOME.labelRes
 }
+
+@Composable
+internal fun String?.toTopBarTitle(): String = stringResource(toTopBarTitleRes())
 
 internal fun String?.shouldShowShellTopBar(): Boolean = when {
     this?.startsWith("activity/") == true -> false

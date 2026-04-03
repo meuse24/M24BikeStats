@@ -76,6 +76,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
@@ -1054,9 +1055,15 @@ internal fun HeroCard(
     eyebrow: String,
     title: String,
     subtitle: String,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable (() -> Unit)? = null,
 ) {
     val colorScheme = MaterialTheme.colorScheme
+    val textAlign = if (horizontalAlignment == Alignment.CenterHorizontally) {
+        TextAlign.Center
+    } else {
+        TextAlign.Start
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -1075,22 +1082,30 @@ internal fun HeroCard(
                 )
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = horizontalAlignment,
         ) {
-            Text(
-                text = eyebrow,
-                style = MaterialTheme.typography.labelLarge,
-                color = colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.SemiBold,
-            )
+            if (eyebrow.isNotBlank()) {
+                Text(
+                    text = eyebrow,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = colorScheme.onPrimaryContainer,
+                    textAlign = textAlign,
+                )
+            }
+            if (title.isNotBlank()) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = textAlign,
+                )
+            }
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                textAlign = textAlign,
             )
             content?.invoke()
         }
@@ -1944,8 +1959,15 @@ private fun DetailRow(
 }
 
 @Composable
-internal fun SummaryChipRow(summary: List<Pair<String, String>>) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+internal fun SummaryChipRow(
+    summary: List<Pair<String, String>>,
+    modifier: Modifier = Modifier,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(8.dp),
+) {
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = horizontalArrangement,
+    ) {
         items(summary) { (label, value) ->
             MetricPill(label = label, value = value)
         }
@@ -1964,16 +1986,19 @@ internal fun MetricPill(
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
             )
         }
     }
