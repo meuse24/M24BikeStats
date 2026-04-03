@@ -12,6 +12,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Lokaler Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - Explizite Room-Migrationen für die bekannten Cache-Schema-Versionen ab v2
 - Cache-first Detail- und Bike-Screens mit Hintergrund-Refresh aus Room
+- Cache-first Listen-, Detail- und Bike-Flows mit `observe + refreshIfStale`
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
 - Funktionen-Tab mit CSV-Export aller Aktivitäten
 - Funktionen-Tab mit CSV-Export aller Aktivitäten und sichtbarer Aktivitätsdetails
@@ -22,6 +23,8 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Fullscreen-Track-Screen mit Kartenansicht, Share-, GPX-, CSV- und Autofit-Aktionen
 - Höhen-, Leistungs- und Geschwindigkeitsprofil auf Basis der Bosch-Detailpunkte
 - Direkter GPX-Export über das Android-Share-Sheet
+- Track-CSV-Export direkt im fullscreen Track-Screen
+- Erweiterte Testabdeckung für Mapper, Repository, Room-Migrationen, ViewModel und Exporte
 
 ## Voraussetzungen
 
@@ -87,6 +90,8 @@ Die Anmeldung erfolgt in `M24 Bike Stats` mit demselben Bosch-Login-Prinzip wie 
 | Koin | Dependency Injection |
 | OkHttp | HTTP-Client |
 | EncryptedSharedPreferences | Sichere Token-Speicherung |
+| Room | Lokaler Cache inkl. Migrationen |
+| MapLibre + OpenFreeMap | Interaktive Kartenkacheln |
 
 ## Verifizierte Endpunkte
 
@@ -129,6 +134,7 @@ Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch 
 - Textsuche über Titel, Datum und Distanzlabel
 - persistente Zwischenspeicherung der geladenen Aktivitäten in Room
 - automatische Hintergrund-Aktualisierung nur bei veraltetem Cache
+- ViewModel- und Präsentationslogik für Filter, Sortierung und Suche sind separat testbar
 
 ### Aktivitätsdetails
 
@@ -147,6 +153,7 @@ Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
 - GPX-Datei direkt über das Android-Share-Sheet sowie GPX-Kopierfunktion
 - CSV-Datei mit allen Detailpunkten inklusive GPS-, Distanz-, Höhen-, Geschwindigkeits-, Kadenz- und Leistungswerten
 - Detail-CSV auch gesammelt für mehrere sichtbare Aktivitäten über den Funktionen-Tab
+- direkter CSV-Export des aktuell geöffneten Tracks im fullscreen Track-Screen
 - persistente Zwischenspeicherung der Detaildaten und Trackpunkte in Room
 - Detailscreen zeigt lokale Daten sofort und aktualisiert sie bei Bedarf im Hintergrund
 
@@ -161,6 +168,16 @@ Die Antwort auf `bikes` bzw. `bikes/{bikeId}` enthält:
 - `serviceDue`
 
 Die App cached Bike-Liste und Bike-Details ebenfalls in Room, sodass der Bike-Tab lokale Daten sofort anzeigen und danach im Hintergrund aktualisieren kann.
+
+## Teststand
+
+Die aktuelle Testabdeckung umfasst:
+- Unit-Tests für Mapper und Präsentationslogik
+- UseCase-Tests mit Fakes
+- ViewModel-Tests für Dashboard-Filter, Suche und Exporte
+- Room- und Migrationstests auf Android
+- Repository-Integrationstests für `remote -> db -> cache-flow`
+- Android-Tests für GPX-/CSV-Exportpfade
 
 ## Lizenz
 

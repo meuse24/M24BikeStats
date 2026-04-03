@@ -39,7 +39,7 @@ domain/          ← reines Kotlin, kein Android-Framework
   usecase/       ← FetchBoschDataUseCase, Smart-System-UseCases
 
 data/            ← implementiert Domain-Interfaces
-  remote/        ← BoschApiClient (OkHttp, JWT-Decoder)
+  remote/        ← BoschApiClient, BoschApiDataSource (OkHttp, JWT-Decoder)
   repository/    ← BoschRepositoryImpl, BoschSmartSystemRepositoryImpl
 
 auth/            ← OAuth2-Brücke (plattformspezifisch)
@@ -70,7 +70,9 @@ domain       → (nichts)
 
 Koin (`AppModule`):
 - `AuthManager` als Singleton; über `AuthRepository` und `LoginRepository` gebunden
+- `BoschApiClient` als `BoschApiDataSource` gebunden
 - `BoschRepositoryImpl` als Singleton (über `BoschRepository`)
+- `BoschSmartSystemRepositoryImpl` als Singleton (über `BoschSmartSystemRepository`)
 - `FetchBoschDataUseCase` als Factory
 - ViewModels via `viewModelOf`
 
@@ -142,6 +144,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Dashboard zeigt Aktivitäten, Bike und Funktionen in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
+- Aktivitätenlisten-UI arbeitet ohne separate Domain-In-Memory-Kopie; Filter/Sortierung basieren auf `allActivities` im UiState
 - Room nutzt echte Migrationen für die bekannten Cache-Schema-Stände ab Version 2
 - Aktivitätenliste unterstützt Datumsfilter und Sortierung direkt im Dashboard
 - Aktivitätenliste unterstützt zusätzlich freie Textsuche im Dashboard
@@ -151,6 +154,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Remote-Refresh für Listen und Details läuft nur bei veraltetem Cache oder explizitem Refresh
 - Aktivitätsdetails können den vollständigen Track als GPX teilen
 - Aktivitätsdetails können die vollständigen Detailpunkte zusätzlich als CSV exportieren
+- Der Track-Screen kann den aktuell geöffneten Track zusätzlich direkt als CSV exportieren
 - Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
 - Der Track-Screen enthält zusätzlich eine MapLibre/OpenFreeMap-Kartenansicht mit Track-Overlay
 - Der Track-Screen ist eine fullscreen Kartenansicht mit Top-Bar und Action-Bottom-Bar
@@ -161,6 +165,20 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Der Funktionen-Tab enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
 - Der Funktionen-Tab zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
+- Repository-, Mapper-, ViewModel-, Room-, Migrations- und Exportpfade sind testseitig abgedeckt
+
+### Teststand
+
+- Unit-Tests:
+  - Mapper (`data/local/mapper/*Test.kt`)
+  - Präsentationslogik (`ActivityPresentationTest`)
+  - Dashboard-ViewModel
+  - UseCases inkl. Cache-/Refresh-Logik
+- Android-Tests:
+  - Room-DAO- und Relationstests
+  - Room-Migrationstests
+  - Repository-Integrationstests `remote -> db -> cache-flow`
+  - GPX-/CSV-Exporttests mit `FileProvider`
 
 ---
 
