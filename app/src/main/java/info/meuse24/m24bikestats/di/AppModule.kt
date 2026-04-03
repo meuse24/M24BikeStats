@@ -13,6 +13,7 @@ import info.meuse24.m24bikestats.domain.repository.BoschRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
@@ -69,6 +70,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get()) }
+    factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }

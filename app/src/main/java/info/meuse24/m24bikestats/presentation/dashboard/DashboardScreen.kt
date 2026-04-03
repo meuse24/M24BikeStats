@@ -107,7 +107,9 @@ fun DashboardScreen(
     onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onExportActivitiesCsv: () -> Unit,
+    onExportActivityDetailsCsv: () -> Unit,
     onActivitiesCsvExportHandled: () -> Unit,
+    onActivityDetailsCsvExportHandled: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToBikeDetail: (String) -> Unit,
     onLogout: () -> Unit,
@@ -135,6 +137,18 @@ fun DashboardScreen(
         }
         context.startActivity(Intent.createChooser(shareIntent, "CSV exportieren"))
         onActivitiesCsvExportHandled()
+    }
+    LaunchedEffect(uiState.pendingActivityDetailsCsvExport) {
+        val export = uiState.pendingActivityDetailsCsvExport ?: return@LaunchedEffect
+        val csvUri = createActivityDetailsCsvUri(context, export)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, csvUri)
+            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "Detail-CSV exportieren"))
+        onActivityDetailsCsvExportHandled()
     }
 
     Scaffold(
@@ -201,6 +215,7 @@ fun DashboardScreen(
                         else -> FunctionsOverview(
                             uiState = uiState,
                             onExportActivitiesCsv = onExportActivitiesCsv,
+                            onExportActivityDetailsCsv = onExportActivityDetailsCsv,
                         )
                     }
                 }
@@ -213,6 +228,7 @@ fun DashboardScreen(
 private fun FunctionsOverview(
     uiState: DashboardUiState,
     onExportActivitiesCsv: () -> Unit,
+    onExportActivityDetailsCsv: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -223,12 +239,13 @@ private fun FunctionsOverview(
             HeroCard(
                 eyebrow = "Funktionen",
                 title = "Datenexport",
-                subtitle = "Alle aktuell verfügbaren Aktivitäten paginiert laden und als CSV-Datei exportieren.",
+                subtitle = "Aktivitätenlisten und Detailpunkte als teilbare CSV-Dateien exportieren.",
             ) {
                 SummaryChipRow(
                     listOf(
                         "Geladen" to uiState.loadedActivityCount.toString(),
                         "Gesamt" to uiState.activityTotalCount.toString(),
+                        "Sichtbar" to uiState.visibleActivityCount.toString(),
                     )
                 )
             }
@@ -288,7 +305,10 @@ private fun FunctionsOverview(
                     }
                     Button(
                         onClick = onExportActivitiesCsv,
-                        enabled = !uiState.isExportingActivitiesCsv && !uiState.isLoading && !uiState.isRefreshing,
+                        enabled = !uiState.isExportingActivitiesCsv &&
+                            !uiState.isExportingActivityDetailsCsv &&
+                            !uiState.isLoading &&
+                            !uiState.isRefreshing,
                     ) {
                         if (uiState.isExportingActivitiesCsv) {
                             CircularProgressIndicator(
@@ -301,6 +321,88 @@ private fun FunctionsOverview(
                             Text("Export läuft")
                         } else {
                             Text("CSV exportieren")
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Sichtbare Detailpunkte als CSV exportieren",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert alle Detailpunkte aus Cache und bei Bedarf per Live-Nachladen.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SectionSurface {
+                        OptionalRow("Sichtbare Aktivitäten", uiState.visibleActivityCount.toString())
+                        OptionalRow("Geladene Aktivitäten", uiState.loadedActivityCount.toString())
+                    }
+                    uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
+                        SectionSurface {
+                            Text(
+                                text = "Zuletzt exportiert",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            OptionalRow("Datei", exportSummary.fileName)
+                            OptionalRow("Aktivitäten", exportSummary.activityCount.toString())
+                            OptionalRow("Detailpunkte", exportSummary.detailPointCount.toString())
+                            OptionalRow("Zeitpunkt", exportSummary.exportedAtLabel)
+                        }
+                    }
+                    if (uiState.isExportingActivityDetailsCsv) {
+                        val totalCount = uiState.exportDetailedTotalActivityCount
+                        val loadedCount = uiState.exportDetailedLoadedActivityCount
+                        val progress = if (totalCount > 0) {
+                            loadedCount.toFloat() / totalCount.toFloat()
+                        } else {
+                            0f
+                        }
+
+                        Text(
+                            text = "$loadedCount von $totalCount Aktivitäten geladen",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        LinearProgressIndicator(
+                            progress = { progress.coerceIn(0f, 1f) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Button(
+                        onClick = onExportActivityDetailsCsv,
+                        enabled = uiState.visibleActivityCount > 0 &&
+                            !uiState.isExportingActivitiesCsv &&
+                            !uiState.isExportingActivityDetailsCsv &&
+                            !uiState.isLoading &&
+                            !uiState.isRefreshing,
+                    ) {
+                        if (uiState.isExportingActivityDetailsCsv) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .width(18.dp)
+                                    .height(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Detail-Export läuft")
+                        } else {
+                            Text("Detail-CSV exportieren")
                         }
                     }
                 }

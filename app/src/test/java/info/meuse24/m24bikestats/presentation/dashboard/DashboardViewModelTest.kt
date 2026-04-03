@@ -4,6 +4,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
@@ -105,6 +106,65 @@ class DashboardViewModelTest {
         assertTrue(state.lastActivitiesCsvExport?.fileName?.endsWith(".csv") == true)
     }
 
+    @Test
+    fun `detail csv export stores visible activity export summary`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                listOf(
+                    testActivity(id = "a1", title = "Morgenrunde"),
+                    testActivity(id = "a2", title = "Abendrunde"),
+                ),
+                totalCount = 2,
+            )
+            setBikes(emptyList())
+            setActivityDetail(
+                "a1",
+                BoschActivityDetail(
+                    activityId = "a1",
+                    points = listOf(
+                        info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint(
+                            distanceMeters = 100.0,
+                            altitudeMeters = 500.0,
+                            speedKmh = 25.0,
+                            cadenceRpm = 80.0,
+                            latitude = 47.1,
+                            longitude = 9.1,
+                            riderPowerWatts = 210.0,
+                        )
+                    )
+                )
+            )
+            setActivityDetail(
+                "a2",
+                BoschActivityDetail(
+                    activityId = "a2",
+                    points = listOf(
+                        info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint(
+                            distanceMeters = 120.0,
+                            altitudeMeters = 520.0,
+                            speedKmh = 22.0,
+                            cadenceRpm = 78.0,
+                            latitude = 47.2,
+                            longitude = 9.2,
+                            riderPowerWatts = 190.0,
+                        )
+                    )
+                )
+            )
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.exportVisibleActivityDetailsCsv()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.pendingActivityDetailsCsvExport)
+        assertNotNull(state.lastActivityDetailsCsvExport)
+        assertEquals(2, state.lastActivityDetailsCsvExport?.activityCount)
+        assertEquals(2, state.lastActivityDetailsCsvExport?.detailPointCount)
+    }
+
     private fun createViewModel(repository: DashboardFakeRepository): DashboardViewModel {
         val authRepository = object : AuthRepository {
             override fun getAccessToken(): String? = "token"
@@ -124,6 +184,7 @@ class DashboardViewModelTest {
             getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
             refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
             exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository),
+            exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository),
             refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, authRepository),
             refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
             refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, authRepository),
@@ -173,6 +234,10 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
         bikesFlow.value = bikes
     }
 
+    fun setActivityDetail(activityId: String, detail: BoschActivityDetail) {
+        activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.value = detail
+    }
+
     override fun observeCachedActivities(): Flow<List<BoschActivity>> = activitiesFlow.asStateFlow()
     override fun observeCachedBikes(): Flow<List<BoschBike>> = bikesFlow.asStateFlow()
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
@@ -193,7 +258,8 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
         bikeDetails[bikeId]?.value ?: bikesFlow.value.firstOrNull { it.id == bikeId }
 
     override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean = true
-    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean = true
+    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean =
+        activityDetails[activityId]?.value != null
     override suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean = true
     override suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean = true
 
@@ -208,7 +274,8 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
         )
 
     override suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail> =
-        Result.failure(IllegalStateException("not needed"))
+        activityDetails[activityId]?.value?.let { Result.success(it) }
+            ?: Result.failure(IllegalStateException("not needed"))
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> =
         Result.success(bikesFlow.value)

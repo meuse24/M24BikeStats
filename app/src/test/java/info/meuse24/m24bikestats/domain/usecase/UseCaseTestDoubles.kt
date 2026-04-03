@@ -31,6 +31,7 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
 
     var cachedActivities: List<BoschActivity> = emptyList()
     var cachedActivityTotalCount: Int? = null
+    var cachedActivityDetails: MutableMap<String, BoschActivityDetail> = mutableMapOf()
 
     var getActivitiesCalls = mutableListOf<Pair<Int, Int>>()
     var getActivityDetailCalls = mutableListOf<String>()
@@ -44,7 +45,7 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
     override suspend fun getCachedActivities(): List<BoschActivity> = cachedActivities
     override suspend fun getCachedActivityTotalCount(): Int? = cachedActivityTotalCount
     override suspend fun getCachedActivity(activityId: String): BoschActivity? = cachedActivities.firstOrNull { it.id == activityId }
-    override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? = null
+    override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? = cachedActivityDetails[activityId]
     override suspend fun getCachedBike(bikeId: String): BoschBike? = null
     override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean = activitiesFresh
     override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean = activityDetailFresh

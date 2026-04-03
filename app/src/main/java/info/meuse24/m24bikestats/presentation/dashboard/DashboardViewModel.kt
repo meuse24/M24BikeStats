@@ -9,6 +9,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
@@ -47,6 +48,7 @@ class DashboardViewModel(
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
+    private val exportActivityDetailsCsv: ExportSmartSystemActivityDetailsCsvUseCase,
     private val refreshActivityDetailUseCase: RefreshSmartSystemActivityDetailUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
     private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
@@ -204,7 +206,7 @@ class DashboardViewModel(
 
     fun exportAllActivitiesCsv() {
         val state = _uiState.value
-        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv) return
+        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
 
         viewModelScope.launch {
             _uiState.update {
@@ -213,6 +215,7 @@ class DashboardViewModel(
                     exportLoadedActivityCount = 0,
                     exportTotalActivityCount = 0,
                     pendingActivitiesCsvExport = null,
+                    pendingActivityDetailsCsvExport = null,
                     error = null,
                 )
             }
@@ -249,6 +252,69 @@ class DashboardViewModel(
                     lastActivitiesCsvExport = ActivitiesCsvExportSummaryUiModel(
                         fileName = export.fileName,
                         activityCount = export.activityCount,
+                        exportedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
+                    ),
+                    error = null,
+                )
+            }
+        }
+    }
+
+    fun exportVisibleActivityDetailsCsv() {
+        val state = _uiState.value
+        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv || state.isExportingActivityDetailsCsv) return
+
+        val activityIds = state.activities.map { it.id }.distinct()
+        if (activityIds.isEmpty()) {
+            _uiState.update { it.copy(error = "Keine sichtbaren Aktivitäten für den Detail-Export verfügbar") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isExportingActivityDetailsCsv = true,
+                    exportDetailedLoadedActivityCount = 0,
+                    exportDetailedTotalActivityCount = activityIds.size,
+                    pendingActivityDetailsCsvExport = null,
+                    error = null,
+                )
+            }
+
+            val export = exportActivityDetailsCsv(activityIds) { processedCount, totalCount ->
+                _uiState.update {
+                    it.copy(
+                        exportDetailedLoadedActivityCount = processedCount,
+                        exportDetailedTotalActivityCount = totalCount,
+                    )
+                }
+            }.getOrElse { error ->
+                _uiState.update {
+                    it.copy(
+                        isExportingActivityDetailsCsv = false,
+                        exportDetailedLoadedActivityCount = 0,
+                        exportDetailedTotalActivityCount = 0,
+                        error = error.message ?: "Detail-CSV konnte nicht erstellt werden",
+                    )
+                }
+                return@launch
+            }
+
+            _uiState.update {
+                it.copy(
+                    isExportingActivityDetailsCsv = false,
+                    exportDetailedLoadedActivityCount = export.activityCount,
+                    exportDetailedTotalActivityCount = export.activityCount,
+                    pendingActivityDetailsCsvExport = ActivityDetailsCsvExportUiModel(
+                        fileName = export.fileName,
+                        csvContent = export.csvContent,
+                        activityCount = export.activityCount,
+                        detailPointCount = export.detailPointCount,
+                    ),
+                    lastActivityDetailsCsvExport = ActivityDetailsCsvExportSummaryUiModel(
+                        fileName = export.fileName,
+                        activityCount = export.activityCount,
+                        detailPointCount = export.detailPointCount,
                         exportedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
                     ),
                     error = null,
@@ -311,6 +377,16 @@ class DashboardViewModel(
                 pendingActivitiesCsvExport = null,
                 exportLoadedActivityCount = 0,
                 exportTotalActivityCount = 0,
+            )
+        }
+    }
+
+    fun onActivityDetailsCsvExportHandled() {
+        _uiState.update {
+            it.copy(
+                pendingActivityDetailsCsvExport = null,
+                exportDetailedLoadedActivityCount = 0,
+                exportDetailedTotalActivityCount = 0,
             )
         }
     }

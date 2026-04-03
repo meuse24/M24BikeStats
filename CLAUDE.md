@@ -158,6 +158,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Bike-Liste und Bike-Details kommen cache-first aus Room
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
 - Der Funktionen-Tab enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
+- Der Funktionen-Tab enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
 - Der Funktionen-Tab zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 

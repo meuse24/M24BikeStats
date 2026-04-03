@@ -14,6 +14,7 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Cache-first Detail- und Bike-Screens mit Hintergrund-Refresh aus Room
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
 - Funktionen-Tab mit CSV-Export aller Aktivitäten
+- Funktionen-Tab mit CSV-Export aller Aktivitäten und sichtbarer Aktivitätsdetails
 - Aktivitätenliste mit Datumsfilter und Sortierung
 - Aktivitätenliste mit zusätzlicher Textsuche
 - Trackansicht mit vollständigem Verlauf auf Basis der bestätigten GPS-Punkte
@@ -122,6 +123,7 @@ Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch 
 - Aktivitätsdetailseite auf Basis der Summary-Daten
 - `Mehr Aktivitäten laden` über `limit`/`offset`
 - CSV-Export aller Aktivitäten über den Funktionen-Tab
+- Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz über den Funktionen-Tab
 - Datumsfilter für `Alle`, `30 Tage` und `12 Monate`
 - Sortierung nach neuesten/ältesten Touren sowie Distanz und Dauer
 - Textsuche über Titel, Datum und Distanzlabel
@@ -144,6 +146,7 @@ Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
 - Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit entlang der Strecke
 - GPX-Datei direkt über das Android-Share-Sheet sowie GPX-Kopierfunktion
 - CSV-Datei mit allen Detailpunkten inklusive GPS-, Distanz-, Höhen-, Geschwindigkeits-, Kadenz- und Leistungswerten
+- Detail-CSV auch gesammelt für mehrere sichtbare Aktivitäten über den Funktionen-Tab
 - persistente Zwischenspeicherung der Detaildaten und Trackpunkte in Room
 - Detailscreen zeigt lokale Daten sofort und aktualisiert sie bei Bedarf im Hintergrund
 

@@ -64,7 +64,9 @@ fun AppNavigation() {
                 onActivityDateRangeFilterChanged = dashboardViewModel::updateActivityDateRangeFilter,
                 onActivitySortOptionChanged = dashboardViewModel::updateActivitySortOption,
                 onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
+                onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
                 onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
+                onActivityDetailsCsvExportHandled = dashboardViewModel::onActivityDetailsCsvExportHandled,
                 onNavigateToActivityDetail = { activityId ->
                     navController.navigate("activity/$activityId")
                 },

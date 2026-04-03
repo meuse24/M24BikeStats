@@ -5,8 +5,11 @@ data class DashboardUiState(
     val isRefreshing: Boolean = false,
     val isLoadingMoreActivities: Boolean = false,
     val isExportingActivitiesCsv: Boolean = false,
+    val isExportingActivityDetailsCsv: Boolean = false,
     val exportLoadedActivityCount: Int = 0,
     val exportTotalActivityCount: Int = 0,
+    val exportDetailedLoadedActivityCount: Int = 0,
+    val exportDetailedTotalActivityCount: Int = 0,
     val activityTotalCount: Int = 0,
     val loadedActivityCount: Int = 0,
     val visibleActivityCount: Int = 0,
@@ -17,7 +20,9 @@ data class DashboardUiState(
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
     val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel? = null,
+    val pendingActivityDetailsCsvExport: ActivityDetailsCsvExportUiModel? = null,
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel? = null,
+    val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel? = null,
     val selectedActivityDetail: ActivityDetailUiModel? = null,
     val selectedActivityId: String? = null,
     val isActivityDetailLoading: Boolean = false,
@@ -110,6 +115,20 @@ data class ActivitiesCsvExportUiModel(
 data class ActivitiesCsvExportSummaryUiModel(
     val fileName: String,
     val activityCount: Int,
+    val exportedAtLabel: String,
+)
+
+data class ActivityDetailsCsvExportUiModel(
+    val fileName: String,
+    val csvContent: String,
+    val activityCount: Int,
+    val detailPointCount: Int,
+)
+
+data class ActivityDetailsCsvExportSummaryUiModel(
+    val fileName: String,
+    val activityCount: Int,
+    val detailPointCount: Int,
     val exportedAtLabel: String,
 )
 
