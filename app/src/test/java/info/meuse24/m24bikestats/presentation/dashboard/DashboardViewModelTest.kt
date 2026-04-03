@@ -252,6 +252,7 @@ class DashboardViewModelTest {
             syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, authRepository),
             observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
             updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
+            stringResolver = TestStringResolver(),
         )
     }
 
@@ -280,6 +281,18 @@ class DashboardViewModelTest {
         elevationLossMeters = null,
         caloriesBurned = null,
     )
+}
+
+private class TestStringResolver : DashboardStringResolver {
+    override fun get(resId: Int, args: Array<out Any>): String =
+        buildString {
+            append("res-")
+            append(resId)
+            if (args.isNotEmpty()) {
+                append(':')
+                append(args.joinToString(","))
+            }
+        }
 }
 
 private class DashboardFakeRepository : BoschSmartSystemRepository {

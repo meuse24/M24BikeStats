@@ -35,10 +35,13 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
+import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
+import info.meuse24.m24bikestats.presentation.dashboard.DashboardStringResolver
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -65,6 +68,7 @@ val appModule = module {
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<LoginRepository> { get<AuthManager>() }
+    single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
 
     // --- Domain ---
     factory { FetchBoschDataUseCase(get(), get()) }
@@ -92,5 +96,26 @@ val appModule = module {
     // --- Presentation ---
     viewModelOf(::LoginViewModel)
     viewModelOf(::ApiTestViewModel)
-    viewModelOf(::DashboardViewModel)
+    viewModel {
+        DashboardViewModel(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
 }
