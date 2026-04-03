@@ -6,6 +6,7 @@ import androidx.room.Transaction
 import androidx.room.Upsert
 import info.meuse24.m24bikestats.data.local.entity.BikeAssistModeEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeBatteryEntity
+import info.meuse24.m24bikestats.data.local.entity.BikeCacheStateEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeEntity
 import info.meuse24.m24bikestats.data.local.model.CachedBike
 import kotlinx.coroutines.flow.Flow
@@ -20,8 +21,21 @@ interface BikeDao {
     @Query("SELECT * FROM bikes WHERE id = :bikeId LIMIT 1")
     suspend fun getById(bikeId: String): CachedBike?
 
+    @Transaction
+    @Query("SELECT * FROM bikes WHERE id = :bikeId LIMIT 1")
+    fun observeById(bikeId: String): Flow<CachedBike?>
+
+    @Query("SELECT updatedAtEpochMillis FROM bikes WHERE id = :bikeId LIMIT 1")
+    suspend fun getUpdatedAtEpochMillis(bikeId: String): Long?
+
+    @Query("SELECT updatedAtEpochMillis FROM bike_cache_state WHERE id = 0 LIMIT 1")
+    suspend fun getCacheUpdatedAtEpochMillis(): Long?
+
     @Query("DELETE FROM bikes")
     suspend fun clearAll()
+
+    @Query("DELETE FROM bike_cache_state")
+    suspend fun clearCacheState()
 
     @Query("DELETE FROM bike_batteries WHERE bikeId = :bikeId")
     suspend fun deleteBatteriesByBikeId(bikeId: String)
@@ -39,6 +53,9 @@ interface BikeDao {
     suspend fun upsertBikes(bikes: List<BikeEntity>)
 
     @Upsert
+    suspend fun upsertCacheState(cacheState: BikeCacheStateEntity)
+
+    @Upsert
     suspend fun upsertBatteries(batteries: List<BikeBatteryEntity>)
 
     @Upsert
@@ -49,11 +66,14 @@ interface BikeDao {
         bikes: List<BikeEntity>,
         batteries: List<BikeBatteryEntity>,
         assistModes: List<BikeAssistModeEntity>,
+        cacheState: BikeCacheStateEntity,
     ) {
         clearAll()
+        clearCacheState()
         if (bikes.isNotEmpty()) upsertBikes(bikes)
         if (batteries.isNotEmpty()) upsertBatteries(batteries)
         if (assistModes.isNotEmpty()) upsertAssistModes(assistModes)
+        upsertCacheState(cacheState)
     }
 
     @Transaction

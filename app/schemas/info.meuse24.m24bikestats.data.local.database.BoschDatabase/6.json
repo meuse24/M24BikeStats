@@ -1,0 +1,582 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 6,
+    "identityHash": "3537e89d87d5600fbbcac01e219a17d4",
+    "entities": [
+      {
+        "tableName": "activities",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, `startTime` TEXT NOT NULL, `startTimeEpoch` INTEGER NOT NULL, `endTime` TEXT, `timeZone` TEXT, `durationWithoutStopsSeconds` INTEGER NOT NULL, `bikeId` TEXT, `startOdometerMeters` INTEGER, `distanceMeters` INTEGER NOT NULL, `averageSpeedKmh` REAL, `maxSpeedKmh` REAL, `averageCadenceRpm` REAL, `maxCadenceRpm` REAL, `averageRiderPowerWatts` REAL, `maxRiderPowerWatts` REAL, `elevationGainMeters` INTEGER, `elevationLossMeters` INTEGER, `caloriesBurned` REAL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "startTime",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTimeEpoch",
+            "columnName": "startTimeEpoch",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "endTime",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "timeZone",
+            "columnName": "timeZone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "durationWithoutStopsSeconds",
+            "columnName": "durationWithoutStopsSeconds",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "bikeId",
+            "columnName": "bikeId",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "startOdometerMeters",
+            "columnName": "startOdometerMeters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "averageSpeedKmh",
+            "columnName": "averageSpeedKmh",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "maxSpeedKmh",
+            "columnName": "maxSpeedKmh",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "averageCadenceRpm",
+            "columnName": "averageCadenceRpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "maxCadenceRpm",
+            "columnName": "maxCadenceRpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "averageRiderPowerWatts",
+            "columnName": "averageRiderPowerWatts",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "maxRiderPowerWatts",
+            "columnName": "maxRiderPowerWatts",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "elevationGainMeters",
+            "columnName": "elevationGainMeters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "elevationLossMeters",
+            "columnName": "elevationLossMeters",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "caloriesBurned",
+            "columnName": "caloriesBurned",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "activity_cache_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `totalCount` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalCount",
+            "columnName": "totalCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "activity_details",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `pointCount` INTEGER NOT NULL, `gpsPointCount` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`activityId`), FOREIGN KEY(`activityId`) REFERENCES `activities`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "activityId",
+            "columnName": "activityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointCount",
+            "columnName": "pointCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gpsPointCount",
+            "columnName": "gpsPointCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "activityId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_activity_details_activityId",
+            "unique": false,
+            "columnNames": [
+              "activityId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_activity_details_activityId` ON `${TABLE_NAME}` (`activityId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "activities",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "activityId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "activity_detail_points",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`activityId` TEXT NOT NULL, `pointIndex` INTEGER NOT NULL, `distanceMeters` REAL, `altitudeMeters` REAL, `speedKmh` REAL, `cadenceRpm` REAL, `latitude` REAL, `longitude` REAL, `riderPowerWatts` REAL, PRIMARY KEY(`activityId`, `pointIndex`), FOREIGN KEY(`activityId`) REFERENCES `activity_details`(`activityId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "activityId",
+            "columnName": "activityId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointIndex",
+            "columnName": "pointIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "distanceMeters",
+            "columnName": "distanceMeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "altitudeMeters",
+            "columnName": "altitudeMeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "speedKmh",
+            "columnName": "speedKmh",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "cadenceRpm",
+            "columnName": "cadenceRpm",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "riderPowerWatts",
+            "columnName": "riderPowerWatts",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "activityId",
+            "pointIndex"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_activity_detail_points_activityId",
+            "unique": false,
+            "columnNames": [
+              "activityId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_activity_detail_points_activityId` ON `${TABLE_NAME}` (`activityId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "activity_details",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "activityId"
+            ],
+            "referencedColumns": [
+              "activityId"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "bikes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `createdAt` TEXT, `updatedAtEpochMillis` INTEGER NOT NULL, `language` TEXT, `driveUnitSerialNumber` TEXT, `driveUnitPartNumber` TEXT, `driveUnitProductName` TEXT, `driveUnitOdometerMeters` REAL, `driveUnitRearWheelCircumferenceMillimeters` REAL, `driveUnitMaximumAssistanceSpeedKmh` REAL, `driveUnitWalkAssistEnabled` INTEGER, `driveUnitWalkAssistMaximumSpeedKmh` REAL, `driveUnitTotalPowerOnHours` INTEGER, `driveUnitSupportPowerOnHours` INTEGER, `remoteControlSerialNumber` TEXT, `remoteControlPartNumber` TEXT, `remoteControlProductName` TEXT, `headUnitSerialNumber` TEXT, `headUnitPartNumber` TEXT, `headUnitProductName` TEXT, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "language",
+            "columnName": "language",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "driveUnitSerialNumber",
+            "columnName": "driveUnitSerialNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "driveUnitPartNumber",
+            "columnName": "driveUnitPartNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "driveUnitProductName",
+            "columnName": "driveUnitProductName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "driveUnitOdometerMeters",
+            "columnName": "driveUnitOdometerMeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "driveUnitRearWheelCircumferenceMillimeters",
+            "columnName": "driveUnitRearWheelCircumferenceMillimeters",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "driveUnitMaximumAssistanceSpeedKmh",
+            "columnName": "driveUnitMaximumAssistanceSpeedKmh",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "driveUnitWalkAssistEnabled",
+            "columnName": "driveUnitWalkAssistEnabled",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "driveUnitWalkAssistMaximumSpeedKmh",
+            "columnName": "driveUnitWalkAssistMaximumSpeedKmh",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "driveUnitTotalPowerOnHours",
+            "columnName": "driveUnitTotalPowerOnHours",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "driveUnitSupportPowerOnHours",
+            "columnName": "driveUnitSupportPowerOnHours",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "remoteControlSerialNumber",
+            "columnName": "remoteControlSerialNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "remoteControlPartNumber",
+            "columnName": "remoteControlPartNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "remoteControlProductName",
+            "columnName": "remoteControlProductName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "headUnitSerialNumber",
+            "columnName": "headUnitSerialNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "headUnitPartNumber",
+            "columnName": "headUnitPartNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "headUnitProductName",
+            "columnName": "headUnitProductName",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "bike_cache_state",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `updatedAtEpochMillis` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updatedAtEpochMillis",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "bike_batteries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bikeId` TEXT NOT NULL, `batteryIndex` INTEGER NOT NULL, `serialNumber` TEXT, `partNumber` TEXT, `productName` TEXT, `deliveredWhOverLifetime` INTEGER, `totalChargeCycles` REAL, `onBikeChargeCycles` REAL, `offBikeChargeCycles` REAL, PRIMARY KEY(`bikeId`, `batteryIndex`), FOREIGN KEY(`bikeId`) REFERENCES `bikes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bikeId",
+            "columnName": "bikeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "batteryIndex",
+            "columnName": "batteryIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "serialNumber",
+            "columnName": "serialNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "partNumber",
+            "columnName": "partNumber",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "productName",
+            "columnName": "productName",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "deliveredWhOverLifetime",
+            "columnName": "deliveredWhOverLifetime",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalChargeCycles",
+            "columnName": "totalChargeCycles",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "onBikeChargeCycles",
+            "columnName": "onBikeChargeCycles",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "offBikeChargeCycles",
+            "columnName": "offBikeChargeCycles",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bikeId",
+            "batteryIndex"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_bike_batteries_bikeId",
+            "unique": false,
+            "columnNames": [
+              "bikeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_bike_batteries_bikeId` ON `${TABLE_NAME}` (`bikeId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "bikes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bikeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "bike_assist_modes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`bikeId` TEXT NOT NULL, `modeIndex` INTEGER NOT NULL, `name` TEXT NOT NULL, `reachableRangeKm` REAL, PRIMARY KEY(`bikeId`, `modeIndex`), FOREIGN KEY(`bikeId`) REFERENCES `bikes`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "bikeId",
+            "columnName": "bikeId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "modeIndex",
+            "columnName": "modeIndex",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "reachableRangeKm",
+            "columnName": "reachableRangeKm",
+            "affinity": "REAL"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "bikeId",
+            "modeIndex"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_bike_assist_modes_bikeId",
+            "unique": false,
+            "columnNames": [
+              "bikeId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_bike_assist_modes_bikeId` ON `${TABLE_NAME}` (`bikeId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "bikes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "bikeId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3537e89d87d5600fbbcac01e219a17d4')"
+    ]
+  }
+}

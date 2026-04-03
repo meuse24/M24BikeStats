@@ -144,6 +144,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
 - Aktivitätsdetails und Trackpunkte werden in Room gecacht und cache-first geladen
+- Aktivitätsdetail- und Bike-Detail-Screens beobachten Room direkt per Flow
+- Remote-Refresh für Listen und Details läuft nur bei veraltetem Cache oder explizitem Refresh
 - Aktivitätsdetails können den vollständigen Track als GPX teilen
 - Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
 - Der Track-Screen enthält zusätzlich eine MapLibre/OpenFreeMap-Kartenansicht mit Track-Overlay

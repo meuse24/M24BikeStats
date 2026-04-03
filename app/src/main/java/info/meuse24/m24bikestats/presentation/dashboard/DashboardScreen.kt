@@ -660,6 +660,13 @@ fun BikeDetailScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (uiState.isBikeDetailRefreshing) {
+                        item {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                     item {
                         HeroCard(
                             eyebrow = "Smart System Bike",

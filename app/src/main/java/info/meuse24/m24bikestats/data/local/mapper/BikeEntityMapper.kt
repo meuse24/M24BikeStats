@@ -69,9 +69,13 @@ fun CachedBike.toDomain(): BoschBike =
     )
 
 fun BoschBike.toEntity(): BikeEntity =
+    toEntity(updatedAtEpochMillis = System.currentTimeMillis())
+
+fun BoschBike.toEntity(updatedAtEpochMillis: Long): BikeEntity =
     BikeEntity(
         id = id,
         createdAt = createdAt,
+        updatedAtEpochMillis = updatedAtEpochMillis,
         language = language,
         driveUnitSerialNumber = driveUnit?.serialNumber,
         driveUnitPartNumber = driveUnit?.partNumber,

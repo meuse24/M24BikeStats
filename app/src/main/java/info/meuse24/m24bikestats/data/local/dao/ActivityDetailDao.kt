@@ -7,12 +7,20 @@ import androidx.room.Upsert
 import info.meuse24.m24bikestats.data.local.entity.ActivityDetailEntity
 import info.meuse24.m24bikestats.data.local.entity.ActivityDetailPointEntity
 import info.meuse24.m24bikestats.data.local.model.CachedActivityDetail
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ActivityDetailDao {
     @Transaction
     @Query("SELECT * FROM activity_details WHERE activityId = :activityId LIMIT 1")
+    fun observeByActivityId(activityId: String): Flow<CachedActivityDetail?>
+
+    @Transaction
+    @Query("SELECT * FROM activity_details WHERE activityId = :activityId LIMIT 1")
     suspend fun getByActivityId(activityId: String): CachedActivityDetail?
+
+    @Query("SELECT updatedAtEpochMillis FROM activity_details WHERE activityId = :activityId LIMIT 1")
+    suspend fun getUpdatedAtEpochMillis(activityId: String): Long?
 
     @Upsert
     suspend fun upsertDetail(detail: ActivityDetailEntity)

@@ -4,11 +4,8 @@ import info.meuse24.m24bikestats.data.local.dao.ActivityDetailDao
 import info.meuse24.m24bikestats.data.local.dao.ActivityDao
 import info.meuse24.m24bikestats.data.local.dao.BikeDao
 import info.meuse24.m24bikestats.data.local.entity.ActivityCacheStateEntity
-import info.meuse24.m24bikestats.data.local.mapper.toAssistModeEntities
-import info.meuse24.m24bikestats.data.local.mapper.toBatteryEntities
-import info.meuse24.m24bikestats.data.local.mapper.toDomain
-import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
-import info.meuse24.m24bikestats.data.local.mapper.toEntity
+import info.meuse24.m24bikestats.data.local.entity.BikeCacheStateEntity
+import info.meuse24.m24bikestats.data.local.mapper.*
 import info.meuse24.m24bikestats.data.local.model.CachedBike
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.domain.model.BoschActivity
@@ -27,6 +24,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
@@ -40,6 +39,12 @@ class BoschSmartSystemRepositoryImpl(
 
     override fun observeCachedBikes(): Flow<List<BoschBike>> =
         bikeDao.observeAll().map { bikes -> bikes.map(CachedBike::toDomain) }
+
+    override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
+        activityDetailDao.observeByActivityId(activityId).map { detail -> detail?.toDomain() }
+
+    override fun observeCachedBike(bikeId: String): Flow<BoschBike?> =
+        bikeDao.observeById(bikeId).map { bike -> bike?.toDomain() }
 
     override suspend fun getCachedActivities(): List<BoschActivity> =
         activityDao.getAll().map { it.toDomain() }
@@ -56,12 +61,25 @@ class BoschSmartSystemRepositoryImpl(
     override suspend fun getCachedBike(bikeId: String): BoschBike? =
         bikeDao.getById(bikeId)?.toDomain()
 
+    override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean =
+        isFresh(activityDao.getCacheUpdatedAtEpochMillis(), maxAgeMillis)
+
+    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean =
+        isFresh(activityDetailDao.getUpdatedAtEpochMillis(activityId), maxAgeMillis)
+
+    override suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean =
+        isFresh(bikeDao.getCacheUpdatedAtEpochMillis(), maxAgeMillis)
+
+    override suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean =
+        isFresh(bikeDao.getUpdatedAtEpochMillis(bikeId), maxAgeMillis)
+
     override suspend fun getActivities(
         accessToken: String,
         limit: Int,
         offset: Int,
     ): Result<BoschActivityPage> =
         runCatching {
+            val updatedAtEpochMillis = currentTimeMillis()
             val response = apiClient.get(
                 BoschRequest(
                     label = BoschEndpoint.SMART_ACTIVITIES.label,
@@ -88,7 +106,7 @@ class BoschSmartSystemRepositoryImpl(
                 activityDao.upsertCacheState(
                     ActivityCacheStateEntity(
                         totalCount = page.total,
-                        updatedAtEpochMillis = System.currentTimeMillis(),
+                        updatedAtEpochMillis = updatedAtEpochMillis,
                     )
                 )
             }
@@ -96,15 +114,17 @@ class BoschSmartSystemRepositoryImpl(
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> =
         runCatching {
+            val updatedAtEpochMillis = currentTimeMillis()
             val response = apiClient.get(BoschEndpoint.SMART_BIKES.toRequest(), accessToken)
             val json = extractJsonBody(response) ?: error("Keine Bike-Daten erhalten")
             val root = JSONObject(json)
             val items = root.optJSONArray("bikes") ?: JSONArray()
             items.mapObjects(::parseBike).also { bikes ->
                 bikeDao.replaceAll(
-                    bikes = bikes.map { it.toEntity() },
+                    bikes = bikes.map { it.toEntity(updatedAtEpochMillis) },
                     batteries = bikes.flatMap { it.toBatteryEntities() },
                     assistModes = bikes.flatMap { it.toAssistModeEntities() },
+                    cacheState = BikeCacheStateEntity(updatedAtEpochMillis = updatedAtEpochMillis),
                 )
             }
         }
@@ -121,7 +141,7 @@ class BoschSmartSystemRepositoryImpl(
             val json = extractJsonBody(response) ?: error("Keine Aktivitätsdetaildaten erhalten")
             parseActivityDetail(activityId, JSONObject(json)).also { detail ->
                 activityDetailDao.replaceDetail(
-                    detail = detail.toEntity(),
+                    detail = detail.toEntity(updatedAtEpochMillis = currentTimeMillis()),
                     points = detail.toPointEntities(),
                 )
             }
@@ -129,6 +149,7 @@ class BoschSmartSystemRepositoryImpl(
 
     override suspend fun getBikeDetail(accessToken: String, bikeId: String): Result<BoschBike> =
         runCatching {
+            val updatedAtEpochMillis = currentTimeMillis()
             val response = apiClient.get(
                 BoschEndpoint.SMART_BIKE_DETAIL.toRequest(bikeId = bikeId),
                 accessToken
@@ -136,12 +157,21 @@ class BoschSmartSystemRepositoryImpl(
             val json = extractJsonBody(response) ?: error("Keine Bike-Detaildaten erhalten")
             parseBike(JSONObject(json)).also { bike ->
                 bikeDao.replaceBike(
-                    bike = bike.toEntity(),
+                    bike = bike.toEntity(updatedAtEpochMillis),
                     batteries = bike.toBatteryEntities(),
                     assistModes = bike.toAssistModeEntities(),
                 )
             }
         }
+
+    @OptIn(ExperimentalTime::class)
+    private fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
+
+    @OptIn(ExperimentalTime::class)
+    private fun isFresh(updatedAtEpochMillis: Long?, maxAgeMillis: Long): Boolean {
+        if (updatedAtEpochMillis == null) return false
+        return currentTimeMillis() - updatedAtEpochMillis <= maxAgeMillis
+    }
 
     private fun parseActivity(root: JSONObject): BoschActivity {
         val speed = root.optJSONObject("speed")

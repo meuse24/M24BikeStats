@@ -20,6 +20,7 @@ data class DashboardUiState(
     val selectedBikeDetail: BikeDetailUiModel? = null,
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,
+    val isBikeDetailRefreshing: Boolean = false,
     val error: String? = null,
 )
 

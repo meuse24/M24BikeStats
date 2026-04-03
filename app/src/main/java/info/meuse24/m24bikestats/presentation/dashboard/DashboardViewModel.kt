@@ -13,13 +13,17 @@ import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUs
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
-import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
-import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
-import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,15 +37,18 @@ import java.util.Locale
 
 class DashboardViewModel(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
+    private val observeCachedActivityDetail: ObserveCachedSmartSystemActivityDetailUseCase,
     private val observeCachedBikes: ObserveCachedSmartSystemBikesUseCase,
+    private val observeCachedBikeDetail: ObserveCachedSmartSystemBikeDetailUseCase,
     private val getCachedActivity: GetCachedSmartSystemActivityUseCase,
     private val getCachedActivityDetail: GetCachedSmartSystemActivityDetailUseCase,
     private val getCachedBike: GetCachedSmartSystemBikeUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
+    private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
-    private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
-    private val getBikes: GetSmartSystemBikesUseCase,
-    private val getBikeDetail: GetSmartSystemBikeDetailUseCase,
+    private val refreshActivityDetailUseCase: RefreshSmartSystemActivityDetailUseCase,
+    private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
+    private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
@@ -50,11 +57,13 @@ class DashboardViewModel(
     private var cachedActivities: List<BoschActivity> = emptyList()
     private var activityOffset: Int = 0
     private var activityTotalCount: Int = 0
+    private var activityDetailObservationJob: Job? = null
+    private var bikeDetailObservationJob: Job? = null
 
     init {
         observeActivities()
         observeBikes()
-        refresh()
+        refresh(force = false)
     }
 
     private fun observeActivities() {
@@ -67,6 +76,7 @@ class DashboardViewModel(
                         activityTotalCount > 0 -> maxOf(activityTotalCount, activities.size)
                         else -> activities.size
                     }
+                    activityOffset = activities.size
                     val hasInitialContent = activities.isNotEmpty() || current.bikes.isNotEmpty()
                     current.copy(
                         isLoading = current.isLoading && !hasInitialContent,
@@ -94,7 +104,7 @@ class DashboardViewModel(
         }
     }
 
-    fun refresh() {
+    fun refresh(force: Boolean = true) {
         viewModelScope.launch {
             val hasContent = _uiState.value.activities.isNotEmpty() || _uiState.value.bikes.isNotEmpty()
             _uiState.update {
@@ -105,8 +115,10 @@ class DashboardViewModel(
                 )
             }
 
-            val activitiesDeferred = async { getActivities(limit = ACTIVITIES_PAGE_SIZE, offset = 0) }
-            val bikesDeferred = async { getBikes() }
+            val activitiesDeferred = async {
+                refreshActivitiesUseCase(limit = ACTIVITIES_PAGE_SIZE, offset = 0, force = force)
+            }
+            val bikesDeferred = async { refreshBikesUseCase(force = force) }
 
             val activitiesResult = activitiesDeferred.await()
             val bikesResult = bikesDeferred.await()
@@ -133,15 +145,19 @@ class DashboardViewModel(
                 return@launch
             }
 
-            activityOffset = activityPage.offset + activityPage.items.size
-            activityTotalCount = activityPage.total
+            if (activityPage != null) {
+                activityOffset = activityPage.offset + activityPage.items.size
+                activityTotalCount = activityPage.total
+            } else {
+                activityOffset = cachedActivities.size
+            }
 
             _uiState.update {
                 it.copy(
                     isLoading = false,
                     isRefreshing = false,
                     isLoadingMoreActivities = false,
-                    activityTotalCount = activityPage.total,
+                    activityTotalCount = activityPage?.total ?: activityTotalCount,
                     error = null,
                 )
             }
@@ -239,23 +255,36 @@ class DashboardViewModel(
     }
 
     fun loadBikeDetail(bikeId: String) {
+        bikeDetailObservationJob?.cancel()
         viewModelScope.launch {
             val cachedBike = getCachedBike(bikeId)
-            if (cachedBike == null && _uiState.value.selectedBikeId == bikeId && _uiState.value.selectedBikeDetail != null) return@launch
-
             _uiState.update {
                 it.copy(
                     selectedBikeId = bikeId,
                     selectedBikeDetail = cachedBike?.let(::toBikeDetailUiModel),
                     isBikeDetailLoading = cachedBike == null,
+                    isBikeDetailRefreshing = cachedBike != null,
                     error = null,
                 )
             }
 
-            val detail = getBikeDetail(bikeId).getOrElse { error ->
+            bikeDetailObservationJob = viewModelScope.launch {
+                observeCachedBikeDetail(bikeId).collectLatest { bike ->
+                    if (_uiState.value.selectedBikeId != bikeId) return@collectLatest
+                    _uiState.update {
+                        it.copy(
+                            selectedBikeDetail = bike?.let(::toBikeDetailUiModel),
+                            isBikeDetailLoading = bike == null && it.isBikeDetailLoading,
+                        )
+                    }
+                }
+            }
+
+            val result = refreshBikeDetailUseCase(bikeId, force = false).getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isBikeDetailLoading = false,
+                        isBikeDetailRefreshing = false,
                         selectedBikeDetail = cachedBike?.let(::toBikeDetailUiModel),
                         error = error.message ?: "Bike-Detail konnte nicht geladen werden",
                     )
@@ -265,9 +294,8 @@ class DashboardViewModel(
 
             _uiState.update {
                 it.copy(
-                    selectedBikeId = bikeId,
-                    selectedBikeDetail = toBikeDetailUiModel(detail),
                     isBikeDetailLoading = false,
+                    isBikeDetailRefreshing = false,
                     error = null,
                 )
             }
@@ -275,6 +303,7 @@ class DashboardViewModel(
     }
 
     fun loadActivityDetail(activityId: String) {
+        activityDetailObservationJob?.cancel()
         viewModelScope.launch {
             val activity = getCachedActivity(activityId)
             if (activity == null) {
@@ -294,7 +323,19 @@ class DashboardViewModel(
                 )
             }
 
-            val detail = getActivityDetail(activityId).getOrElse { error ->
+            activityDetailObservationJob = viewModelScope.launch {
+                observeCachedActivityDetail(activityId).collectLatest { detail ->
+                    if (_uiState.value.selectedActivityId != activityId) return@collectLatest
+                    _uiState.update {
+                        it.copy(
+                            selectedActivityDetail = detail?.let { cached -> toActivityDetailUiModel(activity, cached) },
+                            isActivityDetailLoading = detail == null && it.isActivityDetailLoading,
+                        )
+                    }
+                }
+            }
+
+            refreshActivityDetailUseCase(activityId, force = false).getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isActivityDetailLoading = false,
@@ -308,8 +349,6 @@ class DashboardViewModel(
 
             _uiState.update {
                 it.copy(
-                    selectedActivityId = activityId,
-                    selectedActivityDetail = toActivityDetailUiModel(activity, detail),
                     isActivityDetailLoading = false,
                     isActivityDetailRefreshing = false,
                     error = null,

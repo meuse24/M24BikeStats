@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class BikeEntity(
     @PrimaryKey val id: String,
     val createdAt: String?,
+    val updatedAtEpochMillis: Long,
     val language: String?,
     val driveUnitSerialNumber: String?,
     val driveUnitPartNumber: String?,

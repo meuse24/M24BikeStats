@@ -19,8 +19,14 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
@@ -54,7 +60,9 @@ val appModule = module {
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
     factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
+    factory { ObserveCachedSmartSystemActivityDetailUseCase(get()) }
     factory { ObserveCachedSmartSystemBikesUseCase(get()) }
+    factory { ObserveCachedSmartSystemBikeDetailUseCase(get()) }
     factory { GetCachedSmartSystemActivityUseCase(get()) }
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
@@ -62,6 +70,10 @@ val appModule = module {
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
+    factory { RefreshSmartSystemActivitiesUseCase(get(), get()) }
+    factory { RefreshSmartSystemActivityDetailUseCase(get(), get()) }
+    factory { RefreshSmartSystemBikesUseCase(get(), get()) }
+    factory { RefreshSmartSystemBikeDetailUseCase(get(), get()) }
 
     // --- Presentation ---
     viewModelOf(::LoginViewModel)

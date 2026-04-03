@@ -22,6 +22,9 @@ interface ActivityDao {
     @Query("SELECT totalCount FROM activity_cache_state WHERE id = 0 LIMIT 1")
     suspend fun getCachedTotalCount(): Int?
 
+    @Query("SELECT updatedAtEpochMillis FROM activity_cache_state WHERE id = 0 LIMIT 1")
+    suspend fun getCacheUpdatedAtEpochMillis(): Long?
+
     @Upsert
     suspend fun upsertCacheState(cacheState: ActivityCacheStateEntity)
 

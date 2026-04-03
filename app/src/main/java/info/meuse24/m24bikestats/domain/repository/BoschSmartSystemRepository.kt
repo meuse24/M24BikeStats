@@ -9,11 +9,17 @@ import kotlinx.coroutines.flow.Flow
 interface BoschSmartSystemRepository {
     fun observeCachedActivities(): Flow<List<BoschActivity>>
     fun observeCachedBikes(): Flow<List<BoschBike>>
+    fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?>
+    fun observeCachedBike(bikeId: String): Flow<BoschBike?>
     suspend fun getCachedActivities(): List<BoschActivity>
     suspend fun getCachedActivityTotalCount(): Int?
     suspend fun getCachedActivity(activityId: String): BoschActivity?
     suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail?
     suspend fun getCachedBike(bikeId: String): BoschBike?
+    suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean
+    suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean
+    suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean
+    suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean
     suspend fun getActivities(accessToken: String, limit: Int, offset: Int): Result<BoschActivityPage>
     suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail>
     suspend fun getBikes(accessToken: String): Result<List<BoschBike>>

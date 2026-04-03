@@ -11,6 +11,7 @@ import info.meuse24.m24bikestats.data.local.entity.ActivityDetailPointEntity
 import info.meuse24.m24bikestats.data.local.entity.ActivityEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeAssistModeEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeBatteryEntity
+import info.meuse24.m24bikestats.data.local.entity.BikeCacheStateEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeEntity
 
 @Database(
@@ -20,10 +21,11 @@ import info.meuse24.m24bikestats.data.local.entity.BikeEntity
         ActivityDetailEntity::class,
         ActivityDetailPointEntity::class,
         BikeEntity::class,
+        BikeCacheStateEntity::class,
         BikeBatteryEntity::class,
         BikeAssistModeEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class BoschDatabase : RoomDatabase() {
