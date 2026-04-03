@@ -25,7 +25,7 @@ class ActivityDetailEntityMapperTest {
         val points = detail.toPointEntities()
 
         assertEquals(3, entity.pointCount)
-        assertEquals(2, entity.gpsPointCount)
+        assertEquals("Punkt (0.0, 0.0) darf nicht als GPS-Punkt gezaehlt werden", 2, entity.gpsPointCount)
         assertEquals(3, points.size)
         assertEquals(0, points.first().pointIndex)
         assertEquals(100.0, points.last().distanceMeters)

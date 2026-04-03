@@ -116,19 +116,48 @@ class BoschSmartSystemRepositoryImplTest {
         assertEquals("PowerTube", cached.first().batteries.first().productName)
         assertEquals("Tour+", cached.first().driveUnit?.activeAssistModes?.first()?.name)
     }
+
+    @Test
+    fun getBikeDetail_persistsSingleBikeResponse() = runBlocking {
+        api.bikeDetailResponse = """
+            {
+              "id":"bike-1",
+              "createdAt":"2026-04-03T10:00:00Z",
+              "language":"de",
+              "driveUnit":{
+                "serialNumber":"du-1",
+                "productName":"Performance Line CX",
+                "odometer":12345.0,
+                "maximumAssistanceSpeed":25.0,
+                "activeAssistModes":[{"name":"Tour+","reachableRange":75.0}]
+              },
+              "batteries":[{"serialNumber":"bat-1","productName":"PowerTube","deliveredWhOverLifetime":20000,"chargeCycles":{"total":50.0,"onBike":40.0,"offBike":10.0}}],
+              "headUnit":{"productName":"Kiox 300"}
+            }
+        """.trimIndent()
+
+        val bike = repository.getBikeDetail(accessToken = "token", bikeId = "bike-1").getOrThrow()
+        val cached = repository.observeCachedBike("bike-1").first()
+
+        assertEquals("bike-1", bike.id)
+        assertNotNull(cached)
+        assertEquals("Performance Line CX", cached!!.driveUnit?.productName)
+        assertEquals("PowerTube", cached.batteries.first().productName)
+    }
 }
 
 private class FakeBoschApiDataSource : BoschApiDataSource {
     var activitiesResponse: String = """{"pagination":{"total":0,"offset":0,"limit":20},"activitySummaries":[]}"""
     var activityDetailResponse: String = """{"activityDetails":[]}"""
     var bikesResponse: String = """{"bikes":[]}"""
+    var bikeDetailResponse: String = """{"id":"bike-1"}"""
 
     override suspend fun get(request: BoschRequest, accessToken: String): String {
         val body = when {
             request.path.startsWith("/activity/smart-system/v1/activities?") -> activitiesResponse
             request.path.contains("/activity/smart-system/v1/activities/") -> activityDetailResponse
             request.path == "/bike-profile/smart-system/v1/bikes" -> bikesResponse
-            request.path.startsWith("/bike-profile/smart-system/v1/bikes/") -> bikesResponse
+            request.path.startsWith("/bike-profile/smart-system/v1/bikes/") -> bikeDetailResponse
             else -> error("Unhandled request path: ${request.path}")
         }
         return "HTTP 200 OK\n\n$body"

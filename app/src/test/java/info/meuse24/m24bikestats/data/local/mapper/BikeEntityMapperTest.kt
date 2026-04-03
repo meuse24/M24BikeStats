@@ -10,6 +10,7 @@ import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -91,5 +92,40 @@ class BikeEntityMapperTest {
         assertEquals(1, domain.batteries.size)
         assertEquals("PowerTube", domain.batteries.single().productName)
         assertTrue(domain.driveUnit?.activeAssistModes?.any { it.name == "Tour+" } == true)
+    }
+
+    @Test
+    fun `cached bike without drive unit fields maps to null drive unit`() {
+        val cachedBike = CachedBike(
+            bike = BikeEntity(
+                id = "bike-2",
+                createdAt = "2026-04-03T10:00:00Z",
+                updatedAtEpochMillis = 1234L,
+                language = "de",
+                driveUnitSerialNumber = null,
+                driveUnitPartNumber = null,
+                driveUnitProductName = null,
+                driveUnitOdometerMeters = null,
+                driveUnitRearWheelCircumferenceMillimeters = null,
+                driveUnitMaximumAssistanceSpeedKmh = null,
+                driveUnitWalkAssistEnabled = null,
+                driveUnitWalkAssistMaximumSpeedKmh = null,
+                driveUnitTotalPowerOnHours = null,
+                driveUnitSupportPowerOnHours = null,
+                remoteControlSerialNumber = null,
+                remoteControlPartNumber = null,
+                remoteControlProductName = null,
+                headUnitSerialNumber = null,
+                headUnitPartNumber = null,
+                headUnitProductName = null,
+            ),
+            batteries = emptyList(),
+            assistModes = emptyList(),
+        )
+
+        val domain = cachedBike.toDomain()
+
+        assertEquals("bike-2", domain.id)
+        assertNull(domain.driveUnit)
     }
 }
