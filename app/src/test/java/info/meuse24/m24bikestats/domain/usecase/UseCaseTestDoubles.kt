@@ -56,16 +56,26 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
 
     override suspend fun getActivities(accessToken: String, limit: Int, offset: Int): Result<BoschActivityPage> {
         getActivitiesCalls += limit to offset
-        return activityResultsByOffset[offset] ?: activitiesResult
+        val result = activityResultsByOffset[offset] ?: activitiesResult
+        result.onSuccess { page ->
+            cachedActivityTotalCount = page.total
+            val byId = cachedActivities.associateBy { it.id }.toMutableMap()
+            page.items.forEach { activity -> byId[activity.id] = activity }
+            cachedActivities = byId.values.toList()
+        }
+        return result
     }
 
     override suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail> {
         getActivityDetailCalls += activityId
-        return activityDetailResultsById[activityId] ?: activityDetailResult
+        val result = activityDetailResultsById[activityId] ?: activityDetailResult
+        result.onSuccess { detail -> cachedActivityDetails[activityId] = detail }
+        return result
     }
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> {
         getBikesCalls += 1
+        bikesResult.onSuccess { bikesFresh = true }
         return bikesResult
     }
 

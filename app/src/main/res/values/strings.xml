@@ -46,7 +46,7 @@
     <string name="help_bike_label">Bike</string>
     <string name="help_bike_text">The bike area also shows Bosch Smart System components, batteries and detail information cache-first from Room.</string>
     <string name="help_functions_label">Functions</string>
-    <string name="help_functions_text">CSV exports use either the visible activity set or the full fetch, then open the Android share sheet. The CSV format preset from Setup controls separators, decimal numbers and date formatting.</string>
+    <string name="help_functions_text">CSV exports use only the activities and detail data already stored in the local cache, then open the Android share sheet. The CSV format preset from Setup controls separators, decimal numbers and date formatting.</string>
     <string name="help_diagnostics_label">Diagnostics</string>
     <string name="help_diagnostics_text">The API test screen remains available as a diagnostic tool and is intentionally not part of the primary navigation.</string>
 
@@ -75,13 +75,17 @@
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Visible</string>
     <string name="home_sync_title">Cloud sync</string>
-    <string name="home_sync_subtitle">Cloud sync reloads all activity pages and the bike list into the Room cache.</string>
+    <string name="home_sync_subtitle">Cloud sync refreshes bike and activity lists, then loads only missing or stale activity details into the Room cache.</string>
     <string name="home_sync_last_sync">Last sync</string>
     <string name="home_sync_activities">Activities</string>
     <string name="home_sync_bikes">Bikes</string>
     <string name="home_sync_running">Cloud sync in progress</string>
     <string name="home_sync_starting">Synchronization started</string>
-    <string name="home_sync_progress">%1$d of %2$d activities synchronized</string>
+    <string name="home_sync_progress">%1$d of %2$d items processed</string>
+    <string name="home_sync_phase_bikes">Refreshing bike list</string>
+    <string name="home_sync_phase_activities">Refreshing activity list</string>
+    <string name="home_sync_phase_activity_details">Loading missing activity details</string>
+    <string name="home_sync_cancel_button">Cancel sync</string>
     <string name="home_sync_button">Reload cloud data</string>
     <string name="home_latest_tour">Latest ride</string>
     <string name="home_no_tours_title">No ride data available yet</string>
@@ -167,9 +171,9 @@
     <string name="functions_hero_title">Data export</string>
     <string name="functions_hero_subtitle">Export activity lists and detail points as shareable CSV files.</string>
     <string name="functions_export_activities_title">Export activities as CSV</string>
-    <string name="functions_export_activities_subtitle">Fetches all activities and enriches each row with known detail metrics, excluding raw GPS coordinates.</string>
+    <string name="functions_export_activities_subtitle">Exports cached activities only and enriches each row with known cached detail metrics, excluding raw GPS coordinates.</string>
     <string name="functions_export_details_title">Export visible detail points as CSV</string>
-    <string name="functions_export_details_subtitle">Uses the currently visible activity set and exports all detail points from cache and, if needed, via live reload.</string>
+    <string name="functions_export_details_subtitle">Uses the currently visible activity set and exports only the detail points already stored in the local cache.</string>
     <string name="functions_chip_csv">CSV</string>
     <string name="functions_chip_scope">Scope</string>
     <string name="functions_chip_rows">Rows</string>
@@ -187,6 +191,7 @@
     <string name="functions_last_exported">Last exported</string>
     <string name="functions_progress_processed">%1$d of %2$d activities processed</string>
     <string name="functions_export_running">Export in progress</string>
+    <string name="functions_cancel_button">Cancel export</string>
     <string name="functions_export_button">Export CSV</string>
     <string name="functions_detail_export_running">Detail export in progress</string>
     <string name="functions_detail_export_button">Export detail CSV</string>
@@ -252,6 +257,8 @@
     <string name="dashboard_error_no_visible_activities">No visible activities available for detail export</string>
     <string name="dashboard_error_detail_csv_export">Detail CSV could not be created</string>
     <string name="dashboard_error_cloud_sync">Cloud sync could not be completed</string>
+    <string name="dashboard_info_export_cancelled">Export cancelled</string>
+    <string name="dashboard_info_sync_cancelled">Cloud sync cancelled</string>
     <string name="dashboard_error_bike_detail_load">Bike detail could not be loaded</string>
     <string name="dashboard_error_activity_not_found">Activity not found</string>
     <string name="dashboard_error_activity_detail_load">Activity details could not be loaded</string>

@@ -10,58 +10,28 @@ import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 
 class ExportSmartSystemActivitiesCsvUseCase(
     private val repository: BoschSmartSystemRepository,
+    @Suppress("unused")
     private val authRepository: AuthRepository,
     private val appSettingsRepository: AppSettingsRepository,
-    private val detailCacheTtlMillis: Long = DEFAULT_DETAIL_CACHE_TTL_MILLIS,
     private val localeProvider: () -> Locale = Locale::getDefault,
 ) {
     suspend operator fun invoke(
         onProgress: (loadedCount: Int, totalCount: Int) -> Unit = { _, _ -> },
-    ): Result<BoschActivitiesCsvExport> = withValidAccessToken(authRepository) { token ->
-        val activities = repository.getCachedActivities().toMutableList()
-        var total = repository.getCachedActivityTotalCount()
-        var offset = activities.size
-
-        if (activities.isEmpty() && (total == null || total == 0)) {
-            val firstPage = repository.getActivities(
-                accessToken = token,
-                limit = EXPORT_PAGE_SIZE,
-                offset = 0,
-            ).getOrElse { return@withValidAccessToken Result.failure(it) }
-
-            total = firstPage.total
-            activities += firstPage.items
-            offset = firstPage.offset + firstPage.items.size
-        }
-
-        var totalCount = total ?: activities.size
-
-        while (activities.size < totalCount) {
-            val page = repository.getActivities(
-                accessToken = token,
-                limit = EXPORT_PAGE_SIZE,
-                offset = offset,
-            ).getOrElse { return@withValidAccessToken Result.failure(it) }
-
-            totalCount = page.total
-            if (page.items.isEmpty()) break
-
-            val knownIds = activities.asSequence().map { it.id }.toHashSet()
-            activities += page.items.filterNot { it.id in knownIds }
-            offset = page.offset + page.items.size
-        }
-
-        if (activities.isNotEmpty()) {
-            onProgress(0, activities.size)
+    ): Result<BoschActivitiesCsvExport> = runCatching {
+        val activities = repository.getCachedActivities().sortedByDescending { it.startTime }
+        if (activities.isEmpty()) {
+            error("Keine Aktivitäten im Cache verfügbar")
         }
 
         val dialect = appSettingsRepository.getSettings().csvExportFormat.resolve(localeProvider())
         val activityRows = activities.mapIndexed { index, activity ->
+            coroutineContext.ensureActive()
             val detailAggregate = loadActivityDetailAggregate(
-                token = token,
                 activityId = activity.id,
             )
             onProgress(index + 1, activities.size)
@@ -74,15 +44,13 @@ class ExportSmartSystemActivitiesCsvUseCase(
         val timestamp = LocalDateTime.now()
             .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm", Locale.US))
 
-        Result.success(
-            BoschActivitiesCsvExport(
-                fileName = "bosch-activities-$timestamp.csv",
-                csvContent = buildCsv(
-                    rows = activityRows,
-                    dialect = dialect,
-                ),
-                activityCount = activities.size,
-            )
+        BoschActivitiesCsvExport(
+            fileName = "bosch-activities-$timestamp.csv",
+            csvContent = buildCsv(
+                rows = activityRows,
+                dialect = dialect,
+            ),
+            activityCount = activities.size,
         )
     }
 
@@ -138,29 +106,10 @@ class ExportSmartSystemActivitiesCsvUseCase(
     }
 
     private suspend fun loadActivityDetailAggregate(
-        token: String,
         activityId: String,
     ): ActivityDetailAggregate {
-        val detail = loadActivityDetailOrNull(token, activityId) ?: return ActivityDetailAggregate.unavailable()
+        val detail = repository.getCachedActivityDetail(activityId) ?: return ActivityDetailAggregate.unavailable()
         return detail.toAggregate()
-    }
-
-    private suspend fun loadActivityDetailOrNull(
-        token: String,
-        activityId: String,
-    ): BoschActivityDetail? {
-        val cachedDetail = repository.getCachedActivityDetail(activityId)
-        val isFresh = cachedDetail != null &&
-            repository.isActivityDetailCacheFresh(activityId, detailCacheTtlMillis)
-
-        if (isFresh) {
-            return cachedDetail
-        }
-
-        return repository.getActivityDetail(token, activityId).fold(
-            onSuccess = { it },
-            onFailure = { cachedDetail },
-        )
     }
 
     private fun BoschActivityDetail.toAggregate(): ActivityDetailAggregate {
@@ -229,8 +178,6 @@ class ExportSmartSystemActivitiesCsvUseCase(
     }
 
     companion object {
-        private const val EXPORT_PAGE_SIZE = 100
-        private const val DEFAULT_DETAIL_CACHE_TTL_MILLIS = 30 * 60 * 1000L
         private val CSV_COLUMNS = listOf(
             "id",
             "title",

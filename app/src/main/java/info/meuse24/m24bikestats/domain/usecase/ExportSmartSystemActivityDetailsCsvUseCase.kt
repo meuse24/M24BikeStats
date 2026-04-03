@@ -10,12 +10,14 @@ import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 
 class ExportSmartSystemActivityDetailsCsvUseCase(
     private val repository: BoschSmartSystemRepository,
+    @Suppress("unused")
     private val authRepository: AuthRepository,
     private val appSettingsRepository: AppSettingsRepository,
-    private val detailCacheTtlMillis: Long = DEFAULT_DETAIL_CACHE_TTL_MILLIS,
     private val localeProvider: () -> Locale = Locale::getDefault,
 ) {
     suspend operator fun invoke(
@@ -27,21 +29,25 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             return Result.failure(IllegalArgumentException("Keine Aktivitäten für den Detail-Export ausgewählt"))
         }
 
-        return withValidAccessToken(authRepository) { token ->
+        return runCatching {
             val detailRows = mutableListOf<String>()
             var exportedPointCount = 0
             var exportedActivityCount = 0
             val dialect = appSettingsRepository.getSettings().csvExportFormat.resolve(localeProvider())
 
             normalizedIds.forEachIndexed { index, activityId ->
+                coroutineContext.ensureActive()
                 val activity = repository.getCachedActivity(activityId)
                 if (activity == null) {
                     onProgress(index + 1, normalizedIds.size)
                     return@forEachIndexed
                 }
 
-                val detail = loadActivityDetail(token, activityId)
-                    .getOrElse { return@withValidAccessToken Result.failure(it) }
+                val detail = repository.getCachedActivityDetail(activityId)
+                if (detail == null) {
+                    onProgress(index + 1, normalizedIds.size)
+                    return@forEachIndexed
+                }
 
                 detailRows += buildRows(activity, detail, dialect)
                 exportedPointCount += detail.points.size
@@ -50,45 +56,22 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
             }
 
             if (exportedActivityCount == 0) {
-                return@withValidAccessToken Result.failure(
-                    IllegalStateException("Keine ausgewählten Aktivitäten sind im Cache verfügbar")
-                )
+                error("Keine ausgewählten Aktivitäten mit Detaildaten im Cache verfügbar")
             }
 
             val timestamp = LocalDateTime.now()
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm", Locale.US))
 
-            Result.success(
-                BoschActivityDetailsCsvExport(
-                    fileName = "bosch-activity-details-$timestamp.csv",
-                    csvContent = buildString {
-                        appendLine(dialect.row(CSV_COLUMNS))
-                        detailRows.forEach(::appendLine)
-                    },
-                    activityCount = exportedActivityCount,
-                    detailPointCount = exportedPointCount,
-                )
+            BoschActivityDetailsCsvExport(
+                fileName = "bosch-activity-details-$timestamp.csv",
+                csvContent = buildString {
+                    appendLine(dialect.row(CSV_COLUMNS))
+                    detailRows.forEach(::appendLine)
+                },
+                activityCount = exportedActivityCount,
+                detailPointCount = exportedPointCount,
             )
         }
-    }
-
-    private suspend fun loadActivityDetail(
-        token: String,
-        activityId: String,
-    ): Result<BoschActivityDetail> {
-        val cachedDetail = repository.getCachedActivityDetail(activityId)
-        val isFresh = repository.isActivityDetailCacheFresh(activityId, detailCacheTtlMillis)
-        if (cachedDetail != null && isFresh) {
-            return Result.success(cachedDetail)
-        }
-
-        val remoteDetail = repository.getActivityDetail(token, activityId)
-        return remoteDetail.fold(
-            onSuccess = { Result.success(it) },
-            onFailure = { error ->
-                cachedDetail?.let { Result.success(it) } ?: Result.failure(error)
-            }
-        )
     }
 
     private fun buildRows(
@@ -118,7 +101,6 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
     private fun Double.toCsvNumber(dialect: CsvDialect): String = dialect.formatDecimal(this, 6)
 
     companion object {
-        private const val DEFAULT_DETAIL_CACHE_TTL_MILLIS = 30 * 60 * 1000L
         private val CSV_COLUMNS = listOf(
             "activity_id",
             "activity_title",

@@ -202,6 +202,8 @@ fun DashboardScreen(
                             uiState = uiState.toFunctionsUiState(),
                             onExportActivitiesCsv = onExportActivitiesCsv,
                             onExportActivityDetailsCsv = onExportActivityDetailsCsv,
+                            onCancelActivitiesCsvExport = {},
+                            onCancelActivityDetailsCsvExport = {},
                             onActivitiesCsvExportHandled = onActivitiesCsvExportHandled,
                             onActivityDetailsCsvExportHandled = onActivityDetailsCsvExportHandled,
                         )

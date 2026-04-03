@@ -46,7 +46,7 @@
     <string name="help_bike_label">Bike</string>
     <string name="help_bike_text">Der Bike-Bereich zeigt Bosch Smart System Komponenten, Batterien und Detailinformationen ebenfalls cache-first aus Room.</string>
     <string name="help_functions_label">Funktionen</string>
-    <string name="help_functions_text">CSV-Exporte greifen auf den sichtbaren Aktivitätssatz oder den kompletten Abruf zurück und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
+    <string name="help_functions_text">CSV-Exporte verwenden nur die bereits im lokalen Cache gespeicherten Aktivitäten und Detaildaten und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
     <string name="help_diagnostics_label">Diagnose</string>
     <string name="help_diagnostics_text">Der API-Test-Screen bleibt als Diagnosewerkzeug verfügbar und ist bewusst nicht Teil der primären Navigation.</string>
 
@@ -75,13 +75,17 @@
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Sichtbar</string>
     <string name="home_sync_title">Cloud-Abgleich</string>
-    <string name="home_sync_subtitle">Der Cloud-Abgleich lädt alle Aktivitätsseiten und die Bike-Liste erneut in den Room-Cache.</string>
+    <string name="home_sync_subtitle">Der Cloud-Abgleich aktualisiert Bike- und Aktivitätenlisten und lädt danach nur fehlende oder veraltete Aktivitätsdetails in den Room-Cache.</string>
     <string name="home_sync_last_sync">Letzter Abgleich</string>
     <string name="home_sync_activities">Aktivitäten</string>
     <string name="home_sync_bikes">Bikes</string>
     <string name="home_sync_running">Cloud-Abgleich läuft</string>
     <string name="home_sync_starting">Synchronisierung gestartet</string>
-    <string name="home_sync_progress">%1$d von %2$d Aktivitäten synchronisiert</string>
+    <string name="home_sync_progress">%1$d von %2$d Elementen verarbeitet</string>
+    <string name="home_sync_phase_bikes">Bike-Liste wird aktualisiert</string>
+    <string name="home_sync_phase_activities">Aktivitätenliste wird aktualisiert</string>
+    <string name="home_sync_phase_activity_details">Fehlende Aktivitätsdetails werden geladen</string>
+    <string name="home_sync_cancel_button">Sync abbrechen</string>
     <string name="home_sync_button">Cloud-Daten neu einlesen</string>
     <string name="home_latest_tour">Letzte Tour</string>
     <string name="home_no_tours_title">Noch keine Tourdaten verfügbar</string>
@@ -167,9 +171,9 @@
     <string name="functions_hero_title">Datenexport</string>
     <string name="functions_hero_subtitle">Aktivitätenlisten und Detailpunkte als teilbare CSV-Dateien exportieren.</string>
     <string name="functions_export_activities_title">Aktivitäten als CSV exportieren</string>
-    <string name="functions_export_activities_subtitle">Ruft alle Aktivitäten ab und ergänzt jede Zeile um bekannte Detailmetriken ohne rohe GPS-Koordinaten.</string>
+    <string name="functions_export_activities_subtitle">Exportiert nur zwischengespeicherte Aktivitäten und ergänzt jede Zeile um bekannte Detailmetriken aus dem Cache ohne rohe GPS-Koordinaten.</string>
     <string name="functions_export_details_title">Sichtbare Detailpunkte als CSV exportieren</string>
-    <string name="functions_export_details_subtitle">Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert alle Detailpunkte aus Cache und bei Bedarf per Live-Nachladen.</string>
+    <string name="functions_export_details_subtitle">Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert nur Detailpunkte, die bereits im lokalen Cache liegen.</string>
     <string name="functions_chip_csv">CSV</string>
     <string name="functions_chip_scope">Umfang</string>
     <string name="functions_chip_rows">Zeilen</string>
@@ -187,6 +191,7 @@
     <string name="functions_last_exported">Zuletzt exportiert</string>
     <string name="functions_progress_processed">%1$d von %2$d Aktivitäten verarbeitet</string>
     <string name="functions_export_running">Export läuft</string>
+    <string name="functions_cancel_button">Export abbrechen</string>
     <string name="functions_export_button">CSV exportieren</string>
     <string name="functions_detail_export_running">Detail-Export läuft</string>
     <string name="functions_detail_export_button">Detail-CSV exportieren</string>
@@ -252,6 +257,8 @@
     <string name="dashboard_error_no_visible_activities">Keine sichtbaren Aktivitäten für den Detail-Export verfügbar</string>
     <string name="dashboard_error_detail_csv_export">Detail-CSV konnte nicht erstellt werden</string>
     <string name="dashboard_error_cloud_sync">Cloud-Abgleich konnte nicht durchgeführt werden</string>
+    <string name="dashboard_info_export_cancelled">Export abgebrochen</string>
+    <string name="dashboard_info_sync_cancelled">Cloud-Abgleich abgebrochen</string>
     <string name="dashboard_error_bike_detail_load">Bike-Detail konnte nicht geladen werden</string>
     <string name="dashboard_error_activity_not_found">Aktivität nicht gefunden</string>
     <string name="dashboard_error_activity_detail_load">Aktivitätsdetails konnten nicht geladen werden</string>

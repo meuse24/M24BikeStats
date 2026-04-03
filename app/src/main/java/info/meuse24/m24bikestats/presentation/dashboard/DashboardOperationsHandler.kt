@@ -2,10 +2,13 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -16,6 +19,10 @@ class DashboardOperationsHandler(
     private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val stringResolver: DashboardStringResolver,
 ) {
+    private var activitiesExportJob: Job? = null
+    private var activityDetailsExportJob: Job? = null
+    private var cloudSyncJob: Job? = null
+
     fun exportAllActivitiesCsv(
         scope: CoroutineScope,
         currentState: () -> DashboardUiState,
@@ -23,7 +30,7 @@ class DashboardOperationsHandler(
     ) {
         if (!currentState().canRunBackgroundOperation()) return
 
-        scope.launch {
+        activitiesExportJob = scope.launch {
             updateState {
                 it.copy(
                     isExportingActivitiesCsv = true,
@@ -43,6 +50,18 @@ class DashboardOperationsHandler(
                     )
                 }
             }.getOrElse { error ->
+                if (error is CancellationException) {
+                    updateState {
+                        it.copy(
+                            isExportingActivitiesCsv = false,
+                            exportLoadedActivityCount = 0,
+                            exportTotalActivityCount = 0,
+                            error = s(R.string.dashboard_info_export_cancelled),
+                        )
+                    }
+                    activitiesExportJob = null
+                    return@launch
+                }
                 updateState {
                     it.copy(
                         isExportingActivitiesCsv = false,
@@ -51,6 +70,7 @@ class DashboardOperationsHandler(
                         error = error.message ?: s(R.string.dashboard_error_csv_export),
                     )
                 }
+                activitiesExportJob = null
                 return@launch
             }
 
@@ -72,6 +92,7 @@ class DashboardOperationsHandler(
                     error = null,
                 )
             }
+            activitiesExportJob = null
         }
     }
 
@@ -89,7 +110,7 @@ class DashboardOperationsHandler(
             return
         }
 
-        scope.launch {
+        activityDetailsExportJob = scope.launch {
             updateState {
                 it.copy(
                     isExportingActivityDetailsCsv = true,
@@ -108,6 +129,18 @@ class DashboardOperationsHandler(
                     )
                 }
             }.getOrElse { error ->
+                if (error is CancellationException) {
+                    updateState {
+                        it.copy(
+                            isExportingActivityDetailsCsv = false,
+                            exportDetailedLoadedActivityCount = 0,
+                            exportDetailedTotalActivityCount = 0,
+                            error = s(R.string.dashboard_info_export_cancelled),
+                        )
+                    }
+                    activityDetailsExportJob = null
+                    return@launch
+                }
                 updateState {
                     it.copy(
                         isExportingActivityDetailsCsv = false,
@@ -116,6 +149,7 @@ class DashboardOperationsHandler(
                         error = error.message ?: s(R.string.dashboard_error_detail_csv_export),
                     )
                 }
+                activityDetailsExportJob = null
                 return@launch
             }
 
@@ -139,6 +173,39 @@ class DashboardOperationsHandler(
                     error = null,
                 )
             }
+            activityDetailsExportJob = null
+        }
+    }
+
+    fun cancelActivitiesCsvExport(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        activitiesExportJob?.cancel()
+        activitiesExportJob = null
+        updateState {
+            it.copy(
+                isExportingActivitiesCsv = false,
+                exportLoadedActivityCount = 0,
+                exportTotalActivityCount = 0,
+                pendingActivitiesCsvExport = null,
+                error = s(R.string.dashboard_info_export_cancelled),
+            )
+        }
+    }
+
+    fun cancelActivityDetailsCsvExport(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        activityDetailsExportJob?.cancel()
+        activityDetailsExportJob = null
+        updateState {
+            it.copy(
+                isExportingActivityDetailsCsv = false,
+                exportDetailedLoadedActivityCount = 0,
+                exportDetailedTotalActivityCount = 0,
+                pendingActivityDetailsCsvExport = null,
+                error = s(R.string.dashboard_info_export_cancelled),
+            )
         }
     }
 
@@ -173,38 +240,61 @@ class DashboardOperationsHandler(
     ) {
         if (!currentState().canRunBackgroundOperation()) return
 
-        scope.launch {
+        cloudSyncJob = scope.launch {
             updateState {
                 it.copy(
                     isSyncingCloudData = true,
+                    syncPhase = null,
+                    syncPhaseLabel = null,
                     syncLoadedActivityCount = 0,
                     syncTotalActivityCount = 0,
                     error = null,
                 )
             }
 
-            val summary = syncSmartSystemCloudUseCase { loadedCount, totalCount ->
+            val summary = syncSmartSystemCloudUseCase { progress ->
                 updateState {
                     it.copy(
-                        syncLoadedActivityCount = loadedCount,
-                        syncTotalActivityCount = totalCount,
+                        syncPhase = progress.phase,
+                        syncPhaseLabel = syncPhaseLabel(progress.phase),
+                        syncLoadedActivityCount = progress.processedCount,
+                        syncTotalActivityCount = progress.totalCount,
                     )
                 }
             }.getOrElse { error ->
+                if (error is CancellationException) {
+                    updateState {
+                        it.copy(
+                            isSyncingCloudData = false,
+                            syncPhase = null,
+                            syncPhaseLabel = null,
+                            syncLoadedActivityCount = 0,
+                            syncTotalActivityCount = 0,
+                            error = s(R.string.dashboard_info_sync_cancelled),
+                        )
+                    }
+                    cloudSyncJob = null
+                    return@launch
+                }
                 updateState {
                     it.copy(
                         isSyncingCloudData = false,
+                        syncPhase = null,
+                        syncPhaseLabel = null,
                         syncLoadedActivityCount = 0,
                         syncTotalActivityCount = 0,
                         error = error.message ?: s(R.string.dashboard_error_cloud_sync),
                     )
                 }
+                cloudSyncJob = null
                 return@launch
             }
 
             updateState {
                 it.copy(
                     isSyncingCloudData = false,
+                    syncPhase = null,
+                    syncPhaseLabel = null,
                     syncLoadedActivityCount = summary.activityCount,
                     syncTotalActivityCount = summary.activityCount,
                     lastCloudSyncSummary = CloudSyncSummaryUiModel(
@@ -215,6 +305,24 @@ class DashboardOperationsHandler(
                     error = null,
                 )
             }
+            cloudSyncJob = null
+        }
+    }
+
+    fun cancelCloudSync(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        cloudSyncJob?.cancel()
+        cloudSyncJob = null
+        updateState {
+            it.copy(
+                isSyncingCloudData = false,
+                syncPhase = null,
+                syncPhaseLabel = null,
+                syncLoadedActivityCount = 0,
+                syncTotalActivityCount = 0,
+                error = s(R.string.dashboard_info_sync_cancelled),
+            )
         }
     }
 
@@ -227,6 +335,12 @@ class DashboardOperationsHandler(
 
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)
+
+    private fun syncPhaseLabel(phase: SmartSystemCloudSyncPhase): String = when (phase) {
+        SmartSystemCloudSyncPhase.BIKES -> s(R.string.home_sync_phase_bikes)
+        SmartSystemCloudSyncPhase.ACTIVITIES -> s(R.string.home_sync_phase_activities)
+        SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> s(R.string.home_sync_phase_activity_details)
+    }
 
     private companion object {
         private val EXPORT_DATE_TIME_FORMATTER: DateTimeFormatter =

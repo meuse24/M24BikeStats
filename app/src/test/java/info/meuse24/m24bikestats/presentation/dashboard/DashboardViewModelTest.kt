@@ -383,6 +383,11 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
 
     override suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail> =
         activityDetails[activityId]?.value?.let { Result.success(it) }
+            ?: getCachedActivity(activityId)?.let {
+                val detail = BoschActivityDetail(activityId = activityId, points = emptyList())
+                activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.value = detail
+                Result.success(detail)
+            }
             ?: Result.failure(IllegalStateException("not needed"))
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> =

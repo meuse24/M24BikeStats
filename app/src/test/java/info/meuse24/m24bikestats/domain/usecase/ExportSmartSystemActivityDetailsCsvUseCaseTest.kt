@@ -50,30 +50,23 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
     }
 
     @Test
-    fun `falls back to remote detail when cache missing`() = runTest {
+    fun `skips activities without cached detail data`() = runTest {
         val repository = FakeBoschSmartSystemRepository().apply {
             cachedActivities = listOf(activity(id = "a1", title = "Morgenrunde"))
-            activityDetailFresh = false
-            activityDetailResult = Result.success(
-                detail(
-                    "a1",
-                    BoschActivityDetailPoint(100.0, 500.0, 23.4, 80.0, 47.1, 9.1, 210.0),
-                )
-            )
         }
 
-        val export = ExportSmartSystemActivityDetailsCsvUseCase(
+        val result = ExportSmartSystemActivityDetailsCsvUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
             appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.EXCEL_DE),
-        )(listOf("a1")).getOrThrow()
+        )(listOf("a1"))
 
-        assertEquals(listOf("a1"), repository.getActivityDetailCalls)
-        assertEquals(1, export.activityCount)
-        assertEquals(1, export.detailPointCount)
-        assertTrue(export.csvContent.contains("\"activity_id\";\"activity_title\""))
-        assertTrue(export.csvContent.contains("\"03.04.2026 10:00:00\""))
-        assertTrue(export.csvContent.contains("\"47,100000\";\"9,100000\";\"100,000000\""))
+        assertTrue(result.isFailure)
+        assertTrue(repository.getActivityDetailCalls.isEmpty())
+        assertEquals(
+            "Keine ausgewählten Aktivitäten mit Detaildaten im Cache verfügbar",
+            result.exceptionOrNull()?.message,
+        )
     }
 
     @Test
@@ -114,7 +107,7 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
 
         assertTrue(result.isFailure)
         assertEquals(
-            "Keine ausgewählten Aktivitäten sind im Cache verfügbar",
+            "Keine ausgewählten Aktivitäten mit Detaildaten im Cache verfügbar",
             result.exceptionOrNull()?.message,
         )
     }

@@ -59,6 +59,14 @@ class DashboardViewModel(
         )
     }
 
+    fun cancelActivitiesCsvExport() {
+        operationsHandler.cancelActivitiesCsvExport(_uiState::update)
+    }
+
+    fun cancelActivityDetailsCsvExport() {
+        operationsHandler.cancelActivityDetailsCsvExport(_uiState::update)
+    }
+
     fun updateActivityDateRangeFilter(filter: ActivityDateRangeFilter) {
         feedHandler.updateActivityDateRangeFilter(
             filter = filter,
@@ -102,6 +110,10 @@ class DashboardViewModel(
             currentState = _uiState::value,
             updateState = _uiState::update,
         )
+    }
+
+    fun cancelCloudSync() {
+        operationsHandler.cancelCloudSync(_uiState::update)
     }
 
     fun loadBikeDetail(bikeId: String) {

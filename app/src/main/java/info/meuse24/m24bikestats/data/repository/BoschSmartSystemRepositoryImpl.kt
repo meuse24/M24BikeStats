@@ -86,11 +86,7 @@ class BoschSmartSystemRepositoryImpl(
             )
             val json = jsonBodyExtractor.extract(response) ?: error("Keine Aktivitätendaten erhalten")
             parser.parseActivitiesPage(json, limit, offset).also { page ->
-                if (offset == 0) {
-                    activityDao.replaceAll(page.items.map { it.toEntity() })
-                } else {
-                    activityDao.upsertAll(page.items.map { it.toEntity() })
-                }
+                activityDao.upsertAll(page.items.map { it.toEntity() })
                 activityDao.upsertCacheState(
                     ActivityCacheStateEntity(
                         totalCount = page.total,

@@ -17,6 +17,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,6 +35,8 @@ fun FunctionsScreen(
     uiState: FunctionsUiState,
     onExportActivitiesCsv: () -> Unit,
     onExportActivityDetailsCsv: () -> Unit,
+    onCancelActivitiesCsvExport: () -> Unit,
+    onCancelActivityDetailsCsvExport: () -> Unit,
     onActivitiesCsvExportHandled: () -> Unit,
     onActivityDetailsCsvExportHandled: () -> Unit,
     modifier: Modifier = Modifier,
@@ -99,6 +102,7 @@ fun FunctionsScreen(
                 progressCurrent = uiState.exportLoadedActivityCount,
                 progressTotal = uiState.exportTotalActivityCount,
                 onClick = onExportActivitiesCsv,
+                onCancel = onCancelActivitiesCsvExport,
                 enabled = !uiState.isExportingActivitiesCsv &&
                     !uiState.isExportingActivityDetailsCsv &&
                     !uiState.isInitialLoading &&
@@ -130,6 +134,7 @@ fun FunctionsScreen(
                 progressCurrent = uiState.exportDetailedLoadedActivityCount,
                 progressTotal = uiState.exportDetailedTotalActivityCount,
                 onClick = onExportActivityDetailsCsv,
+                onCancel = onCancelActivityDetailsCsvExport,
                 enabled = uiState.visibleActivityCount > 0 &&
                     !uiState.isExportingActivitiesCsv &&
                     !uiState.isExportingActivityDetailsCsv &&
@@ -172,6 +177,7 @@ private fun FunctionsExportCard(
     progressCurrent: Int,
     progressTotal: Int,
     onClick: () -> Unit,
+    onCancel: () -> Unit,
     enabled: Boolean,
     idleButtonLabel: String,
     runningButtonLabel: String,
@@ -210,10 +216,16 @@ private fun FunctionsExportCard(
                         current = progressCurrent,
                         total = progressTotal,
                     )
+                    OutlinedButton(
+                        onClick = onCancel,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(stringResource(R.string.functions_cancel_button))
+                    }
                 }
                 Button(
                     onClick = onClick,
-                    enabled = enabled,
+                    enabled = enabled && !isRunning,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (isRunning) {

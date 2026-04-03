@@ -5,6 +5,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -138,38 +139,10 @@ class RefreshSmartSystemUseCasesTest {
     }
 
     @Test
-    fun `csv export fetches first page when cache is empty and total unknown`() {
-        val page = BoschActivityPage(
-            total = 1,
-            offset = 0,
-            limit = 100,
-            items = listOf(
-                info.meuse24.m24bikestats.domain.model.BoschActivity(
-                    id = "a1",
-                    title = "Ride",
-                    startTime = "2026-04-03T10:00:00Z",
-                    endTime = null,
-                    timeZone = null,
-                    durationWithoutStopsSeconds = 1200,
-                    bikeId = null,
-                    startOdometerMeters = null,
-                    distanceMeters = 1234,
-                    averageSpeedKmh = null,
-                    maxSpeedKmh = null,
-                    averageCadenceRpm = null,
-                    maxCadenceRpm = null,
-                    averageRiderPowerWatts = null,
-                    maxRiderPowerWatts = null,
-                    elevationGainMeters = null,
-                    elevationLossMeters = null,
-                    caloriesBurned = null,
-                )
-            ),
-        )
+    fun `csv export fails when no cached activities are available`() {
         val repository = FakeBoschSmartSystemRepository().apply {
             cachedActivities = emptyList()
             cachedActivityTotalCount = null
-            activitiesResult = Result.success(page)
         }
         val useCase = ExportSmartSystemActivitiesCsvUseCase(
             repository = repository,
@@ -179,9 +152,9 @@ class RefreshSmartSystemUseCasesTest {
 
         val result = kotlinx.coroutines.runBlocking { useCase() }
 
-        assertTrue(result.isSuccess)
-        assertEquals(listOf(100 to 0), repository.getActivitiesCalls)
-        assertEquals(1, result.getOrNull()?.activityCount)
+        assertTrue(result.isFailure)
+        assertTrue(repository.getActivitiesCalls.isEmpty())
+        assertEquals("Keine Aktivitäten im Cache verfügbar", result.exceptionOrNull()?.message)
     }
 
     @Test
@@ -341,7 +314,6 @@ class RefreshSmartSystemUseCasesTest {
         val repository = FakeBoschSmartSystemRepository().apply {
             cachedActivities = listOf(activity("a1"))
             cachedActivityTotalCount = 1
-            activityDetailResult = Result.failure(IllegalStateException("offline"))
         }
         val useCase = ExportSmartSystemActivitiesCsvUseCase(
             repository = repository,
@@ -352,7 +324,7 @@ class RefreshSmartSystemUseCasesTest {
         val result = kotlinx.coroutines.runBlocking { useCase() }
 
         assertTrue(result.isSuccess)
-        assertEquals(listOf("a1"), repository.getActivityDetailCalls)
+        assertTrue(repository.getActivityDetailCalls.isEmpty())
         assertEquals(1, result.getOrNull()?.activityCount)
         assertTrue(result.getOrNull()!!.csvContent.contains("\"false\""))
     }
@@ -360,6 +332,9 @@ class RefreshSmartSystemUseCasesTest {
     @Test
     fun `cloud sync fetches all pages and bikes`() {
         val repository = FakeBoschSmartSystemRepository().apply {
+            cachedActivities = listOf(activity("a1"))
+            cachedActivityDetails["a1"] = BoschActivityDetail("a1", points = emptyList())
+            activityDetailFresh = false
             bikesResult = Result.success(
                 listOf(
                     BoschBike(
@@ -389,21 +364,31 @@ class RefreshSmartSystemUseCasesTest {
                     items = listOf(activity("a3")),
                 )
             )
+            activityDetailResultsById["a2"] = Result.success(
+                BoschActivityDetail("a2", points = listOf(detailPoint(10.0, 500.0, 20.0, 80.0, 47.0, 9.0, 100.0)))
+            )
+            activityDetailResultsById["a3"] = Result.success(
+                BoschActivityDetail("a3", points = listOf(detailPoint(20.0, 510.0, 21.0, 82.0, 47.1, 9.1, 110.0)))
+            )
         }
-        val progressEvents = mutableListOf<Pair<Int, Int>>()
+        val progressEvents = mutableListOf<Triple<SmartSystemCloudSyncPhase, Int, Int>>()
         val useCase = SyncSmartSystemCloudUseCase(
             repository = repository,
             authRepository = FakeAuthRepository(),
         )
 
         val result = kotlinx.coroutines.runBlocking {
-            useCase { loaded, total -> progressEvents += loaded to total }
+            useCase { progress -> progressEvents += Triple(progress.phase, progress.processedCount, progress.totalCount) }
         }
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(100 to 0, 100 to 2), repository.getActivitiesCalls)
         assertEquals(1, repository.getBikesCalls)
-        assertEquals(listOf(2 to 3, 3 to 3), progressEvents)
+        assertEquals(listOf("a2", "a3"), repository.getActivityDetailCalls)
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.BIKES, 1, 1)))
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 2, 3)))
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 3, 3)))
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITY_DETAILS, 2, 2)))
         assertEquals(3, result.getOrNull()?.activityCount)
         assertEquals(1, result.getOrNull()?.bikeCount)
     }

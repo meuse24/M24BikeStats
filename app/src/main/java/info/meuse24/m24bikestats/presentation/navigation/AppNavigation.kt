@@ -169,6 +169,7 @@ fun AppNavigation() {
                         HomeScreen(
                             uiState = dashboardUiState.toHomeUiState(),
                             onSyncCloudData = dashboardViewModel::syncCloudData,
+                            onCancelSyncCloudData = dashboardViewModel::cancelCloudSync,
                             onNavigateToActivityDetail = { activityId ->
                                 shellNavController.navigate("activity/$activityId")
                             },
@@ -211,6 +212,8 @@ fun AppNavigation() {
                             uiState = dashboardUiState.toFunctionsUiState(),
                             onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
                             onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
+                            onCancelActivitiesCsvExport = dashboardViewModel::cancelActivitiesCsvExport,
+                            onCancelActivityDetailsCsvExport = dashboardViewModel::cancelActivityDetailsCsvExport,
                             onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
                             onActivityDetailsCsvExportHandled = dashboardViewModel::onActivityDetailsCsvExportHandled,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),

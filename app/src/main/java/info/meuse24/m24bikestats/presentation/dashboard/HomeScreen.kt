@@ -19,6 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
@@ -33,11 +34,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
     onSyncCloudData: () -> Unit,
+    onCancelSyncCloudData: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToActivityTrack: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -102,24 +105,47 @@ fun HomeScreen(
                     if (uiState.isSyncingCloudData) {
                         val totalCount = uiState.syncTotalActivityCount
                         val loadedCount = uiState.syncLoadedActivityCount
-                        val progress = if (totalCount > 0) {
+                        val phaseProgress = if (totalCount > 0) {
                             loadedCount.toFloat() / totalCount.toFloat()
                         } else {
                             0f
                         }
-                        Text(
-                            text = if (totalCount > 0) {
-                                stringResource(R.string.home_sync_progress, loadedCount, totalCount)
-                            } else {
-                                stringResource(R.string.home_sync_starting)
-                            },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
+                        val overallProgress = when (uiState.syncPhase) {
+                            SmartSystemCloudSyncPhase.BIKES -> phaseProgress / 3f
+                            SmartSystemCloudSyncPhase.ACTIVITIES -> (1f + phaseProgress) / 3f
+                            SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> (2f + phaseProgress) / 3f
+                            null -> 0f
+                        }
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            uiState.syncPhaseLabel?.let { phaseLabel ->
+                                Text(
+                                    text = phaseLabel,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            Text(
+                                text = if (totalCount > 0) {
+                                    stringResource(R.string.home_sync_progress, loadedCount, totalCount)
+                                } else {
+                                    stringResource(R.string.home_sync_starting)
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                         LinearProgressIndicator(
-                            progress = { progress.coerceIn(0f, 1f) },
+                            progress = { overallProgress.coerceIn(0f, 1f) },
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        OutlinedButton(
+                            onClick = onCancelSyncCloudData,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.home_sync_cancel_button))
+                        }
                     }
                     Button(
                         onClick = onSyncCloudData,
