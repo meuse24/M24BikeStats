@@ -36,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -99,6 +100,8 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     onRefresh: () -> Unit,
     onLoadMoreActivities: () -> Unit,
+    onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
+    onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onExportActivitiesCsv: () -> Unit,
     onActivitiesCsvExportHandled: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
@@ -180,6 +183,8 @@ fun DashboardScreen(
                         0 -> ActivitiesOverview(
                             uiState = uiState,
                             activities = uiState.activities,
+                            onActivityDateRangeFilterChanged = onActivityDateRangeFilterChanged,
+                            onActivitySortOptionChanged = onActivitySortOptionChanged,
                             onActivityClick = onNavigateToActivityDetail,
                             onLoadMore = onLoadMoreActivities,
                         )
@@ -245,6 +250,18 @@ private fun FunctionsOverview(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    uiState.lastActivitiesCsvExport?.let { exportSummary ->
+                        SectionSurface {
+                            Text(
+                                text = "Zuletzt exportiert",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            OptionalRow("Datei", exportSummary.fileName)
+                            OptionalRow("Aktivitäten", exportSummary.activityCount.toString())
+                            OptionalRow("Zeitpunkt", exportSummary.exportedAtLabel)
+                        }
+                    }
                     if (uiState.isExportingActivitiesCsv) {
                         val totalCount = uiState.exportTotalActivityCount
                         val loadedCount = uiState.exportLoadedActivityCount
@@ -715,6 +732,8 @@ fun BikeDetailScreen(
 private fun ActivitiesOverview(
     uiState: DashboardUiState,
     activities: List<ActivityCardUiModel>,
+    onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
+    onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onActivityClick: (String) -> Unit,
     onLoadMore: () -> Unit,
 ) {
@@ -726,10 +745,16 @@ private fun ActivitiesOverview(
         item {
             HeroCard(
                 eyebrow = "Tourenübersicht",
-                title = "${uiState.loadedActivityCount} von ${uiState.activityTotalCount} Aktivitäten geladen",
+                title = "${uiState.visibleActivityCount} sichtbar • ${uiState.loadedActivityCount} geladen",
                 subtitle = "Die App liest aktuell die bestätigten Summary-Daten aus Bosch Smart System.",
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        MetricPill(
+                            label = "Sichtbar",
+                            value = uiState.visibleActivityCount.toString(),
+                        )
+                    }
                     item {
                         MetricPill(
                             label = "Geladen",
@@ -746,6 +771,41 @@ private fun ActivitiesOverview(
                         MetricPill(
                             label = "Status",
                             value = if (uiState.isRefreshing) "Aktualisiert..." else "Bereit",
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            ActivityFilterSection(
+                selectedDateRange = uiState.activityDateRangeFilter,
+                selectedSortOption = uiState.activitySortOption,
+                onDateRangeSelected = onActivityDateRangeFilterChanged,
+                onSortOptionSelected = onActivitySortOptionChanged,
+            )
+        }
+
+        if (activities.isEmpty()) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+                ) {
+                    Column(
+                        modifier = Modifier.padding(18.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = "Keine Aktivitäten für diese Auswahl",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = "Passe Datumsbereich oder Sortierung an, um andere Touren anzuzeigen.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -775,6 +835,63 @@ private fun ActivitiesOverview(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         Text("Mehr Aktivitäten laden")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ActivityFilterSection(
+    selectedDateRange: ActivityDateRangeFilter,
+    selectedSortOption: ActivitySortOption,
+    onDateRangeSelected: (ActivityDateRangeFilter) -> Unit,
+    onSortOptionSelected: (ActivitySortOption) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = "Filter & Sortierung",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Zeitraum",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(ActivityDateRangeFilter.entries) { option ->
+                        FilterChip(
+                            selected = option == selectedDateRange,
+                            onClick = { onDateRangeSelected(option) },
+                            label = { Text(option.label) },
+                        )
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "Sortierung",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(ActivitySortOption.entries) { option ->
+                        FilterChip(
+                            selected = option == selectedSortOption,
+                            onClick = { onSortOptionSelected(option) },
+                            label = { Text(option.label) },
+                        )
                     }
                 }
             }

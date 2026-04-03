@@ -9,10 +9,14 @@ data class DashboardUiState(
     val exportTotalActivityCount: Int = 0,
     val activityTotalCount: Int = 0,
     val loadedActivityCount: Int = 0,
+    val visibleActivityCount: Int = 0,
     val canLoadMoreActivities: Boolean = false,
+    val activityDateRangeFilter: ActivityDateRangeFilter = ActivityDateRangeFilter.ALL,
+    val activitySortOption: ActivitySortOption = ActivitySortOption.NEWEST_FIRST,
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
     val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel? = null,
+    val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel? = null,
     val selectedActivityDetail: ActivityDetailUiModel? = null,
     val selectedActivityId: String? = null,
     val isActivityDetailLoading: Boolean = false,
@@ -28,6 +32,9 @@ data class ActivityCardUiModel(
     val id: String,
     val title: String,
     val startedAt: String,
+    val startedAtEpochMillis: Long?,
+    val distanceMeters: Int,
+    val durationSeconds: Int,
     val dateLabel: String,
     val distanceLabel: String,
     val durationLabel: String,
@@ -98,3 +105,22 @@ data class ActivitiesCsvExportUiModel(
     val csvContent: String,
     val activityCount: Int,
 )
+
+data class ActivitiesCsvExportSummaryUiModel(
+    val fileName: String,
+    val activityCount: Int,
+    val exportedAtLabel: String,
+)
+
+enum class ActivityDateRangeFilter(val label: String) {
+    ALL("Alle"),
+    LAST_30_DAYS("30 Tage"),
+    LAST_12_MONTHS("12 Monate"),
+}
+
+enum class ActivitySortOption(val label: String) {
+    NEWEST_FIRST("Neueste"),
+    OLDEST_FIRST("Älteste"),
+    LONGEST_DISTANCE("Distanz"),
+    LONGEST_DURATION("Dauer"),
+}

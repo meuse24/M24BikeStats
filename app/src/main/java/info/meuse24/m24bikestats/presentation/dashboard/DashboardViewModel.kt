@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -70,6 +71,11 @@ class DashboardViewModel(
         viewModelScope.launch {
             observeCachedActivities().collectLatest { activities ->
                 cachedActivities = activities
+                val presentedActivities = buildPresentedActivities(
+                    activities = activities,
+                    dateRangeFilter = _uiState.value.activityDateRangeFilter,
+                    sortOption = _uiState.value.activitySortOption,
+                )
                 _uiState.update { current ->
                     val resolvedTotal = when {
                         current.activityTotalCount > 0 -> maxOf(current.activityTotalCount, activities.size)
@@ -80,8 +86,9 @@ class DashboardViewModel(
                     val hasInitialContent = activities.isNotEmpty() || current.bikes.isNotEmpty()
                     current.copy(
                         isLoading = current.isLoading && !hasInitialContent,
-                        activities = activities.map(::toActivityCardUiModel),
+                        activities = presentedActivities,
                         loadedActivityCount = activities.size,
+                        visibleActivityCount = presentedActivities.size,
                         activityTotalCount = resolvedTotal,
                         canLoadMoreActivities = activities.size < resolvedTotal,
                     )
@@ -238,9 +245,44 @@ class DashboardViewModel(
                         csvContent = export.csvContent,
                         activityCount = export.activityCount,
                     ),
+                    lastActivitiesCsvExport = ActivitiesCsvExportSummaryUiModel(
+                        fileName = export.fileName,
+                        activityCount = export.activityCount,
+                        exportedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
+                    ),
                     error = null,
                 )
             }
+        }
+    }
+
+    fun updateActivityDateRangeFilter(filter: ActivityDateRangeFilter) {
+        _uiState.update { current ->
+            val presentedActivities = buildPresentedActivities(
+                activities = cachedActivities,
+                dateRangeFilter = filter,
+                sortOption = current.activitySortOption,
+            )
+            current.copy(
+                activityDateRangeFilter = filter,
+                activities = presentedActivities,
+                visibleActivityCount = presentedActivities.size,
+            )
+        }
+    }
+
+    fun updateActivitySortOption(sortOption: ActivitySortOption) {
+        _uiState.update { current ->
+            val presentedActivities = buildPresentedActivities(
+                activities = cachedActivities,
+                dateRangeFilter = current.activityDateRangeFilter,
+                sortOption = sortOption,
+            )
+            current.copy(
+                activitySortOption = sortOption,
+                activities = presentedActivities,
+                visibleActivityCount = presentedActivities.size,
+            )
         }
     }
 
@@ -388,6 +430,9 @@ class DashboardViewModel(
             id = activity.id,
             title = activity.title,
             startedAt = activity.startTime,
+            startedAtEpochMillis = activity.startTime.toEpochMillis(),
+            distanceMeters = activity.distanceMeters,
+            durationSeconds = activity.durationWithoutStopsSeconds,
             dateLabel = activity.startTime.toReadableDateTime(),
             distanceLabel = activity.distanceMeters.toKilometerText(),
             durationLabel = activity.durationWithoutStopsSeconds.toDurationText(),
@@ -665,6 +710,9 @@ class DashboardViewModel(
         }.getOrDefault(this)
     }
 
+    private fun String.toEpochMillis(): Long? =
+        runCatching { Instant.parse(this).toEpochMilli() }.getOrNull()
+
     private fun Int.toDurationText(): String {
         val hours = this / 3600
         val minutes = (this % 3600) / 60
@@ -695,9 +743,21 @@ class DashboardViewModel(
         return latitude != 0.0 || longitude != 0.0
     }
 
+    private fun buildPresentedActivities(
+        activities: List<BoschActivity>,
+        dateRangeFilter: ActivityDateRangeFilter,
+        sortOption: ActivitySortOption,
+    ): List<ActivityCardUiModel> = filterAndSortActivities(
+        activities = activities.map(::toActivityCardUiModel),
+        dateRangeFilter = dateRangeFilter,
+        sortOption = sortOption,
+    )
+
     companion object {
         private const val ACTIVITIES_PAGE_SIZE = 20
         private val DATE_TIME_FORMATTER: DateTimeFormatter =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+        private val EXPORT_DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
     }
 }
