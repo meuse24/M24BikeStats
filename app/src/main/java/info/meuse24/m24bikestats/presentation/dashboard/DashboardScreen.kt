@@ -48,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -72,9 +73,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
-import info.meuse24.m24bikestats.presentation.apitest.ApiTestUiState
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
@@ -92,19 +90,16 @@ import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.spatialk.geojson.Position
 
-private val dashboardTabs = listOf("Aktivitäten", "Bike", "API-Test")
+private val dashboardTabs = listOf("Aktivitäten", "Bike", "Funktionen")
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     uiState: DashboardUiState,
-    apiTestUiState: ApiTestUiState,
     onRefresh: () -> Unit,
     onLoadMoreActivities: () -> Unit,
-    onSelectApiEndpoint: (BoschEndpoint) -> Unit,
-    onFetchApiEndpoint: () -> Unit,
-    onRunAllApiEndpoints: () -> Unit,
-    onClearApiOutput: () -> Unit,
+    onExportActivitiesCsv: () -> Unit,
+    onActivitiesCsvExportHandled: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToBikeDetail: (String) -> Unit,
     onLogout: () -> Unit,
@@ -118,6 +113,20 @@ fun DashboardScreen(
             snackbarHostState.showSnackbar(it)
             onErrorShown()
         }
+    }
+
+    val context = LocalContext.current
+    LaunchedEffect(uiState.pendingActivitiesCsvExport) {
+        val export = uiState.pendingActivitiesCsvExport ?: return@LaunchedEffect
+        val csvUri = createActivitiesCsvUri(context, export)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/csv"
+            putExtra(Intent.EXTRA_STREAM, csvUri)
+            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, "CSV exportieren"))
+        onActivitiesCsvExportHandled()
     }
 
     Scaffold(
@@ -178,13 +187,79 @@ fun DashboardScreen(
                             isRefreshing = uiState.isRefreshing,
                             onBikeClick = onNavigateToBikeDetail,
                         )
-                        else -> ApiTestContent(
-                            uiState = apiTestUiState,
-                            onSelectEndpoint = onSelectApiEndpoint,
-                            onFetch = onFetchApiEndpoint,
-                            onRunAll = onRunAllApiEndpoints,
-                            onClear = onClearApiOutput,
+                        else -> FunctionsOverview(
+                            uiState = uiState,
+                            onExportActivitiesCsv = onExportActivitiesCsv,
                         )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FunctionsOverview(
+    uiState: DashboardUiState,
+    onExportActivitiesCsv: () -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        item {
+            HeroCard(
+                eyebrow = "Funktionen",
+                title = "Datenexport",
+                subtitle = "Alle aktuell verfügbaren Aktivitäten paginiert laden und als CSV-Datei exportieren.",
+            ) {
+                SummaryChipRow(
+                    listOf(
+                        "Geladen" to uiState.loadedActivityCount.toString(),
+                        "Gesamt" to uiState.activityTotalCount.toString(),
+                    )
+                )
+            }
+        }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    Text(
+                        text = "Aktivitäten als CSV exportieren",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = "Die Funktion ruft alle Seiten der Aktivitätenliste ab und erstellt daraus eine teilbare CSV-Datei mit den bekannten Metriken.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Button(
+                        onClick = onExportActivitiesCsv,
+                        enabled = !uiState.isExportingActivitiesCsv && !uiState.isLoading && !uiState.isRefreshing,
+                    ) {
+                        if (uiState.isExportingActivitiesCsv) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .width(18.dp)
+                                    .height(18.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text("Export läuft")
+                        } else {
+                            Text("CSV exportieren")
+                        }
                     }
                 }
             }

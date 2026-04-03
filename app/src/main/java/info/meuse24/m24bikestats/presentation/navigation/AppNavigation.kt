@@ -10,7 +10,6 @@ import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.ActivityDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardScreen
@@ -28,7 +27,6 @@ fun AppNavigation() {
     val loginViewModel: LoginViewModel = koinViewModel()
     val isAuthenticated = loginViewModel.status is LoginStatus.Authenticated
     val dashboardViewModel: DashboardViewModel? = if (isAuthenticated) koinViewModel() else null
-    val apiTestViewModel: ApiTestViewModel? = if (isAuthenticated) koinViewModel() else null
     val logoutLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {
@@ -58,16 +56,12 @@ fun AppNavigation() {
 
         composable("dashboard") {
             val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
-            val apiTestUiState by apiTestViewModel!!.uiState.collectAsStateWithLifecycle()
             DashboardScreen(
                 uiState = uiState,
-                apiTestUiState = apiTestUiState,
                 onRefresh = dashboardViewModel::refresh,
                 onLoadMoreActivities = dashboardViewModel::loadMoreActivities,
-                onSelectApiEndpoint = apiTestViewModel::selectEndpoint,
-                onFetchApiEndpoint = apiTestViewModel::fetch,
-                onRunAllApiEndpoints = apiTestViewModel::runAllEndpoints,
-                onClearApiOutput = apiTestViewModel::clear,
+                onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
+                onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
                 onNavigateToActivityDetail = { activityId ->
                     navController.navigate("activity/$activityId")
                 },

@@ -4,11 +4,13 @@ data class DashboardUiState(
     val isLoading: Boolean = false,
     val isRefreshing: Boolean = false,
     val isLoadingMoreActivities: Boolean = false,
+    val isExportingActivitiesCsv: Boolean = false,
     val activityTotalCount: Int = 0,
     val loadedActivityCount: Int = 0,
     val canLoadMoreActivities: Boolean = false,
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
+    val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel? = null,
     val selectedActivityDetail: ActivityDetailUiModel? = null,
     val selectedActivityId: String? = null,
     val isActivityDetailLoading: Boolean = false,
@@ -85,4 +87,10 @@ data class ActivityProfilePointUiModel(
     val speedKmh: Double?,
     val cadenceRpm: Double?,
     val riderPowerWatts: Double?,
+)
+
+data class ActivitiesCsvExportUiModel(
+    val fileName: String,
+    val csvContent: String,
+    val activityCount: Int,
 )

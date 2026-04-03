@@ -9,6 +9,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
@@ -26,6 +27,7 @@ import java.util.Locale
 
 class DashboardViewModel(
     private val getActivities: GetSmartSystemActivitiesUseCase,
+    private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
     private val getBikes: GetSmartSystemBikesUseCase,
     private val getBikeDetail: GetSmartSystemBikeDetailUseCase,
@@ -136,6 +138,47 @@ class DashboardViewModel(
                 )
             }
         }
+    }
+
+    fun exportAllActivitiesCsv() {
+        val state = _uiState.value
+        if (state.isLoading || state.isRefreshing || state.isExportingActivitiesCsv) return
+
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isExportingActivitiesCsv = true,
+                    pendingActivitiesCsvExport = null,
+                    error = null,
+                )
+            }
+
+            val export = exportActivitiesCsv().getOrElse { error ->
+                _uiState.update {
+                    it.copy(
+                        isExportingActivitiesCsv = false,
+                        error = error.message ?: "CSV-Export konnte nicht erstellt werden",
+                    )
+                }
+                return@launch
+            }
+
+            _uiState.update {
+                it.copy(
+                    isExportingActivitiesCsv = false,
+                    pendingActivitiesCsvExport = ActivitiesCsvExportUiModel(
+                        fileName = export.fileName,
+                        csvContent = export.csvContent,
+                        activityCount = export.activityCount,
+                    ),
+                    error = null,
+                )
+            }
+        }
+    }
+
+    fun onActivitiesCsvExportHandled() {
+        _uiState.update { it.copy(pendingActivitiesCsvExport = null) }
     }
 
     fun loadBikeDetail(bikeId: String) {
