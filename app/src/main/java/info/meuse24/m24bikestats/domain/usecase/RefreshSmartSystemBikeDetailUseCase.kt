@@ -7,12 +7,13 @@ import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 class RefreshSmartSystemBikeDetailUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
+    private val cacheTtlMillis: Long = DEFAULT_CACHE_TTL_MS,
 ) {
     suspend operator fun invoke(
         bikeId: String,
         force: Boolean = false,
     ): Result<BoschBike?> {
-        if (!force && repository.isBikeDetailCacheFresh(bikeId, CACHE_TTL_MS)) {
+        if (!force && repository.isBikeDetailCacheFresh(bikeId, cacheTtlMillis)) {
             return Result.success(null)
         }
 
@@ -22,6 +23,6 @@ class RefreshSmartSystemBikeDetailUseCase(
     }
 
     private companion object {
-        const val CACHE_TTL_MS = 30 * 60 * 1000L
+        const val DEFAULT_CACHE_TTL_MS = 30 * 60 * 1000L
     }
 }

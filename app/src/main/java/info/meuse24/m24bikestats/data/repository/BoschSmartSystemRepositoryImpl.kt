@@ -24,14 +24,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.json.JSONArray
 import org.json.JSONObject
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
     private val activityDao: ActivityDao,
     private val activityDetailDao: ActivityDetailDao,
     private val bikeDao: BikeDao,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : BoschSmartSystemRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
@@ -164,10 +163,8 @@ class BoschSmartSystemRepositoryImpl(
             }
         }
 
-    @OptIn(ExperimentalTime::class)
-    private fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
+    private fun currentTimeMillis(): Long = nowMillis()
 
-    @OptIn(ExperimentalTime::class)
     private fun isFresh(updatedAtEpochMillis: Long?, maxAgeMillis: Long): Boolean {
         if (updatedAtEpochMillis == null) return false
         return currentTimeMillis() - updatedAtEpochMillis <= maxAgeMillis
