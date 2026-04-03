@@ -9,14 +9,14 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Automatischer Access-Token-Refresh über den Bosch-OIDC-Token-Endpunkt
 - Best-Effort-Logout über den Bosch-OIDC-End-Session-Endpunkt
 - Fachliches Dashboard mit Aktivitätenübersicht, Aktivitätsdetail und Bike-Ansicht
-- API-Test als zusätzlicher Tab innerhalb des Dashboards
+- Lokaler Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
+- Funktionen-Tab mit CSV-Export aller Aktivitäten
 - Trackansicht mit vollständigem Verlauf auf Basis der bestätigten GPS-Punkte
 - Interaktive Kartenkachel-Ansicht mit MapLibre und OpenFreeMap
-- Track-Screen mit Umschalter zwischen Karte, Profilen und GPX-Vorschau
+- Fullscreen-Track-Screen mit Kartenansicht, Share-, GPX- und Autofit-Aktionen
 - Höhen-, Leistungs- und Geschwindigkeitsprofil auf Basis der Bosch-Detailpunkte
-- GPX-Export über einen Metadaten-Dialog und das Android-Share-Sheet
-- API-Test-Tab: Einzelaufrufe und Batch-Test aller bekannten Endpunkte mit Roh-JSON
+- Direkter GPX-Export über das Android-Share-Sheet
 
 ## Voraussetzungen
 
@@ -117,7 +117,8 @@ Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch 
 - paginierte Aktivitätenübersicht
 - Aktivitätsdetailseite auf Basis der Summary-Daten
 - `Mehr Aktivitäten laden` über `limit`/`offset`
-- API-Test als zusätzlicher Tab der Hauptnavigation statt als separater Primär-Screen
+- CSV-Export aller Aktivitäten über den Funktionen-Tab
+- persistente Zwischenspeicherung der geladenen Aktivitäten in Room
 
 ### Aktivitätsdetails
 
@@ -133,7 +134,8 @@ Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
 - interaktive Kartenkacheln mit live gezeichneter Tracklinie
 - automatische Ausrichtung auf die Track-Bounds sowie getrennte Start-/Zielmarker
 - Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit entlang der Strecke
-- GPX-Datei und GPX-Rohtext über einen Export-Dialog mit Metadaten und Vorschau
+- GPX-Datei direkt über das Android-Share-Sheet sowie GPX-Kopierfunktion
+- persistente Zwischenspeicherung der Detaildaten und Trackpunkte in Room
 
 ### Bike-Liste und Bike-Detail
 
@@ -144,6 +146,8 @@ Die Antwort auf `bikes` bzw. `bikes/{bikeId}` enthält:
 - `batteries[]` mit z. B. `deliveredWhOverLifetime`, `chargeCycles`
 - `headUnit`
 - `serviceDue`
+
+Die App cached Bike-Liste und Bike-Details ebenfalls in Room, sodass der Bike-Tab lokale Daten sofort anzeigen und danach im Hintergrund aktualisieren kann.
 
 ## Lizenz
 

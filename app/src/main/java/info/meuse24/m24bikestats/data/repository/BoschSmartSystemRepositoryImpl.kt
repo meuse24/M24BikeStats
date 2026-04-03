@@ -2,9 +2,14 @@ package info.meuse24.m24bikestats.data.repository
 
 import info.meuse24.m24bikestats.data.local.dao.ActivityDetailDao
 import info.meuse24.m24bikestats.data.local.dao.ActivityDao
-import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
+import info.meuse24.m24bikestats.data.local.dao.BikeDao
+import info.meuse24.m24bikestats.data.local.entity.ActivityCacheStateEntity
+import info.meuse24.m24bikestats.data.local.mapper.toAssistModeEntities
+import info.meuse24.m24bikestats.data.local.mapper.toBatteryEntities
 import info.meuse24.m24bikestats.data.local.mapper.toDomain
+import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
 import info.meuse24.m24bikestats.data.local.mapper.toEntity
+import info.meuse24.m24bikestats.data.local.model.CachedBike
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
@@ -27,16 +32,29 @@ class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
     private val activityDao: ActivityDao,
     private val activityDetailDao: ActivityDetailDao,
+    private val bikeDao: BikeDao,
 ) : BoschSmartSystemRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
         activityDao.observeAll().map { activities -> activities.map { it.toDomain() } }
+
+    override fun observeCachedBikes(): Flow<List<BoschBike>> =
+        bikeDao.observeAll().map { bikes -> bikes.map(CachedBike::toDomain) }
+
+    override suspend fun getCachedActivities(): List<BoschActivity> =
+        activityDao.getAll().map { it.toDomain() }
+
+    override suspend fun getCachedActivityTotalCount(): Int? =
+        activityDao.getCachedTotalCount()
 
     override suspend fun getCachedActivity(activityId: String): BoschActivity? =
         activityDao.getById(activityId)?.toDomain()
 
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
         activityDetailDao.getByActivityId(activityId)?.toDomain()
+
+    override suspend fun getCachedBike(bikeId: String): BoschBike? =
+        bikeDao.getById(bikeId)?.toDomain()
 
     override suspend fun getActivities(
         accessToken: String,
@@ -67,6 +85,12 @@ class BoschSmartSystemRepositoryImpl(
                 } else {
                     activityDao.upsertAll(page.items.map { it.toEntity() })
                 }
+                activityDao.upsertCacheState(
+                    ActivityCacheStateEntity(
+                        totalCount = page.total,
+                        updatedAtEpochMillis = System.currentTimeMillis(),
+                    )
+                )
             }
         }
 
@@ -76,7 +100,13 @@ class BoschSmartSystemRepositoryImpl(
             val json = extractJsonBody(response) ?: error("Keine Bike-Daten erhalten")
             val root = JSONObject(json)
             val items = root.optJSONArray("bikes") ?: JSONArray()
-            items.mapObjects(::parseBike)
+            items.mapObjects(::parseBike).also { bikes ->
+                bikeDao.replaceAll(
+                    bikes = bikes.map { it.toEntity() },
+                    batteries = bikes.flatMap { it.toBatteryEntities() },
+                    assistModes = bikes.flatMap { it.toAssistModeEntities() },
+                )
+            }
         }
 
     override suspend fun getActivityDetail(
@@ -104,7 +134,13 @@ class BoschSmartSystemRepositoryImpl(
                 accessToken
             )
             val json = extractJsonBody(response) ?: error("Keine Bike-Detaildaten erhalten")
-            parseBike(JSONObject(json))
+            parseBike(JSONObject(json)).also { bike ->
+                bikeDao.replaceBike(
+                    bike = bike.toEntity(),
+                    batteries = bike.toBatteryEntities(),
+                    assistModes = bike.toAssistModeEntities(),
+                )
+            }
         }
 
     private fun parseActivity(root: JSONObject): BoschActivity {

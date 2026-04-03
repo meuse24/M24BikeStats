@@ -139,15 +139,19 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ### Aktueller UI-Stand
 
 - Startziel nach Login ist `dashboard`
-- Dashboard zeigt Aktivitäten, Bike und API-Test in einer gemeinsamen Tab-Navigation
+- Dashboard zeigt Aktivitäten, Bike und Funktionen in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
+- Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
+- Aktivitätsdetails und Trackpunkte werden in Room gecacht und cache-first geladen
 - Aktivitätsdetails können den vollständigen Track als GPX teilen
 - Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
 - Der Track-Screen enthält zusätzlich eine MapLibre/OpenFreeMap-Kartenansicht mit Track-Overlay
-- Der Track-Screen wechselt zwischen Karte, Profilen und GPX-Vorschau
+- Der Track-Screen ist eine fullscreen Kartenansicht mit Top-Bar und Action-Bottom-Bar
 - Der Track-Screen zeigt zusätzlich Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit
+- Bike-Liste und Bike-Details kommen cache-first aus Room
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
+- Der Funktionen-Tab enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 
 ---

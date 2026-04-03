@@ -18,9 +18,13 @@ class ExportSmartSystemActivitiesCsvUseCase(
         val token = authRepository.getValidAccessToken()
             .getOrElse { return Result.failure(it) }
 
-        val activities = mutableListOf<BoschActivity>()
-        var offset = 0
-        var total = Int.MAX_VALUE
+        val activities = repository.getCachedActivities().toMutableList()
+        var total = repository.getCachedActivityTotalCount() ?: activities.size
+        var offset = activities.size
+
+        if (activities.isNotEmpty()) {
+            onProgress(activities.size, total.coerceAtLeast(activities.size))
+        }
 
         while (activities.size < total) {
             val page = repository.getActivities(
@@ -32,7 +36,8 @@ class ExportSmartSystemActivitiesCsvUseCase(
             total = page.total
             if (page.items.isEmpty()) break
 
-            activities += page.items
+            val knownIds = activities.asSequence().map { it.id }.toHashSet()
+            activities += page.items.filterNot { it.id in knownIds }
             onProgress(activities.size, total)
             offset = page.offset + page.items.size
         }
