@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.ui.theme
+package info.meuse24.m24bikestats.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,8 +1,8 @@
 package info.meuse24.m24bikestats.di
 
 import androidx.room.Room
-import info.meuse24.m24bikestats.auth.AuthManager
-import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
+import info.meuse24.m24bikestats.data.auth.AuthManager
+import info.meuse24.m24bikestats.data.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
@@ -47,7 +47,6 @@ import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import org.koin.android.ext.koin.androidContext
-import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
@@ -108,21 +107,5 @@ val appModule = module {
     factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)
     viewModelOf(::ApiTestViewModel)
-    viewModel {
-        DashboardViewModel(
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-            get(),
-        )
-    }
+    viewModelOf(::DashboardViewModel)
 }

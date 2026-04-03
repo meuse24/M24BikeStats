@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.ui.theme
+package info.meuse24.m24bikestats.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
