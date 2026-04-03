@@ -1328,7 +1328,7 @@ private fun estimateTrackZoom(
     val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
     val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * 256.0)) / ln(2.0)
     val latitudeZoom = ln(usableHeight / (latitudeFraction * 256.0)) / ln(2.0)
-    return (minOf(longitudeZoom, latitudeZoom) - 1.0).coerceIn(7.0, 15.6)
+    return (minOf(longitudeZoom, latitudeZoom) - 1.2).coerceIn(6.8, 15.4)
 }
 
 private fun calculateTrackCameraPosition(
