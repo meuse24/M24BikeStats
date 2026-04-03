@@ -165,9 +165,6 @@ fun AppNavigation() {
                                     launchSingleTop = true
                                 }
                             },
-                            onNavigateToBike = { bikeId ->
-                                shellNavController.navigate("bike/$bikeId")
-                            },
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }

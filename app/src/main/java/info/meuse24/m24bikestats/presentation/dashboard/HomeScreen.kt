@@ -14,7 +14,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -29,7 +28,6 @@ fun HomeScreen(
     uiState: DashboardUiState,
     onSyncCloudData: () -> Unit,
     onNavigateToActivities: () -> Unit,
-    onNavigateToBike: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val latestActivity = remember(uiState.allActivities) {
@@ -69,7 +67,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Schnellzugriffe",
+                        text = "Cloud-Abgleich",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
@@ -128,19 +126,6 @@ fun HomeScreen(
                         } else {
                             Text("Cloud-Daten neu einlesen")
                         }
-                    }
-                    Button(
-                        onClick = onNavigateToActivities,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text("Zu den Aktivitäten")
-                    }
-                    OutlinedButton(
-                        onClick = { primaryBike?.let { onNavigateToBike(it.id) } },
-                        enabled = primaryBike != null,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(if (primaryBike != null) "Bike öffnen" else "Kein Bike verfügbar")
                     }
                 }
             }
