@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.domain.usecase
 
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncProgress
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncSummary
@@ -12,8 +13,10 @@ class SyncSmartSystemCloudUseCase(
     private val repository: BoschSmartSystemRepository,
     private val authRepository: AuthRepository,
     private val activityDetailCacheTtlMillis: Long = DEFAULT_ACTIVITY_DETAIL_CACHE_TTL_MS,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     suspend operator fun invoke(
+        detailMode: CloudSyncDetailMode,
         onProgress: (SmartSystemCloudSyncProgress) -> Unit = {},
     ): Result<SmartSystemCloudSyncSummary> = withValidAccessToken(authRepository) { token ->
         onProgress(
@@ -65,9 +68,16 @@ class SyncSmartSystemCloudUseCase(
         } while (offset < totalActivityCount && knownActivityIds.size < totalActivityCount)
 
         val cachedActivities = repository.getCachedActivities()
+        val detailMetadataById = repository.getCachedActivityDetailMetadata()
+            .associateBy { it.activityId }
+        val now = nowMillis()
         val detailCandidates = cachedActivities.filter { activity ->
-            repository.getCachedActivityDetail(activity.id) == null ||
-                !repository.isActivityDetailCacheFresh(activity.id, activityDetailCacheTtlMillis)
+            val metadata = detailMetadataById[activity.id]
+            when (detailMode) {
+                CloudSyncDetailMode.MISSING_ONLY -> metadata == null
+                CloudSyncDetailMode.MISSING_OR_STALE -> metadata == null ||
+                    now - metadata.updatedAtEpochMillis > activityDetailCacheTtlMillis
+            }
         }
 
         if (detailCandidates.isNotEmpty()) {

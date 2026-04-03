@@ -67,6 +67,8 @@ fun HomeScreen(
                     SummaryChipRow(
                         summary = listOf(
                             stringResource(R.string.home_metric_tours) to uiState.loadedActivityCount.toString(),
+                            stringResource(R.string.home_metric_details) to uiState.cachedDetailActivityCount.toString(),
+                            stringResource(R.string.home_metric_gpx) to uiState.cachedGpsPointCount.toString(),
                             stringResource(R.string.home_metric_bikes) to uiState.bikes.size.toString(),
                             stringResource(R.string.home_metric_visible) to uiState.visibleActivityCount.toString(),
                         ),

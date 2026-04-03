@@ -29,6 +29,8 @@
     <string name="setup_subtitle">Hier liegen App-Einstellungen, die sich direkt auf Export und Bedienung auswirken.</string>
     <string name="setup_csv_title">CSV-Format</string>
     <string name="setup_csv_subtitle">Lege fest, ob CSV-Exporte automatisch aus den Gerätekonventionen abgeleitet werden oder einem festen Export-Preset folgen.</string>
+    <string name="setup_sync_title">Cloud-Sync Details</string>
+    <string name="setup_sync_subtitle">Lege fest, ob der Cloud-Sync nur fehlende Aktivitätsdetails lädt oder zusätzlich veraltete Cache-Daten aktualisiert.</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
     <string name="csv_export_format_system_default_label">Automatisch</string>
     <string name="csv_export_format_system_default_description">Leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
@@ -36,6 +38,10 @@
     <string name="csv_export_format_excel_de_description">Semikolon als Trennzeichen mit Dezimalkomma und konsistenten Anführungszeichen.</string>
     <string name="csv_export_format_standard_international_label">Standard/International</string>
     <string name="csv_export_format_standard_international_description">Komma als Trennzeichen mit Dezimalpunkt und konsistenten Anführungszeichen.</string>
+    <string name="cloud_sync_detail_mode_missing_only_label">Nur fehlende</string>
+    <string name="cloud_sync_detail_mode_missing_only_description">Lädt Aktivitätsdetails nur, wenn sie noch gar nicht im Cache liegen. Minimaler Datenverbrauch.</string>
+    <string name="cloud_sync_detail_mode_missing_or_stale_label">Fehlende + veraltete</string>
+    <string name="cloud_sync_detail_mode_missing_or_stale_description">Lädt fehlende Details und aktualisiert zusätzlich Cache-Einträge, sobald sie veraltet sind.</string>
 
     <string name="help_title">Hilfe</string>
     <string name="help_subtitle">Kurzübersicht zu Navigation, Datenfluss und Diagnose.</string>
@@ -72,6 +78,8 @@
 
     <string name="home_hero_subtitle">Die Startseite bündelt den letzten Fahrtdatensatz, Bike-Status und die letzten Exportergebnisse.</string>
     <string name="home_metric_tours">Touren</string>
+    <string name="home_metric_details">Details</string>
+    <string name="home_metric_gpx">GPX</string>
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Sichtbar</string>
     <string name="home_sync_title">Cloud-Abgleich</string>
@@ -84,7 +92,8 @@
     <string name="home_sync_progress">%1$d von %2$d Elementen verarbeitet</string>
     <string name="home_sync_phase_bikes">Bike-Liste wird aktualisiert</string>
     <string name="home_sync_phase_activities">Aktivitätenliste wird aktualisiert</string>
-    <string name="home_sync_phase_activity_details">Fehlende Aktivitätsdetails werden geladen</string>
+    <string name="home_sync_phase_activity_details_missing_only">Fehlende Aktivitätsdetails werden geladen</string>
+    <string name="home_sync_phase_activity_details_missing_or_stale">Fehlende oder veraltete Aktivitätsdetails werden geladen</string>
     <string name="home_sync_cancel_button">Sync abbrechen</string>
     <string name="home_sync_button">Cloud-Daten neu einlesen</string>
     <string name="home_latest_tour">Letzte Tour</string>

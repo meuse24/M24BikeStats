@@ -227,7 +227,9 @@ fun AppNavigation() {
                     composable(DrawerDestination.SETUP.route!!) {
                         SetupScreen(
                             csvExportFormat = dashboardUiState.csvExportFormat,
+                            cloudSyncDetailMode = dashboardUiState.cloudSyncDetailMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
+                            onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }

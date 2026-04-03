@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.domain.usecase
 
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
@@ -7,6 +9,7 @@ import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.emptyFlow
 
 internal class FakeAuthRepository(
@@ -42,12 +45,31 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> = emptyFlow()
     override fun observeCachedBikes(): Flow<List<BoschBike>> = emptyFlow()
+    override fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview> =
+        flowOf(
+            ActivityDetailCacheOverview(
+                detailedActivityCount = cachedActivityDetails.size,
+                detailPointCount = cachedActivityDetails.values.sumOf { it.points.size },
+                gpsPointCount = cachedActivityDetails.values.sumOf { detail ->
+                    detail.points.count { point -> point.latitude != null && point.longitude != null }
+                },
+            )
+        )
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> = emptyFlow()
     override fun observeCachedBike(bikeId: String): Flow<BoschBike?> = emptyFlow()
     override suspend fun getCachedActivities(): List<BoschActivity> = cachedActivities
     override suspend fun getCachedActivityTotalCount(): Int? = cachedActivityTotalCount
     override suspend fun getCachedActivity(activityId: String): BoschActivity? = cachedActivities.firstOrNull { it.id == activityId }
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? = cachedActivityDetails[activityId]
+    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
+        cachedActivityDetails.map { (activityId, detail) ->
+            ActivityDetailCacheMetadata(
+                activityId = activityId,
+                pointCount = detail.points.size,
+                gpsPointCount = detail.points.count { point -> point.latitude != null && point.longitude != null },
+                updatedAtEpochMillis = if (activityDetailFresh) Long.MAX_VALUE else 0L,
+            )
+        }
     override suspend fun getCachedBike(bikeId: String): BoschBike? = null
     override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean = activitiesFresh
     override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean = activityDetailFresh

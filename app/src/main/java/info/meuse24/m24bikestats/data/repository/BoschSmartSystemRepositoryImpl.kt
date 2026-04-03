@@ -16,6 +16,8 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschRequest
 import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -36,6 +38,15 @@ class BoschSmartSystemRepositoryImpl(
     override fun observeCachedBikes(): Flow<List<BoschBike>> =
         bikeDao.observeAll().map { bikes -> bikes.map(CachedBike::toDomain) }
 
+    override fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview> =
+        activityDetailDao.observeCacheOverview().map { overview ->
+            ActivityDetailCacheOverview(
+                detailedActivityCount = overview.detailedActivityCount,
+                detailPointCount = overview.detailPointCount,
+                gpsPointCount = overview.gpsPointCount,
+            )
+        }
+
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
         activityDetailDao.observeByActivityId(activityId).map { detail -> detail?.toDomain() }
 
@@ -53,6 +64,16 @@ class BoschSmartSystemRepositoryImpl(
 
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
         activityDetailDao.getByActivityId(activityId)?.toDomain()
+
+    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
+        activityDetailDao.getAllMetadata().map { detail ->
+            ActivityDetailCacheMetadata(
+                activityId = detail.activityId,
+                pointCount = detail.pointCount,
+                gpsPointCount = detail.gpsPointCount,
+                updatedAtEpochMillis = detail.updatedAtEpochMillis,
+            )
+        }
 
     override suspend fun getCachedBike(bikeId: String): BoschBike? =
         bikeDao.getById(bikeId)?.toDomain()

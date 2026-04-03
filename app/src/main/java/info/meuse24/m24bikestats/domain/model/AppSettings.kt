@@ -10,6 +10,7 @@ import java.util.Locale
 
 data class AppSettings(
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
+    val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
 )
 
 enum class CsvSeparator(
@@ -48,6 +49,17 @@ enum class CsvExportFormat {
     companion object {
         fun fromStoredValue(value: String?): CsvExportFormat? =
             entries.firstOrNull { format -> format.name == value }
+    }
+}
+
+enum class CloudSyncDetailMode {
+    MISSING_ONLY,
+    MISSING_OR_STALE,
+    ;
+
+    companion object {
+        fun fromStoredValue(value: String?): CloudSyncDetailMode? =
+            entries.firstOrNull { mode -> mode.name == value }
     }
 }
 

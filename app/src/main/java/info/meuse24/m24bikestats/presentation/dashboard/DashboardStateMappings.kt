@@ -15,6 +15,9 @@ fun DashboardUiState.toHomeUiState(): HomeUiState =
         syncPhaseLabel = syncPhaseLabel,
         syncLoadedActivityCount = syncLoadedActivityCount,
         syncTotalActivityCount = syncTotalActivityCount,
+        cachedDetailActivityCount = cachedDetailActivityCount,
+        cachedDetailPointCount = cachedDetailPointCount,
+        cachedGpsPointCount = cachedGpsPointCount,
         lastCloudSyncSummary = lastCloudSyncSummary,
         lastActivitiesCsvExport = lastActivitiesCsvExport,
         lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
@@ -37,6 +40,7 @@ fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =
 fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
     FunctionsUiState(
         csvExportFormat = csvExportFormat,
+        cloudSyncDetailMode = cloudSyncDetailMode,
         loadedActivityCount = loadedActivityCount,
         visibleActivityCount = visibleActivityCount,
         activityTotalCount = activityTotalCount,

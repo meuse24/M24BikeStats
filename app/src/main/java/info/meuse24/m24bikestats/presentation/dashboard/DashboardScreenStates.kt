@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 
 data class DashboardUiState(
     val isInitialLoading: Boolean = false,
@@ -14,6 +15,9 @@ data class DashboardUiState(
     val syncPhaseLabel: String? = null,
     val syncLoadedActivityCount: Int = 0,
     val syncTotalActivityCount: Int = 0,
+    val cachedDetailActivityCount: Int = 0,
+    val cachedDetailPointCount: Int = 0,
+    val cachedGpsPointCount: Int = 0,
     val exportLoadedActivityCount: Int = 0,
     val exportTotalActivityCount: Int = 0,
     val exportDetailedLoadedActivityCount: Int = 0,
@@ -42,6 +46,7 @@ data class DashboardUiState(
     val isBikeDetailRefreshing: Boolean = false,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
+    val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
     val error: String? = null,
 )
 
@@ -59,6 +64,9 @@ data class HomeUiState(
     val syncPhaseLabel: String?,
     val syncLoadedActivityCount: Int,
     val syncTotalActivityCount: Int,
+    val cachedDetailActivityCount: Int,
+    val cachedDetailPointCount: Int,
+    val cachedGpsPointCount: Int,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel?,
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
@@ -79,6 +87,7 @@ data class ActivitiesUiState(
 
 data class FunctionsUiState(
     val csvExportFormat: CsvExportFormat,
+    val cloudSyncDetailMode: CloudSyncDetailMode,
     val loadedActivityCount: Int,
     val visibleActivityCount: Int,
     val activityTotalCount: Int,

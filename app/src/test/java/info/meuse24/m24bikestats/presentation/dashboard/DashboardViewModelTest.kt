@@ -1,9 +1,12 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
+import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
@@ -16,6 +19,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTota
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
@@ -25,6 +29,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -188,6 +193,63 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `home overview exposes cached detail and gps counters`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(listOf(testActivity(id = "a1", title = "Tour")), totalCount = 1)
+            setBikes(emptyList())
+            setActivityDetail(
+                "a1",
+                BoschActivityDetail(
+                    activityId = "a1",
+                    points = listOf(
+                        info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint(
+                            distanceMeters = 100.0,
+                            altitudeMeters = 500.0,
+                            speedKmh = 25.0,
+                            cadenceRpm = 80.0,
+                            latitude = 47.1,
+                            longitude = 9.1,
+                            riderPowerWatts = 210.0,
+                        ),
+                        info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint(
+                            distanceMeters = 120.0,
+                            altitudeMeters = 505.0,
+                            speedKmh = 22.0,
+                            cadenceRpm = 78.0,
+                            latitude = null,
+                            longitude = null,
+                            riderPowerWatts = 190.0,
+                        ),
+                    ),
+                )
+            )
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        val homeState = viewModel.uiState.value.toHomeUiState()
+        assertEquals(1, homeState.cachedDetailActivityCount)
+        assertEquals(2, homeState.cachedDetailPointCount)
+        assertEquals(1, homeState.cachedGpsPointCount)
+    }
+
+    @Test
+    fun `cloud sync detail mode changes propagate into ui state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository()
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateCloudSyncDetailMode(CloudSyncDetailMode.MISSING_OR_STALE)
+        advanceUntilIdle()
+
+        assertEquals(CloudSyncDetailMode.MISSING_OR_STALE, viewModel.uiState.value.cloudSyncDetailMode)
+    }
+
+    @Test
     fun `can load more activities when cached total exceeds first loaded page`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -258,11 +320,13 @@ class DashboardViewModelTest {
             feedHandler = DashboardFeedHandler(
                 observeCachedActivities = ObserveCachedSmartSystemActivitiesUseCase(repository),
                 observeCachedBikes = ObserveCachedSmartSystemBikesUseCase(repository),
+                observeCachedActivityDetailCacheOverview = ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase(repository),
                 observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
                 getCachedActivityTotalCount = GetCachedSmartSystemActivityTotalCountUseCase(repository),
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
+                updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
@@ -348,6 +412,8 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> = activitiesFlow.asStateFlow()
     override fun observeCachedBikes(): Flow<List<BoschBike>> = bikesFlow.asStateFlow()
+    override fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview> =
+        MutableStateFlow(currentDetailOverview()).asStateFlow()
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
         activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.asStateFlow()
 
@@ -361,6 +427,18 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
 
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
         activityDetails[activityId]?.value
+
+    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
+        activityDetails.mapNotNull { (activityId, flow) ->
+            flow.value?.let { detail ->
+                ActivityDetailCacheMetadata(
+                    activityId = activityId,
+                    pointCount = detail.points.size,
+                    gpsPointCount = detail.points.count { point -> point.latitude != null && point.longitude != null },
+                    updatedAtEpochMillis = Long.MAX_VALUE,
+                )
+            }
+        }
 
     override suspend fun getCachedBike(bikeId: String): BoschBike? =
         bikeDetails[bikeId]?.value ?: bikesFlow.value.firstOrNull { it.id == bikeId }
@@ -395,4 +473,13 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
 
     override suspend fun getBikeDetail(accessToken: String, bikeId: String): Result<BoschBike> =
         Result.failure(IllegalStateException("not needed"))
+
+    private fun currentDetailOverview(): ActivityDetailCacheOverview =
+        ActivityDetailCacheOverview(
+            detailedActivityCount = activityDetails.values.count { it.value != null },
+            detailPointCount = activityDetails.values.sumOf { it.value?.points?.size ?: 0 },
+            gpsPointCount = activityDetails.values.sumOf { flow ->
+                flow.value?.points?.count { point -> point.latitude != null && point.longitude != null } ?: 0
+            },
+        )
 }

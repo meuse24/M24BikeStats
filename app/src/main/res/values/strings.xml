@@ -29,6 +29,8 @@
     <string name="setup_subtitle">This is where app settings live that directly affect export and usage.</string>
     <string name="setup_csv_title">CSV format</string>
     <string name="setup_csv_subtitle">Choose whether CSV exports use the automatic device-based format or a fixed export preset.</string>
+    <string name="setup_sync_title">Cloud sync details</string>
+    <string name="setup_sync_subtitle">Choose whether cloud sync loads only missing activity details or also refreshes stale cached details.</string>
     <string name="setup_csv_example">Example: %1$s</string>
     <string name="csv_export_format_system_default_label">Automatic</string>
     <string name="csv_export_format_system_default_description">Uses the device decimal conventions to choose a fitting CSV preset, for example semicolon plus decimal comma on German systems.</string>
@@ -36,6 +38,10 @@
     <string name="csv_export_format_excel_de_description">Semicolon as separator with decimal comma and consistent quoting.</string>
     <string name="csv_export_format_standard_international_label">Standard/International</string>
     <string name="csv_export_format_standard_international_description">Comma as separator with decimal point and consistent quoting.</string>
+    <string name="cloud_sync_detail_mode_missing_only_label">Missing only</string>
+    <string name="cloud_sync_detail_mode_missing_only_description">Loads activity details only when none are cached yet. Lowest data usage.</string>
+    <string name="cloud_sync_detail_mode_missing_or_stale_label">Missing + stale</string>
+    <string name="cloud_sync_detail_mode_missing_or_stale_description">Loads missing details and refreshes cached details once they become stale.</string>
 
     <string name="help_title">Help</string>
     <string name="help_subtitle">Quick overview of navigation, data flow and diagnostics.</string>
@@ -72,6 +78,8 @@
 
     <string name="home_hero_subtitle">The start page bundles the latest ride dataset, bike status and recent export results.</string>
     <string name="home_metric_tours">Tours</string>
+    <string name="home_metric_details">Details</string>
+    <string name="home_metric_gpx">GPX</string>
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Visible</string>
     <string name="home_sync_title">Cloud sync</string>
@@ -84,7 +92,8 @@
     <string name="home_sync_progress">%1$d of %2$d items processed</string>
     <string name="home_sync_phase_bikes">Refreshing bike list</string>
     <string name="home_sync_phase_activities">Refreshing activity list</string>
-    <string name="home_sync_phase_activity_details">Loading missing activity details</string>
+    <string name="home_sync_phase_activity_details_missing_only">Loading missing activity details</string>
+    <string name="home_sync_phase_activity_details_missing_or_stale">Loading missing or stale activity details</string>
     <string name="home_sync_cancel_button">Cancel sync</string>
     <string name="home_sync_button">Reload cloud data</string>
     <string name="home_latest_tour">Latest ride</string>

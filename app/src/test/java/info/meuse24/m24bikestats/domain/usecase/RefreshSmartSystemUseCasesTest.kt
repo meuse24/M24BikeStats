@@ -4,6 +4,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import org.junit.Assert.assertEquals
@@ -330,7 +331,7 @@ class RefreshSmartSystemUseCasesTest {
     }
 
     @Test
-    fun `cloud sync fetches all pages and bikes`() {
+    fun `cloud sync fetches all pages bikes and stale details in missing or stale mode`() {
         val repository = FakeBoschSmartSystemRepository().apply {
             cachedActivities = listOf(activity("a1"))
             cachedActivityDetails["a1"] = BoschActivityDetail("a1", points = emptyList())
@@ -364,6 +365,9 @@ class RefreshSmartSystemUseCasesTest {
                     items = listOf(activity("a3")),
                 )
             )
+            activityDetailResultsById["a1"] = Result.success(
+                BoschActivityDetail("a1", points = emptyList())
+            )
             activityDetailResultsById["a2"] = Result.success(
                 BoschActivityDetail("a2", points = listOf(detailPoint(10.0, 500.0, 20.0, 80.0, 47.0, 9.0, 100.0)))
             )
@@ -378,17 +382,19 @@ class RefreshSmartSystemUseCasesTest {
         )
 
         val result = kotlinx.coroutines.runBlocking {
-            useCase { progress -> progressEvents += Triple(progress.phase, progress.processedCount, progress.totalCount) }
+            useCase(detailMode = CloudSyncDetailMode.MISSING_OR_STALE) { progress ->
+                progressEvents += Triple(progress.phase, progress.processedCount, progress.totalCount)
+            }
         }
 
         assertTrue(result.isSuccess)
         assertEquals(listOf(100 to 0, 100 to 2), repository.getActivitiesCalls)
         assertEquals(1, repository.getBikesCalls)
-        assertEquals(listOf("a2", "a3"), repository.getActivityDetailCalls)
+        assertEquals(listOf("a1", "a2", "a3"), repository.getActivityDetailCalls)
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.BIKES, 1, 1)))
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 2, 3)))
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 3, 3)))
-        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITY_DETAILS, 2, 2)))
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITY_DETAILS, 3, 3)))
         assertEquals(3, result.getOrNull()?.activityCount)
         assertEquals(1, result.getOrNull()?.bikeCount)
     }

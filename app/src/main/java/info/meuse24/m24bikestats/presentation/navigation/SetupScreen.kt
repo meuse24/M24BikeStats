@@ -20,13 +20,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import java.util.Locale
 
 @Composable
 fun SetupScreen(
     csvExportFormat: CsvExportFormat,
+    cloudSyncDetailMode: CloudSyncDetailMode,
     onCsvExportFormatSelected: (CsvExportFormat) -> Unit,
+    onCloudSyncDetailModeSelected: (CloudSyncDetailMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -130,6 +133,73 @@ fun SetupScreen(
                 }
             }
         }
+        item {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.setup_sync_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.setup_sync_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+        items(CloudSyncDetailMode.entries) { mode ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = { onCloudSyncDetailModeSelected(mode) },
+                colors = CardDefaults.cardColors(
+                    containerColor = if (mode == cloudSyncDetailMode) {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerLow
+                    },
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(0.82f),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(
+                                text = stringResource(mode.labelRes()),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                text = stringResource(mode.descriptionRes()),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        RadioButton(
+                            selected = mode == cloudSyncDetailMode,
+                            onClick = { onCloudSyncDetailModeSelected(mode) },
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -148,4 +218,14 @@ private fun CsvExportFormat.descriptionRes(): Int = when (this) {
     CsvExportFormat.SYSTEM_DEFAULT -> R.string.csv_export_format_system_default_description
     CsvExportFormat.EXCEL_DE -> R.string.csv_export_format_excel_de_description
     CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_description
+}
+
+private fun CloudSyncDetailMode.labelRes(): Int = when (this) {
+    CloudSyncDetailMode.MISSING_ONLY -> R.string.cloud_sync_detail_mode_missing_only_label
+    CloudSyncDetailMode.MISSING_OR_STALE -> R.string.cloud_sync_detail_mode_missing_or_stale_label
+}
+
+private fun CloudSyncDetailMode.descriptionRes(): Int = when (this) {
+    CloudSyncDetailMode.MISSING_ONLY -> R.string.cloud_sync_detail_mode_missing_only_description
+    CloudSyncDetailMode.MISSING_OR_STALE -> R.string.cloud_sync_detail_mode_missing_or_stale_description
 }

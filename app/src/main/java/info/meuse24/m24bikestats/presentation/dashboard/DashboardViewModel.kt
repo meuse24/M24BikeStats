@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -101,6 +102,14 @@ class DashboardViewModel(
             scope = viewModelScope,
             currentState = _uiState::value,
             format = format,
+        )
+    }
+
+    fun updateCloudSyncDetailMode(mode: CloudSyncDetailMode) {
+        feedHandler.updateCloudSyncDetailMode(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            mode = mode,
         )
     }
 

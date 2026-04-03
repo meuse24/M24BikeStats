@@ -1,15 +1,18 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -19,11 +22,13 @@ import kotlinx.coroutines.launch
 class DashboardFeedHandler(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
     private val observeCachedBikes: ObserveCachedSmartSystemBikesUseCase,
+    private val observeCachedActivityDetailCacheOverview: ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase,
     private val observeAppSettings: ObserveAppSettingsUseCase,
     private val getCachedActivityTotalCount: GetCachedSmartSystemActivityTotalCountUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
+    private val updateCloudSyncDetailModeUseCase: UpdateCloudSyncDetailModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
@@ -79,9 +84,24 @@ class DashboardFeedHandler(
         }
 
         scope.launch {
+            observeCachedActivityDetailCacheOverview().collectLatest { overview ->
+                updateState { current ->
+                    current.copy(
+                        cachedDetailActivityCount = overview.detailedActivityCount,
+                        cachedDetailPointCount = overview.detailPointCount,
+                        cachedGpsPointCount = overview.gpsPointCount,
+                    )
+                }
+            }
+        }
+
+        scope.launch {
             observeAppSettings().collectLatest { settings ->
                 updateState { current ->
-                    current.copy(csvExportFormat = settings.csvExportFormat)
+                    current.copy(
+                        csvExportFormat = settings.csvExportFormat,
+                        cloudSyncDetailMode = settings.cloudSyncDetailMode,
+                    )
                 }
             }
         }
@@ -255,6 +275,17 @@ class DashboardFeedHandler(
         if (currentState().csvExportFormat == format) return
         scope.launch {
             updateCsvExportFormatUseCase(format)
+        }
+    }
+
+    fun updateCloudSyncDetailMode(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        mode: CloudSyncDetailMode,
+    ) {
+        if (currentState().cloudSyncDetailMode == mode) return
+        scope.launch {
+            updateCloudSyncDetailModeUseCase(mode)
         }
     }
 

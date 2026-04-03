@@ -30,6 +30,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
@@ -39,6 +40,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardDetailActionHandler
@@ -87,6 +89,7 @@ val appModule = module {
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
     factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
+    factory { ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase(get()) }
     factory { ObserveCachedSmartSystemActivityDetailUseCase(get()) }
     factory { ObserveCachedSmartSystemBikesUseCase(get()) }
     factory { ObserveCachedSmartSystemBikeDetailUseCase(get()) }
@@ -95,6 +98,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { ObserveAppSettingsUseCase(get()) }
+    factory { UpdateCloudSyncDetailModeUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
@@ -108,7 +112,7 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get()) }
 
     // --- Presentation ---
-    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { DashboardOperationsHandler(get(), get(), get(), get()) }
     factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)

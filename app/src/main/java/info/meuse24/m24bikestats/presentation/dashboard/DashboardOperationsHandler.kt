@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
@@ -239,6 +240,7 @@ class DashboardOperationsHandler(
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
         if (!currentState().canRunBackgroundOperation()) return
+        val detailMode = currentState().cloudSyncDetailMode
 
         cloudSyncJob = scope.launch {
             updateState {
@@ -252,11 +254,11 @@ class DashboardOperationsHandler(
                 )
             }
 
-            val summary = syncSmartSystemCloudUseCase { progress ->
+            val summary = syncSmartSystemCloudUseCase(detailMode = detailMode) { progress ->
                 updateState {
                     it.copy(
                         syncPhase = progress.phase,
-                        syncPhaseLabel = syncPhaseLabel(progress.phase),
+                        syncPhaseLabel = syncPhaseLabel(progress.phase, detailMode),
                         syncLoadedActivityCount = progress.processedCount,
                         syncTotalActivityCount = progress.totalCount,
                     )
@@ -336,10 +338,16 @@ class DashboardOperationsHandler(
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)
 
-    private fun syncPhaseLabel(phase: SmartSystemCloudSyncPhase): String = when (phase) {
+    private fun syncPhaseLabel(
+        phase: SmartSystemCloudSyncPhase,
+        detailMode: CloudSyncDetailMode,
+    ): String = when (phase) {
         SmartSystemCloudSyncPhase.BIKES -> s(R.string.home_sync_phase_bikes)
         SmartSystemCloudSyncPhase.ACTIVITIES -> s(R.string.home_sync_phase_activities)
-        SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> s(R.string.home_sync_phase_activity_details)
+        SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> when (detailMode) {
+            CloudSyncDetailMode.MISSING_ONLY -> s(R.string.home_sync_phase_activity_details_missing_only)
+            CloudSyncDetailMode.MISSING_OR_STALE -> s(R.string.home_sync_phase_activity_details_missing_or_stale)
+        }
     }
 
     private companion object {
