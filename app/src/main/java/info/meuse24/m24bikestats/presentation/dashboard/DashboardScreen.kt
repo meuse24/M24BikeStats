@@ -30,10 +30,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +78,7 @@ import info.meuse24.m24bikestats.domain.model.BoschEndpoint
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
+import kotlin.math.pow
 import kotlin.math.tan
 import kotlin.math.PI
 import org.maplibre.compose.camera.CameraPosition
@@ -342,7 +345,6 @@ private fun TrackMapFullScreen(
     onShare: () -> Unit,
     onCopyGpx: () -> Unit,
 ) {
-    var autoFitRequestId by rememberSaveable(activity.id) { mutableIntStateOf(0) }
     val density = LocalDensity.current
     val context = LocalContext.current
     val trackSourceData = remember(activity.id, activity.trackPoints.size) {
@@ -358,18 +360,22 @@ private fun TrackMapFullScreen(
     BoxWithConstraints(modifier = modifier) {
         val viewportWidth = with(density) { maxWidth.toPx().toDouble() }
         val viewportHeight = with(density) { maxHeight.toPx().toDouble() }
-        val autoFitPosition = remember(trackBounds, viewportWidth, viewportHeight, autoFitRequestId) {
-            CameraPosition(
-                target = Position(
-                    longitude = trackBounds.centerLongitude,
-                    latitude = trackBounds.centerLatitude,
-                ),
-                zoom = estimateTrackZoom(trackBounds, viewportWidth, viewportHeight),
+        val sidePaddingPx = with(density) { 28.dp.toPx().toDouble() }
+        val topPaddingPx = with(density) { 92.dp.toPx().toDouble() }
+        val bottomPaddingPx = with(density) { 128.dp.toPx().toDouble() }
+        val autoFitPosition = remember(trackBounds, viewportWidth, viewportHeight) {
+            calculateTrackCameraPosition(
+                bounds = trackBounds,
+                viewportWidth = viewportWidth,
+                viewportHeight = viewportHeight,
+                sidePaddingPx = sidePaddingPx,
+                topPaddingPx = topPaddingPx,
+                bottomPaddingPx = bottomPaddingPx,
             )
         }
         val cameraState = rememberCameraState(firstPosition = autoFitPosition)
 
-        LaunchedEffect(activity.id) {
+        LaunchedEffect(activity.id, autoFitPosition) {
             cameraState.position = autoFitPosition
         }
 
@@ -416,7 +422,6 @@ private fun TrackMapFullScreen(
             onShare = onShare,
             onCopyGpx = onCopyGpx,
             onAutoFit = {
-                autoFitRequestId += 1
                 cameraState.position = autoFitPosition
                 Toast.makeText(context, "Karte auf den Track ausgerichtet", Toast.LENGTH_SHORT).show()
             },
@@ -441,27 +446,62 @@ private fun TrackMapBottomBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            OutlinedButton(
+            TrackMapActionButton(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "GPX teilen",
+                    )
+                },
+                label = "Teilen",
                 onClick = onShare,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Teilen")
-            }
-            OutlinedButton(
+            )
+            TrackMapActionButton(
+                icon = {
+                    Text(
+                        text = "GPX",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                label = "GPX",
                 onClick = onCopyGpx,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("GPX kopieren")
-            }
-            OutlinedButton(
+            )
+            TrackMapActionButton(
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Track einpassen",
+                    )
+                },
+                label = "Autofit",
                 onClick = onAutoFit,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text("Autofit")
-            }
+            )
         }
+    }
+}
+
+@Composable
+private fun TrackMapActionButton(
+    icon: @Composable () -> Unit,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        FilledTonalIconButton(onClick = onClick) {
+            icon()
+        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1257,9 +1297,12 @@ private fun estimateTrackZoom(
     bounds: TrackBounds,
     viewportWidth: Double,
     viewportHeight: Double,
+    sidePaddingPx: Double = 28.0,
+    topPaddingPx: Double = 28.0,
+    bottomPaddingPx: Double = 28.0,
 ): Double {
-    val usableWidth = (viewportWidth * 0.82).coerceAtLeast(1.0)
-    val usableHeight = (viewportHeight * 0.72).coerceAtLeast(1.0)
+    val usableWidth = (viewportWidth - (sidePaddingPx * 2.0)).coerceAtLeast(1.0)
+    val usableHeight = (viewportHeight - topPaddingPx - bottomPaddingPx).coerceAtLeast(1.0)
     val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0003)
     val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
     val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * 256.0)) / ln(2.0)
@@ -1267,10 +1310,47 @@ private fun estimateTrackZoom(
     return minOf(longitudeZoom, latitudeZoom).coerceIn(8.5, 16.8)
 }
 
+private fun calculateTrackCameraPosition(
+    bounds: TrackBounds,
+    viewportWidth: Double,
+    viewportHeight: Double,
+    sidePaddingPx: Double,
+    topPaddingPx: Double,
+    bottomPaddingPx: Double,
+): CameraPosition {
+    val zoom = estimateTrackZoom(
+        bounds = bounds,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight,
+        sidePaddingPx = sidePaddingPx,
+        topPaddingPx = topPaddingPx,
+        bottomPaddingPx = bottomPaddingPx,
+    )
+    val pixelsPerWorld = 256.0 * 2.0.pow(zoom)
+    val mercatorCenter = (mercatorY(bounds.minLatitude) + mercatorY(bounds.maxLatitude)) / 2.0
+    val verticalOffsetPx = (bottomPaddingPx - topPaddingPx) / 2.0
+    val adjustedMercatorCenter = (mercatorCenter + (verticalOffsetPx / pixelsPerWorld))
+        .coerceIn(0.0, 1.0)
+
+    return CameraPosition(
+        target = Position(
+            longitude = bounds.centerLongitude,
+            latitude = inverseMercatorY(adjustedMercatorCenter),
+        ),
+        zoom = zoom,
+    )
+}
+
 private fun mercatorY(latitude: Double): Double {
     val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
     val radians = clamped * PI / 180.0
     return (1.0 - ln(tan(radians) + 1.0 / cos(radians)) / PI) / 2.0
+}
+
+private fun inverseMercatorY(mercatorY: Double): Double {
+    val normalized = mercatorY.coerceIn(0.0, 1.0)
+    val n = PI * (1.0 - 2.0 * normalized)
+    return Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(n)))
 }
 
 private fun buildSingleTrackPointGeoJson(
