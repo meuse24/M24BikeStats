@@ -29,7 +29,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +44,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
 import androidx.compose.material3.SnackbarHost
@@ -100,6 +103,7 @@ fun DashboardScreen(
     uiState: DashboardUiState,
     onRefresh: () -> Unit,
     onLoadMoreActivities: () -> Unit,
+    onActivitySearchQueryChanged: (String) -> Unit,
     onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onExportActivitiesCsv: () -> Unit,
@@ -183,6 +187,7 @@ fun DashboardScreen(
                         0 -> ActivitiesOverview(
                             uiState = uiState,
                             activities = uiState.activities,
+                            onActivitySearchQueryChanged = onActivitySearchQueryChanged,
                             onActivityDateRangeFilterChanged = onActivityDateRangeFilterChanged,
                             onActivitySortOptionChanged = onActivitySortOptionChanged,
                             onActivityClick = onNavigateToActivityDetail,
@@ -732,6 +737,7 @@ fun BikeDetailScreen(
 private fun ActivitiesOverview(
     uiState: DashboardUiState,
     activities: List<ActivityCardUiModel>,
+    onActivitySearchQueryChanged: (String) -> Unit,
     onActivityDateRangeFilterChanged: (ActivityDateRangeFilter) -> Unit,
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onActivityClick: (String) -> Unit,
@@ -779,6 +785,8 @@ private fun ActivitiesOverview(
 
         item {
             ActivityFilterSection(
+                searchQuery = uiState.activitySearchQuery,
+                onSearchQueryChanged = onActivitySearchQueryChanged,
                 selectedDateRange = uiState.activityDateRangeFilter,
                 selectedSortOption = uiState.activitySortOption,
                 onDateRangeSelected = onActivityDateRangeFilterChanged,
@@ -844,6 +852,8 @@ private fun ActivitiesOverview(
 
 @Composable
 private fun ActivityFilterSection(
+    searchQuery: String,
+    onSearchQueryChanged: (String) -> Unit,
     selectedDateRange: ActivityDateRangeFilter,
     selectedSortOption: ActivitySortOption,
     onDateRangeSelected: (ActivityDateRangeFilter) -> Unit,
@@ -862,6 +872,26 @@ private fun ActivityFilterSection(
                 text = "Filter & Sortierung",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
+            )
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Aktivität suchen") },
+                placeholder = { Text("Titel, Datum oder Distanz") },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                trailingIcon = if (searchQuery.isNotBlank()) {
+                    {
+                        IconButton(onClick = { onSearchQueryChanged("") }) {
+                            Icon(Icons.Default.Close, contentDescription = "Suche löschen")
+                        }
+                    }
+                } else {
+                    null
+                },
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(

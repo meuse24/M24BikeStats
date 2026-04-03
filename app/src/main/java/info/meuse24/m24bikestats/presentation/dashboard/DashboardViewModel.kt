@@ -73,6 +73,7 @@ class DashboardViewModel(
                 cachedActivities = activities
                 val presentedActivities = buildPresentedActivities(
                     activities = activities,
+                    searchQuery = _uiState.value.activitySearchQuery,
                     dateRangeFilter = _uiState.value.activityDateRangeFilter,
                     sortOption = _uiState.value.activitySortOption,
                 )
@@ -260,6 +261,7 @@ class DashboardViewModel(
         _uiState.update { current ->
             val presentedActivities = buildPresentedActivities(
                 activities = cachedActivities,
+                searchQuery = current.activitySearchQuery,
                 dateRangeFilter = filter,
                 sortOption = current.activitySortOption,
             )
@@ -275,11 +277,28 @@ class DashboardViewModel(
         _uiState.update { current ->
             val presentedActivities = buildPresentedActivities(
                 activities = cachedActivities,
+                searchQuery = current.activitySearchQuery,
                 dateRangeFilter = current.activityDateRangeFilter,
                 sortOption = sortOption,
             )
             current.copy(
                 activitySortOption = sortOption,
+                activities = presentedActivities,
+                visibleActivityCount = presentedActivities.size,
+            )
+        }
+    }
+
+    fun updateActivitySearchQuery(searchQuery: String) {
+        _uiState.update { current ->
+            val presentedActivities = buildPresentedActivities(
+                activities = cachedActivities,
+                searchQuery = searchQuery,
+                dateRangeFilter = current.activityDateRangeFilter,
+                sortOption = current.activitySortOption,
+            )
+            current.copy(
+                activitySearchQuery = searchQuery,
                 activities = presentedActivities,
                 visibleActivityCount = presentedActivities.size,
             )
@@ -745,10 +764,12 @@ class DashboardViewModel(
 
     private fun buildPresentedActivities(
         activities: List<BoschActivity>,
+        searchQuery: String,
         dateRangeFilter: ActivityDateRangeFilter,
         sortOption: ActivitySortOption,
     ): List<ActivityCardUiModel> = filterAndSortActivities(
         activities = activities.map(::toActivityCardUiModel),
+        searchQuery = searchQuery,
         dateRangeFilter = dateRangeFilter,
         sortOption = sortOption,
     )

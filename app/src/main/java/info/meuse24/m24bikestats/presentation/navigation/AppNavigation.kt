@@ -60,6 +60,7 @@ fun AppNavigation() {
                 uiState = uiState,
                 onRefresh = dashboardViewModel::refresh,
                 onLoadMoreActivities = dashboardViewModel::loadMoreActivities,
+                onActivitySearchQueryChanged = dashboardViewModel::updateActivitySearchQuery,
                 onActivityDateRangeFilterChanged = dashboardViewModel::updateActivityDateRangeFilter,
                 onActivitySortOptionChanged = dashboardViewModel::updateActivitySortOption,
                 onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,

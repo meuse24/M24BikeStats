@@ -143,6 +143,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
 - Aktivitätenliste unterstützt Datumsfilter und Sortierung direkt im Dashboard
+- Aktivitätenliste unterstützt zusätzlich freie Textsuche im Dashboard
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
 - Aktivitätsdetails und Trackpunkte werden in Room gecacht und cache-first geladen
 - Aktivitätsdetail- und Bike-Detail-Screens beobachten Room direkt per Flow

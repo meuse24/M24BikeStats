@@ -11,6 +11,7 @@ data class DashboardUiState(
     val loadedActivityCount: Int = 0,
     val visibleActivityCount: Int = 0,
     val canLoadMoreActivities: Boolean = false,
+    val activitySearchQuery: String = "",
     val activityDateRangeFilter: ActivityDateRangeFilter = ActivityDateRangeFilter.ALL,
     val activitySortOption: ActivitySortOption = ActivitySortOption.NEWEST_FIRST,
     val activities: List<ActivityCardUiModel> = emptyList(),

@@ -15,6 +15,7 @@ class ActivityPresentationTest {
 
         val result = filterAndSortActivities(
             activities = activities,
+            searchQuery = "",
             dateRangeFilter = ActivityDateRangeFilter.LAST_30_DAYS,
             sortOption = ActivitySortOption.NEWEST_FIRST,
             nowMillis = now,
@@ -33,6 +34,7 @@ class ActivityPresentationTest {
 
         val result = filterAndSortActivities(
             activities = activities,
+            searchQuery = "",
             dateRangeFilter = ActivityDateRangeFilter.ALL,
             sortOption = ActivitySortOption.LONGEST_DISTANCE,
         )
@@ -50,6 +52,7 @@ class ActivityPresentationTest {
 
         val result = filterAndSortActivities(
             activities = activities,
+            searchQuery = "",
             dateRangeFilter = ActivityDateRangeFilter.ALL,
             sortOption = ActivitySortOption.OLDEST_FIRST,
         )
@@ -57,14 +60,32 @@ class ActivityPresentationTest {
         assertEquals(listOf("oldest", "middle", "newest"), result.map { it.id })
     }
 
+    @Test
+    fun `filters activities by search query over title`() {
+        val activities = listOf(
+            testActivityCard(id = "a", title = "Abendrunde"),
+            testActivityCard(id = "b", title = "Pendelfahrt"),
+        )
+
+        val result = filterAndSortActivities(
+            activities = activities,
+            searchQuery = "abend",
+            dateRangeFilter = ActivityDateRangeFilter.ALL,
+            sortOption = ActivitySortOption.NEWEST_FIRST,
+        )
+
+        assertEquals(listOf("a"), result.map { it.id })
+    }
+
     private fun testActivityCard(
         id: String,
+        title: String = id,
         startedAtEpochMillis: Long = 1000L,
         distanceMeters: Int = 1000,
         durationSeconds: Int = 100,
     ) = ActivityCardUiModel(
         id = id,
-        title = id,
+        title = title,
         startedAt = id,
         startedAtEpochMillis = startedAtEpochMillis,
         distanceMeters = distanceMeters,
