@@ -1,6 +1,9 @@
 package info.meuse24.m24bikestats.data.repository
 
+import info.meuse24.m24bikestats.data.local.dao.ActivityDetailDao
 import info.meuse24.m24bikestats.data.local.dao.ActivityDao
+import info.meuse24.m24bikestats.data.local.mapper.toEntity
+import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
 import info.meuse24.m24bikestats.data.local.mapper.toDomain
 import info.meuse24.m24bikestats.data.local.mapper.toEntity
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
@@ -24,6 +27,7 @@ import org.json.JSONObject
 class BoschSmartSystemRepositoryImpl(
     private val apiClient: BoschApiClient,
     private val activityDao: ActivityDao,
+    private val activityDetailDao: ActivityDetailDao,
 ) : BoschSmartSystemRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
@@ -31,6 +35,9 @@ class BoschSmartSystemRepositoryImpl(
 
     override suspend fun getCachedActivity(activityId: String): BoschActivity? =
         activityDao.getById(activityId)?.toDomain()
+
+    override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
+        activityDetailDao.getByActivityId(activityId)?.toDomain()
 
     override suspend fun getActivities(
         accessToken: String,
@@ -83,7 +90,12 @@ class BoschSmartSystemRepositoryImpl(
                 accessToken
             )
             val json = extractJsonBody(response) ?: error("Keine Aktivitätsdetaildaten erhalten")
-            parseActivityDetail(activityId, JSONObject(json))
+            parseActivityDetail(activityId, JSONObject(json)).also { detail ->
+                activityDetailDao.replaceDetail(
+                    detail = detail.toEntity(),
+                    points = detail.toPointEntities(),
+                )
+            }
         }
 
     override suspend fun getBikeDetail(accessToken: String, bikeId: String): Result<BoschBike> =

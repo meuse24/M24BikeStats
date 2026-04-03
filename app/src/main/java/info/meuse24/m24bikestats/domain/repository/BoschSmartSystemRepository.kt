@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 interface BoschSmartSystemRepository {
     fun observeCachedActivities(): Flow<List<BoschActivity>>
     suspend fun getCachedActivity(activityId: String): BoschActivity?
+    suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail?
     suspend fun getActivities(accessToken: String, limit: Int, offset: Int): Result<BoschActivityPage>
     suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail>
     suspend fun getBikes(accessToken: String): Result<List<BoschBike>>

@@ -11,6 +11,7 @@ import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
@@ -31,6 +32,7 @@ import java.util.Locale
 class DashboardViewModel(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
     private val getCachedActivity: GetCachedSmartSystemActivityUseCase,
+    private val getCachedActivityDetail: GetCachedSmartSystemActivityDetailUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val getActivityDetail: GetSmartSystemActivityDetailUseCase,
@@ -43,7 +45,6 @@ class DashboardViewModel(
 
     private var cachedActivities: List<BoschActivity> = emptyList()
     private var cachedBikes: List<BoschBike> = emptyList()
-    private val cachedActivityDetails = mutableMapOf<String, BoschActivityDetail>()
     private var activityOffset: Int = 0
     private var activityTotalCount: Int = 0
 
@@ -261,10 +262,7 @@ class DashboardViewModel(
                 return@launch
             }
 
-            val cachedDetail = cachedActivityDetails[activityId]
-            if (_uiState.value.selectedActivityId == activityId && _uiState.value.selectedActivityDetail != null && cachedDetail != null) {
-                return@launch
-            }
+            val cachedDetail = getCachedActivityDetail(activityId)
 
             _uiState.update {
                 it.copy(
@@ -275,17 +273,16 @@ class DashboardViewModel(
                 )
             }
 
-            val detail = cachedDetail ?: getActivityDetail(activityId).getOrElse { error ->
+            val detail = getActivityDetail(activityId).getOrElse { error ->
                 _uiState.update {
                     it.copy(
                         isActivityDetailLoading = false,
+                        selectedActivityDetail = cachedDetail?.let { toActivityDetailUiModel(activity, it) },
                         error = error.message ?: "Aktivitätsdetails konnten nicht geladen werden",
                     )
                 }
                 return@launch
             }
-
-            cachedActivityDetails[activityId] = detail
 
             _uiState.update {
                 it.copy(
