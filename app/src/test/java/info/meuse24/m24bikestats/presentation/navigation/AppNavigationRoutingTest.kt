@@ -11,12 +11,12 @@ class AppNavigationRoutingTest {
 
     @Test
     fun `null route maps to home destination`() {
-        assertEquals(MainDestination.HOME, null.toMainDestination())
+        assertEquals(null, null.toMainDestination())
     }
 
     @Test
     fun `unknown route maps to home destination`() {
-        assertEquals(MainDestination.HOME, "foobar".toMainDestination())
+        assertEquals(null, "foobar".toMainDestination())
     }
 
     @Test
@@ -37,6 +37,10 @@ class AppNavigationRoutingTest {
 
     @Test
     fun `drawer routes expose matching top bar title`() {
+        assertEquals(
+            null,
+            DrawerDestination.HELP.route.toMainDestination(),
+        )
         assertEquals(
             DrawerDestination.HELP.label,
             DrawerDestination.HELP.route.toTopBarTitle(),

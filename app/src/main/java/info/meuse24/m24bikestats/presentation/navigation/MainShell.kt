@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 )
 @Composable
 fun MainShell(
-    currentMainDestination: MainDestination,
+    currentMainDestination: MainDestination?,
     currentRoute: String?,
     topBarTitle: String,
     onMainDestinationSelected: (MainDestination) -> Unit,

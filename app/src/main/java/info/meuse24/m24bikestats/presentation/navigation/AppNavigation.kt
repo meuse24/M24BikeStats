@@ -272,8 +272,8 @@ fun AppNavigation() {
     }
 }
 
-internal fun String?.toMainDestination(): MainDestination =
-    MainDestination.fromRoute(this) ?: MainDestination.HOME
+internal fun String?.toMainDestination(): MainDestination? =
+    MainDestination.fromRoute(this)
 
 internal fun String?.toTopBarTitle(): String = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.label
