@@ -98,11 +98,8 @@ fun AppNavigation() {
                 topBarTitle = topBarTitle,
                 onNavigateToOverview = {
                     shellNavController.navigate(MainDestination.HOME.route) {
-                        popUpTo(shellNavController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
+                        popUpTo(shellNavController.graph.findStartDestination().id)
                         launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 showTopBar = showTopBar,
