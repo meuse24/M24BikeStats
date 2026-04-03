@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.BuildConfig
 
@@ -42,7 +44,8 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         "Build-Typ" to BuildConfig.BUILD_TYPE,
         "Application ID" to BuildConfig.APPLICATION_ID,
         "Lizenz" to "MIT",
-        "Copyright" to "(c) 2026 meuse24",
+        "Copyright" to "(c) 2026 meuse24, Author: Guenther Meusburger",
+        "Repository" to "https://github.com/meuse24/M24BikeStats",
     )
     val libraries = listOf(
         "Kotlin" to "2.2.10",
@@ -101,6 +104,7 @@ private fun InfoSectionScreen(
     sections: List<Pair<String, List<Pair<String, String>>>>,
     modifier: Modifier = Modifier,
 ) {
+    val uriHandler = LocalUriHandler.current
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
@@ -142,6 +146,7 @@ private fun InfoSectionScreen(
                 }
             }
             items(items) { (label, value) ->
+                val isUrl = value.startsWith("https://") || value.startsWith("http://")
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
@@ -160,6 +165,16 @@ private fun InfoSectionScreen(
                         Text(
                             text = value,
                             style = MaterialTheme.typography.bodyLarge,
+                            color = if (isUrl) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            modifier = if (isUrl) {
+                                Modifier.clickable { uriHandler.openUri(value) }
+                            } else {
+                                Modifier
+                            },
                         )
                     }
                 }
