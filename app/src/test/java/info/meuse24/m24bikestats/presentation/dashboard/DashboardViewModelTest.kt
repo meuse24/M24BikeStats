@@ -235,16 +235,23 @@ class DashboardViewModelTest {
         }
 
         return DashboardViewModel(
-            observeCachedActivities = ObserveCachedSmartSystemActivitiesUseCase(repository),
-            observeCachedBikes = ObserveCachedSmartSystemBikesUseCase(repository),
-            getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
-            refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
-            exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
-            exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
-            refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
-            syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, authRepository),
-            observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
-            updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
+            feedHandler = DashboardFeedHandler(
+                observeCachedActivities = ObserveCachedSmartSystemActivitiesUseCase(repository),
+                observeCachedBikes = ObserveCachedSmartSystemBikesUseCase(repository),
+                observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
+                getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
+                refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
+                refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
+                updateCsvSeparatorUseCase = UpdateCsvSeparatorUseCase(settingsRepository),
+                uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
+                stringResolver = TestStringResolver(),
+            ),
+            operationsHandler = DashboardOperationsHandler(
+                exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
+                exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
+                syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, authRepository),
+                stringResolver = TestStringResolver(),
+            ),
             detailActionHandler = DashboardDetailActionHandler(
                 observeCachedActivityDetail = ObserveCachedSmartSystemActivityDetailUseCase(repository),
                 observeCachedBikeDetail = ObserveCachedSmartSystemBikeDetailUseCase(repository),
@@ -256,8 +263,6 @@ class DashboardViewModelTest {
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
             ),
-            uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
-            stringResolver = TestStringResolver(),
         )
     }
 

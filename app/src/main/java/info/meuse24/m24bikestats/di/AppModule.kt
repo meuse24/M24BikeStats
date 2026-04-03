@@ -41,6 +41,8 @@ import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvSeparatorUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardDetailActionHandler
+import info.meuse24.m24bikestats.presentation.dashboard.DashboardFeedHandler
+import info.meuse24.m24bikestats.presentation.dashboard.DashboardOperationsHandler
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardUiModelMapper
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
@@ -104,6 +106,8 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get()) }
 
     // --- Presentation ---
+    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardOperationsHandler(get(), get(), get(), get()) }
     factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)
     viewModelOf(::ApiTestViewModel)
