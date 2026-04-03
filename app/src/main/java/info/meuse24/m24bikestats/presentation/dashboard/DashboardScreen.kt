@@ -361,8 +361,8 @@ private fun TrackMapFullScreen(
         val viewportWidth = with(density) { maxWidth.toPx().toDouble() }
         val viewportHeight = with(density) { maxHeight.toPx().toDouble() }
         val sidePaddingPx = with(density) { 40.dp.toPx().toDouble() }
-        val topPaddingPx = with(density) { 112.dp.toPx().toDouble() }
-        val bottomPaddingPx = with(density) { 152.dp.toPx().toDouble() }
+        val topPaddingPx = with(density) { 92.dp.toPx().toDouble() }
+        val bottomPaddingPx = with(density) { 144.dp.toPx().toDouble() }
         val autoFitPosition = remember(trackBounds, viewportWidth, viewportHeight) {
             calculateTrackCameraPosition(
                 bounds = trackBounds,
@@ -1350,7 +1350,9 @@ private fun calculateTrackCameraPosition(
     )
     val pixelsPerWorld = 256.0 * 2.0.pow(zoom)
     val mercatorCenter = (mercatorY(fittedBounds.minLatitude) + mercatorY(fittedBounds.maxLatitude)) / 2.0
-    val verticalOffsetPx = (bottomPaddingPx - topPaddingPx) / 2.0
+    // Apply only a partial center shift; the larger bottom bar should not push the whole
+    // track into the top edge of the visible map.
+    val verticalOffsetPx = ((bottomPaddingPx - topPaddingPx) / 2.0) * 0.35
     val adjustedMercatorCenter = (mercatorCenter + (verticalOffsetPx / pixelsPerWorld))
         .coerceIn(0.0, 1.0)
 
