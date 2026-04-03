@@ -10,7 +10,7 @@ import info.meuse24.m24bikestats.data.local.entity.ActivityEntity
 
 @Database(
     entities = [ActivityEntity::class, ActivityDetailEntity::class, ActivityDetailPointEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 abstract class BoschDatabase : RoomDatabase() {

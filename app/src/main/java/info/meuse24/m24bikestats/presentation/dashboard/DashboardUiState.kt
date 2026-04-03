@@ -16,6 +16,7 @@ data class DashboardUiState(
     val selectedActivityDetail: ActivityDetailUiModel? = null,
     val selectedActivityId: String? = null,
     val isActivityDetailLoading: Boolean = false,
+    val isActivityDetailRefreshing: Boolean = false,
     val selectedBikeDetail: BikeDetailUiModel? = null,
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,

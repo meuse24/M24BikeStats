@@ -325,7 +325,6 @@ fun ActivityDetailScreen(
             }
             uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
                 val activity = uiState.selectedActivityDetail
-                var selectedTrackTab by rememberSaveable(activity.id) { mutableIntStateOf(0) }
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
@@ -333,6 +332,13 @@ fun ActivityDetailScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    if (uiState.isActivityDetailRefreshing) {
+                        item {
+                            LinearProgressIndicator(
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
                     item {
                         HeroCard(
                             eyebrow = "Aktivität",
@@ -405,18 +411,29 @@ fun TrackScreen(
                 val context = LocalContext.current
                 val trackBounds = remember(activity.trackPoints) { calculateTrackBounds(activity.trackPoints) }
 
-                TrackMapFullScreen(
-                    activity = activity,
-                    trackBounds = trackBounds,
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    onShare = { shareTrackGpx(context, activity) },
-                    onCopyGpx = {
-                        copyTrackGpxToClipboard(context, activity)
-                        Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
-                    },
-                )
+                ) {
+                    TrackMapFullScreen(
+                        activity = activity,
+                        trackBounds = trackBounds,
+                        modifier = Modifier.fillMaxSize(),
+                        onShare = { shareTrackGpx(context, activity) },
+                        onCopyGpx = {
+                            copyTrackGpxToClipboard(context, activity)
+                            Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+                        },
+                    )
+                    if (uiState.isActivityDetailRefreshing) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter),
+                        )
+                    }
+                }
             }
             else -> {
                 Box(

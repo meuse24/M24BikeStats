@@ -15,6 +15,9 @@ fun CachedActivityDetail.toDomain(): BoschActivityDetail =
     )
 
 fun BoschActivityDetail.toEntity(): ActivityDetailEntity =
+    toEntity(updatedAtEpochMillis = System.currentTimeMillis())
+
+fun BoschActivityDetail.toEntity(updatedAtEpochMillis: Long): ActivityDetailEntity =
     ActivityDetailEntity(
         activityId = activityId,
         pointCount = points.size,
@@ -23,7 +26,7 @@ fun BoschActivityDetail.toEntity(): ActivityDetailEntity =
             val longitude = point.longitude
             latitude != null && longitude != null && (latitude != 0.0 || longitude != 0.0)
         },
-        updatedAtEpochMillis = System.currentTimeMillis(),
+        updatedAtEpochMillis = updatedAtEpochMillis,
     )
 
 fun BoschActivityDetail.toPointEntities(): List<ActivityDetailPointEntity> =

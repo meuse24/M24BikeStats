@@ -20,9 +20,6 @@ interface ActivityDetailDao {
     @Upsert
     suspend fun upsertPoints(points: List<ActivityDetailPointEntity>)
 
-    @Query("DELETE FROM activity_detail_points WHERE activityId = :activityId")
-    suspend fun deletePointsByActivityId(activityId: String)
-
     @Query("DELETE FROM activity_details WHERE activityId = :activityId")
     suspend fun deleteDetailByActivityId(activityId: String)
 
@@ -31,7 +28,6 @@ interface ActivityDetailDao {
         detail: ActivityDetailEntity,
         points: List<ActivityDetailPointEntity>,
     ) {
-        deletePointsByActivityId(detail.activityId)
         deleteDetailByActivityId(detail.activityId)
         upsertDetail(detail)
         if (points.isNotEmpty()) {

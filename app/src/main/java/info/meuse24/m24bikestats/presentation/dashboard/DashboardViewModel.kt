@@ -268,7 +268,8 @@ class DashboardViewModel(
                 it.copy(
                     selectedActivityId = activityId,
                     selectedActivityDetail = if (cachedDetail != null) toActivityDetailUiModel(activity, cachedDetail) else null,
-                    isActivityDetailLoading = true,
+                    isActivityDetailLoading = cachedDetail == null,
+                    isActivityDetailRefreshing = cachedDetail != null,
                     error = null,
                 )
             }
@@ -277,6 +278,7 @@ class DashboardViewModel(
                 _uiState.update {
                     it.copy(
                         isActivityDetailLoading = false,
+                        isActivityDetailRefreshing = false,
                         selectedActivityDetail = cachedDetail?.let { toActivityDetailUiModel(activity, it) },
                         error = error.message ?: "Aktivitätsdetails konnten nicht geladen werden",
                     )
@@ -289,6 +291,7 @@ class DashboardViewModel(
                     selectedActivityId = activityId,
                     selectedActivityDetail = toActivityDetailUiModel(activity, detail),
                     isActivityDetailLoading = false,
+                    isActivityDetailRefreshing = false,
                     error = null,
                 )
             }

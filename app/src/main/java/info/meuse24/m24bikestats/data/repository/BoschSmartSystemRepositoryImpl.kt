@@ -2,7 +2,6 @@ package info.meuse24.m24bikestats.data.repository
 
 import info.meuse24.m24bikestats.data.local.dao.ActivityDetailDao
 import info.meuse24.m24bikestats.data.local.dao.ActivityDao
-import info.meuse24.m24bikestats.data.local.mapper.toEntity
 import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
 import info.meuse24.m24bikestats.data.local.mapper.toDomain
 import info.meuse24.m24bikestats.data.local.mapper.toEntity
