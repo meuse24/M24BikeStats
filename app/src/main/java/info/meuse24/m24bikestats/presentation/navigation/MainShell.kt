@@ -30,6 +30,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.window.core.layout.WindowSizeClass
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
@@ -61,6 +65,7 @@ fun MainShell(
     )
     val canOpenDrawer = isCompact && showTopBar
     val canNavigateToOverview = showTopBar && currentRoute.canNavigateToOverview()
+    val showHomeBrandTitle = currentRoute == MainDestination.HOME.route
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var overflowExpanded by remember { mutableStateOf(false) }
@@ -88,7 +93,25 @@ fun MainShell(
                 topBar = {
                     if (showTopBar) {
                         TopAppBar(
-                            title = { Text(topBarTitle) },
+                            title = {
+                                if (showHomeBrandTitle) {
+                                    Text(
+                                        buildAnnotatedString {
+                                            withStyle(
+                                                SpanStyle(
+                                                    color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                                                    fontWeight = FontWeight.Bold,
+                                                ),
+                                            ) {
+                                                append("M24")
+                                            }
+                                            append(" Bike Stats")
+                                        },
+                                    )
+                                } else {
+                                    Text(topBarTitle)
+                                }
+                            },
                             navigationIcon = {
                                 when {
                                     canOpenDrawer -> {

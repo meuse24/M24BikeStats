@@ -7,6 +7,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - OAuth2 + PKCE Login gegen Bosch SingleKey ID
 - adaptives Compose-UI mit `home`, `activities`, `bike` und `functions`
 - sekundäre Navigation für `setup`, `hilfe`, `info`, `api-test` und `logout`
+- Home-Top-Bar mit App-Branding statt generischem Bereichstitel
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
 - Vollsync vom Home-Screen, der alle Aktivitätsseiten und die Bike-Liste neu in Room einliest
@@ -14,6 +15,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - konfigurierbares CSV-Trennzeichen mit sprachabhängigem Default
 - GPX- und Track-Share-Funktionen
 - MapLibre/OpenFreeMap-Kartenansicht und Profilcharts für Tracks
+- aktive UI-Texte in Englisch und Deutsch lokalisiert
 
 ## Voraussetzungen
 
@@ -42,6 +44,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 ## Navigation
 
 - `Home`: Übersicht, letzter Cloud-Abgleich, letzte Tour, Bike-Status, letzte Exporte
+- `Home` zeigt in der Shell-Top-Bar den App-Titel `M24 Bike Stats`, wobei `M24` hervorgehoben ist
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
 - `Bike`: Bike-Liste und Bike-Details
 - `Funktionen`: CSV-Exporte
@@ -65,6 +68,12 @@ auth/          OAuth2/AppAuth und Token-Verwaltung
 presentation/  Compose-Screens, Navigation, ViewModels
 di/            Koin-Modul
 ```
+
+Ergänzungen:
+
+- `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
+- `presentation/dashboard`: Home, Aktivitäten, Bike, Funktionen sowie Detail- und Track-Screens
+- `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
 
 Mehr Projektdetails: [CLAUDE.md](CLAUDE.md)
 

@@ -10,6 +10,7 @@ Single-Module Android-App mit Jetpack Compose, Room, Koin und AppAuth.
 - `minSdk`: 29
 - `targetSdk`: 36
 - Kotlin: `2.2.10`
+- AGP: `9.1.0`
 
 ## Standard-Checks
 
@@ -71,6 +72,8 @@ Regeln:
 - Sekundärnavigation: `setup`, `help`, `info`, `api_test`, `logout`
 - Compact: `ModalNavigationDrawer`
 - größere Breiten: Overflow-Menü in der `TopAppBar`
+- Home zeigt in der Shell-Top-Bar den Brand-Titel `M24 Bike Stats`; `M24` ist visuell hervorgehoben
+- Support-Screens laufen in der Shell und bleiben damit über Hamburger oder Overview-Navigation erreichbar
 
 ## Wichtige Features
 
@@ -81,6 +84,7 @@ Regeln:
 - CSV-Export für Aktivitäten, Details und Tracks
 - CSV-Trennzeichen persistent konfigurierbar
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
+- aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
 
 ## Bosch API
 
@@ -106,6 +110,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - `BoschSmartSystemRepositoryImpl`
 - `AppSettingsRepositoryImpl`
 - alle UseCases
+- `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
 
 ## Hinweise für Änderungen
@@ -114,6 +119,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State und Paging-Verhalten achten
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
+- Keine Android-`Context`-Abhängigkeit direkt ins ViewModel ziehen, wenn ein kleiner Resolver/Provider reicht
+- Bei Lokalisierung nur aktive Nutzertexte anfassen; technische Literale wie MIME-Types, Routen oder JSON-Keys bleiben unberührt
 
 ## Testfokus
 
