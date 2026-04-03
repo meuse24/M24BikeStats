@@ -105,12 +105,19 @@ fun AppNavigation() {
                 showTopBar = showTopBar,
                 snackbarHostState = snackbarHostState,
                 onMainDestinationSelected = { destination ->
-                    shellNavController.navigate(destination.route) {
-                        popUpTo(shellNavController.graph.findStartDestination().id) {
-                            saveState = true
+                    if (destination == MainDestination.HOME) {
+                        shellNavController.navigate(MainDestination.HOME.route) {
+                            popUpTo(shellNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
+                    } else {
+                        shellNavController.navigate(destination.route) {
+                            popUpTo(shellNavController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 onDrawerDestinationSelected = { destination ->

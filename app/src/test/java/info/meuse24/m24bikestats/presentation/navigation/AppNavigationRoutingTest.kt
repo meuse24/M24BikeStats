@@ -75,6 +75,14 @@ class AppNavigationRoutingTest {
     }
 
     @Test
+    fun `home stays the only primary destination without overview back affordance`() {
+        assertFalse(MainDestination.HOME.route.canNavigateToOverview())
+        assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
+        assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
+        assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
+    }
+
+    @Test
     fun `all non home shell routes can navigate back to overview`() {
         assertFalse(MainDestination.HOME.route.canNavigateToOverview())
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
