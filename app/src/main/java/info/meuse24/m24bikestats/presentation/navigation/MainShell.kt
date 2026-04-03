@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -44,6 +45,7 @@ fun MainShell(
     topBarTitle: String,
     onMainDestinationSelected: (MainDestination) -> Unit,
     onDrawerDestinationSelected: (DrawerDestination) -> Unit,
+    onNavigateToOverview: () -> Unit,
     modifier: Modifier = Modifier,
     showTopBar: Boolean = true,
     snackbarHostState: SnackbarHostState? = null,
@@ -55,6 +57,8 @@ fun MainShell(
     val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
         WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
     )
+    val canOpenDrawer = isCompact && !isDrawerRoute
+    val canNavigateToOverview = showTopBar && currentRoute.canNavigateToOverview()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var overflowExpanded by remember { mutableStateOf(false) }
@@ -84,18 +88,29 @@ fun MainShell(
                         TopAppBar(
                             title = { Text(topBarTitle) },
                             navigationIcon = {
-                                if (isCompact && !isDrawerRoute) {
-                                    IconButton(
-                                        onClick = {
-                                            coroutineScope.launch {
-                                                drawerState.open()
-                                            }
-                                        },
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.AutoMirrored.Filled.MenuOpen,
-                                            contentDescription = "Menü öffnen",
-                                        )
+                                when {
+                                    canOpenDrawer -> {
+                                        IconButton(
+                                            onClick = {
+                                                coroutineScope.launch {
+                                                    drawerState.open()
+                                                }
+                                            },
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.MenuOpen,
+                                                contentDescription = "Menü öffnen",
+                                            )
+                                        }
+                                    }
+
+                                    canNavigateToOverview -> {
+                                        IconButton(onClick = onNavigateToOverview) {
+                                            Icon(
+                                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                                contentDescription = "Zur Übersicht",
+                                            )
+                                        }
                                     }
                                 }
                             },
@@ -142,7 +157,7 @@ fun MainShell(
         }
     }
 
-    if (isCompact && !isDrawerRoute) {
+    if (canOpenDrawer) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {
@@ -169,3 +184,11 @@ private fun isDrawerDestinationRoute(route: String?): Boolean =
         destination.route != null &&
             (route == destination.route || route?.startsWith("${destination.route}/") == true)
     }
+
+internal fun String?.canNavigateToOverview(): Boolean = when (this) {
+    null,
+    MainDestination.HOME.route,
+    -> false
+
+    else -> true
+}

@@ -69,4 +69,15 @@ class AppNavigationRoutingTest {
         assertEquals(null, DrawerDestination.LOGOUT.route)
         assertFalse(DrawerDestination.LOGOUT.isNavigationDestination)
     }
+
+    @Test
+    fun `all non home shell routes can navigate back to overview`() {
+        assertFalse(MainDestination.HOME.route.canNavigateToOverview())
+        assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
+        assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
+        assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
+        assertTrue(DrawerDestination.HELP.route.canNavigateToOverview())
+        assertTrue(DrawerDestination.INFO.route.canNavigateToOverview())
+        assertTrue(DrawerDestination.API_TEST.route.canNavigateToOverview())
+    }
 }
