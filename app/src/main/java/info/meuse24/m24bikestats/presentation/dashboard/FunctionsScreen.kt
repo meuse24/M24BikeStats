@@ -2,6 +2,8 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,11 +13,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -85,166 +87,187 @@ fun FunctionsScreen(
             }
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            FunctionsExportCard(
+                title = stringResource(R.string.functions_export_activities_title),
+                subtitle = stringResource(R.string.functions_export_activities_subtitle),
+                summary = listOf(
+                    stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
+                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_all_activities),
+                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_one_per_activity),
                 ),
+                isRunning = uiState.isExportingActivitiesCsv,
+                progressCurrent = uiState.exportLoadedActivityCount,
+                progressTotal = uiState.exportTotalActivityCount,
+                onClick = onExportActivitiesCsv,
+                enabled = !uiState.isExportingActivitiesCsv &&
+                    !uiState.isExportingActivityDetailsCsv &&
+                    !uiState.isInitialLoading &&
+                    !uiState.isRefreshing,
+                idleButtonLabel = stringResource(R.string.functions_export_button),
+                runningButtonLabel = stringResource(R.string.functions_export_running),
             ) {
-                androidx.compose.foundation.layout.Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.functions_export_activities_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.functions_export_activities_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    SectionSurface {
-                        OptionalRow(stringResource(R.string.functions_label_csv_format), stringResource(uiState.csvExportFormat.labelRes()))
-                    }
-                    uiState.lastActivitiesCsvExport?.let { exportSummary ->
-                        SectionSurface {
-                            Text(
-                                text = stringResource(R.string.functions_last_exported),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            OptionalRow(stringResource(R.string.functions_label_file), exportSummary.fileName)
-                            OptionalRow(stringResource(R.string.functions_label_activities), exportSummary.activityCount.toString())
-                            OptionalRow(stringResource(R.string.functions_label_exported_at), exportSummary.exportedAtLabel)
-                        }
-                    }
-                    if (uiState.isExportingActivitiesCsv) {
-                        val totalCount = uiState.exportTotalActivityCount
-                        val loadedCount = uiState.exportLoadedActivityCount
-                        val progress = if (totalCount > 0) {
-                            loadedCount.toFloat() / totalCount.toFloat()
-                        } else {
-                            0f
-                        }
-
-                        Text(
-                            text = stringResource(R.string.functions_progress_loaded, loadedCount, totalCount),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
+                uiState.lastActivitiesCsvExport?.let { exportSummary ->
+                    ExportSummarySection(
+                        rows = listOf(
+                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                            stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
+                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
                         )
-                        LinearProgressIndicator(
-                            progress = { progress.coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Button(
-                        onClick = onExportActivitiesCsv,
-                        enabled = !uiState.isExportingActivitiesCsv &&
-                            !uiState.isExportingActivityDetailsCsv &&
-                            !uiState.isInitialLoading &&
-                            !uiState.isRefreshing,
-                    ) {
-                        if (uiState.isExportingActivitiesCsv) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .width(18.dp)
-                                    .height(18.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(stringResource(R.string.functions_export_running))
-                        } else {
-                            Text(stringResource(R.string.functions_export_button))
-                        }
-                    }
+                    )
                 }
             }
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            FunctionsExportCard(
+                title = stringResource(R.string.functions_export_details_title),
+                subtitle = stringResource(R.string.functions_export_details_subtitle),
+                summary = listOf(
+                    stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
+                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_visible_activities),
+                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_detail_points),
                 ),
+                isRunning = uiState.isExportingActivityDetailsCsv,
+                progressCurrent = uiState.exportDetailedLoadedActivityCount,
+                progressTotal = uiState.exportDetailedTotalActivityCount,
+                onClick = onExportActivityDetailsCsv,
+                enabled = uiState.visibleActivityCount > 0 &&
+                    !uiState.isExportingActivitiesCsv &&
+                    !uiState.isExportingActivityDetailsCsv &&
+                    !uiState.isInitialLoading &&
+                    !uiState.isRefreshing,
+                idleButtonLabel = stringResource(R.string.functions_detail_export_button),
+                runningButtonLabel = stringResource(R.string.functions_detail_export_running),
             ) {
-                androidx.compose.foundation.layout.Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.functions_export_details_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+                SectionSurface {
+                    OptionalRow(
+                        stringResource(R.string.functions_label_visible_activities),
+                        uiState.visibleActivityCount.toString(),
                     )
-                    Text(
-                        text = stringResource(R.string.functions_export_details_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    OptionalRow(
+                        stringResource(R.string.functions_label_loaded_activities),
+                        uiState.loadedActivityCount.toString(),
                     )
-                    SectionSurface {
-                        OptionalRow(stringResource(R.string.functions_label_csv_format), stringResource(uiState.csvExportFormat.labelRes()))
-                        OptionalRow(stringResource(R.string.functions_label_visible_activities), uiState.visibleActivityCount.toString())
-                        OptionalRow(stringResource(R.string.functions_label_loaded_activities), uiState.loadedActivityCount.toString())
-                    }
-                    uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
-                        SectionSurface {
-                            Text(
-                                text = stringResource(R.string.functions_last_exported),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            OptionalRow(stringResource(R.string.functions_label_file), exportSummary.fileName)
-                            OptionalRow(stringResource(R.string.functions_label_activities), exportSummary.activityCount.toString())
-                            OptionalRow(stringResource(R.string.functions_label_detail_points), exportSummary.detailPointCount.toString())
-                            OptionalRow(stringResource(R.string.functions_label_exported_at), exportSummary.exportedAtLabel)
-                        }
-                    }
-                    if (uiState.isExportingActivityDetailsCsv) {
-                        val totalCount = uiState.exportDetailedTotalActivityCount
-                        val loadedCount = uiState.exportDetailedLoadedActivityCount
-                        val progress = if (totalCount > 0) {
-                            loadedCount.toFloat() / totalCount.toFloat()
-                        } else {
-                            0f
-                        }
-
-                        Text(
-                            text = stringResource(R.string.functions_progress_loaded, loadedCount, totalCount),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
+                }
+                uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
+                    ExportSummarySection(
+                        rows = listOf(
+                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                            stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
+                            stringResource(R.string.functions_label_detail_points) to exportSummary.detailPointCount.toString(),
+                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
                         )
-                        LinearProgressIndicator(
-                            progress = { progress.coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    Button(
-                        onClick = onExportActivityDetailsCsv,
-                        enabled = uiState.visibleActivityCount > 0 &&
-                            !uiState.isExportingActivitiesCsv &&
-                            !uiState.isExportingActivityDetailsCsv &&
-                            !uiState.isInitialLoading &&
-                            !uiState.isRefreshing,
-                    ) {
-                        if (uiState.isExportingActivityDetailsCsv) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .width(18.dp)
-                                    .height(18.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(stringResource(R.string.functions_detail_export_running))
-                        } else {
-                            Text(stringResource(R.string.functions_detail_export_button))
-                        }
-                    }
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun FunctionsExportCard(
+    title: String,
+    subtitle: String,
+    summary: List<Pair<String, String>>,
+    isRunning: Boolean,
+    progressCurrent: Int,
+    progressTotal: Int,
+    onClick: () -> Unit,
+    enabled: Boolean,
+    idleButtonLabel: String,
+    runningButtonLabel: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            content = {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                SummaryChipRow(
+                    summary = summary,
+                    itemContent = { label, value ->
+                        CompactMetricPill(label = label, value = value)
+                    },
+                )
+                content()
+                if (isRunning) {
+                    ExportProgressSection(
+                        current = progressCurrent,
+                        total = progressTotal,
+                    )
+                }
+                Button(
+                    onClick = onClick,
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (isRunning) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .width(18.dp)
+                                .height(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(runningButtonLabel)
+                    } else {
+                        Text(idleButtonLabel)
+                    }
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun ExportSummarySection(
+    rows: List<Pair<String, String>>,
+) {
+    SectionSurface {
+        Text(
+            text = stringResource(R.string.functions_last_exported),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        rows.forEach { (label, value) ->
+            OptionalRow(label, value)
+        }
+    }
+}
+
+@Composable
+private fun ExportProgressSection(
+    current: Int,
+    total: Int,
+) {
+    SectionSurface {
+        Text(
+            text = stringResource(R.string.functions_progress_processed, current, total),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        if (total > 0) {
+            LinearProgressIndicator(
+                progress = { (current.toFloat() / total.toFloat()).coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
     }
 }

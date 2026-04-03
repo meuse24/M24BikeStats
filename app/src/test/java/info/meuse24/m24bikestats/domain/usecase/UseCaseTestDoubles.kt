@@ -27,6 +27,7 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
     var activitiesResult: Result<BoschActivityPage> = Result.failure(IllegalStateException("not stubbed"))
     var activityResultsByOffset: MutableMap<Int, Result<BoschActivityPage>> = mutableMapOf()
     var activityDetailResult: Result<BoschActivityDetail> = Result.failure(IllegalStateException("not stubbed"))
+    var activityDetailResultsById: MutableMap<String, Result<BoschActivityDetail>> = mutableMapOf()
     var bikesResult: Result<List<BoschBike>> = Result.failure(IllegalStateException("not stubbed"))
     var bikeDetailResult: Result<BoschBike> = Result.failure(IllegalStateException("not stubbed"))
 
@@ -60,7 +61,7 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
 
     override suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail> {
         getActivityDetailCalls += activityId
-        return activityDetailResult
+        return activityDetailResultsById[activityId] ?: activityDetailResult
     }
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> {

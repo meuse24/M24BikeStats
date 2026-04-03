@@ -167,9 +167,16 @@
     <string name="functions_hero_title">Data export</string>
     <string name="functions_hero_subtitle">Export activity lists and detail points as shareable CSV files.</string>
     <string name="functions_export_activities_title">Export activities as CSV</string>
-    <string name="functions_export_activities_subtitle">This function fetches all pages of the activity list and creates a shareable CSV file from the known metrics.</string>
+    <string name="functions_export_activities_subtitle">Fetches all activities and enriches each row with known detail metrics, excluding raw GPS coordinates.</string>
     <string name="functions_export_details_title">Export visible detail points as CSV</string>
     <string name="functions_export_details_subtitle">Uses the currently visible activity set and exports all detail points from cache and, if needed, via live reload.</string>
+    <string name="functions_chip_csv">CSV</string>
+    <string name="functions_chip_scope">Scope</string>
+    <string name="functions_chip_rows">Rows</string>
+    <string name="functions_scope_all_activities">All rides</string>
+    <string name="functions_scope_visible_activities">Visible rides</string>
+    <string name="functions_rows_one_per_activity">1 per ride</string>
+    <string name="functions_rows_detail_points">Points</string>
     <string name="functions_label_file">File</string>
     <string name="functions_label_activities">Activities</string>
     <string name="functions_label_detail_points">Detail points</string>
@@ -178,7 +185,7 @@
     <string name="functions_label_visible_activities">Visible activities</string>
     <string name="functions_label_loaded_activities">Loaded activities</string>
     <string name="functions_last_exported">Last exported</string>
-    <string name="functions_progress_loaded">%1$d of %2$d activities loaded</string>
+    <string name="functions_progress_processed">%1$d of %2$d activities processed</string>
     <string name="functions_export_running">Export in progress</string>
     <string name="functions_export_button">Export CSV</string>
     <string name="functions_detail_export_running">Detail export in progress</string>

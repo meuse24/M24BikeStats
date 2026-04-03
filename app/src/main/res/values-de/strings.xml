@@ -167,9 +167,16 @@
     <string name="functions_hero_title">Datenexport</string>
     <string name="functions_hero_subtitle">Aktivitätenlisten und Detailpunkte als teilbare CSV-Dateien exportieren.</string>
     <string name="functions_export_activities_title">Aktivitäten als CSV exportieren</string>
-    <string name="functions_export_activities_subtitle">Die Funktion ruft alle Seiten der Aktivitätenliste ab und erstellt daraus eine teilbare CSV-Datei mit den bekannten Metriken.</string>
+    <string name="functions_export_activities_subtitle">Ruft alle Aktivitäten ab und ergänzt jede Zeile um bekannte Detailmetriken ohne rohe GPS-Koordinaten.</string>
     <string name="functions_export_details_title">Sichtbare Detailpunkte als CSV exportieren</string>
     <string name="functions_export_details_subtitle">Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert alle Detailpunkte aus Cache und bei Bedarf per Live-Nachladen.</string>
+    <string name="functions_chip_csv">CSV</string>
+    <string name="functions_chip_scope">Umfang</string>
+    <string name="functions_chip_rows">Zeilen</string>
+    <string name="functions_scope_all_activities">Alle Fahrten</string>
+    <string name="functions_scope_visible_activities">Sichtbare Fahrten</string>
+    <string name="functions_rows_one_per_activity">1 pro Fahrt</string>
+    <string name="functions_rows_detail_points">Punkte</string>
     <string name="functions_label_file">Datei</string>
     <string name="functions_label_activities">Aktivitäten</string>
     <string name="functions_label_detail_points">Detailpunkte</string>
@@ -178,7 +185,7 @@
     <string name="functions_label_visible_activities">Sichtbare Aktivitäten</string>
     <string name="functions_label_loaded_activities">Geladene Aktivitäten</string>
     <string name="functions_last_exported">Zuletzt exportiert</string>
-    <string name="functions_progress_loaded">%1$d von %2$d Aktivitäten geladen</string>
+    <string name="functions_progress_processed">%1$d von %2$d Aktivitäten verarbeitet</string>
     <string name="functions_export_running">Export läuft</string>
     <string name="functions_export_button">CSV exportieren</string>
     <string name="functions_detail_export_running">Detail-Export läuft</string>

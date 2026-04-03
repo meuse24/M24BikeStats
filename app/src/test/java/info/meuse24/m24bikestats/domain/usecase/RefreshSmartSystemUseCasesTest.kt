@@ -6,6 +6,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -266,6 +267,97 @@ class RefreshSmartSystemUseCasesTest {
     }
 
     @Test
+    fun `csv export enriches activities with known detail aggregates without coordinates`() {
+        val repository = FakeBoschSmartSystemRepository().apply {
+            cachedActivities = listOf(activity("a1"))
+            cachedActivityTotalCount = 1
+            activityDetailFresh = true
+            cachedActivityDetails["a1"] = BoschActivityDetail(
+                activityId = "a1",
+                points = listOf(
+                    detailPoint(
+                        distanceMeters = 0.0,
+                        altitudeMeters = 500.0,
+                        speedKmh = 20.0,
+                        cadenceRpm = 70.0,
+                        latitude = 47.0,
+                        longitude = 9.0,
+                        riderPowerWatts = 100.0,
+                    ),
+                    detailPoint(
+                        distanceMeters = 1234.5,
+                        altitudeMeters = 560.0,
+                        speedKmh = 30.0,
+                        cadenceRpm = 90.0,
+                        latitude = 47.1,
+                        longitude = 9.1,
+                        riderPowerWatts = 150.0,
+                    ),
+                    detailPoint(
+                        distanceMeters = 1200.0,
+                        altitudeMeters = null,
+                        speedKmh = null,
+                        cadenceRpm = null,
+                        latitude = null,
+                        longitude = null,
+                        riderPowerWatts = null,
+                    ),
+                ),
+            )
+        }
+        val useCase = ExportSmartSystemActivitiesCsvUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL),
+        )
+
+        val result = kotlinx.coroutines.runBlocking { useCase() }
+
+        assertTrue(result.isSuccess)
+        assertTrue(repository.getActivityDetailCalls.isEmpty())
+        val csvContent = result.getOrNull()!!.csvContent
+        assertTrue(csvContent.contains("\"detail_available\""))
+        assertTrue(csvContent.contains("\"detail_point_count\""))
+        assertTrue(csvContent.contains("\"gps_point_count\""))
+        assertTrue(csvContent.contains("\"track_distance_meters\""))
+        assertFalse(csvContent.contains("\"latitude\""))
+        assertFalse(csvContent.contains("\"longitude\""))
+        assertTrue(csvContent.contains("\"true\""))
+        assertTrue(csvContent.contains("\"3\""))
+        assertTrue(csvContent.contains("\"2\""))
+        assertTrue(csvContent.contains("\"1234.50\""))
+        assertTrue(csvContent.contains("\"500.00\""))
+        assertTrue(csvContent.contains("\"560.00\""))
+        assertTrue(csvContent.contains("\"25.00\""))
+        assertTrue(csvContent.contains("\"30.00\""))
+        assertTrue(csvContent.contains("\"80.00\""))
+        assertTrue(csvContent.contains("\"90.00\""))
+        assertTrue(csvContent.contains("\"125.00\""))
+        assertTrue(csvContent.contains("\"150.00\""))
+    }
+
+    @Test
+    fun `csv export keeps summary rows when detail data is unavailable`() {
+        val repository = FakeBoschSmartSystemRepository().apply {
+            cachedActivities = listOf(activity("a1"))
+            cachedActivityTotalCount = 1
+            activityDetailResult = Result.failure(IllegalStateException("offline"))
+        }
+        val useCase = ExportSmartSystemActivitiesCsvUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL),
+        )
+
+        val result = kotlinx.coroutines.runBlocking { useCase() }
+
+        assertTrue(result.isSuccess)
+        assertEquals(listOf("a1"), repository.getActivityDetailCalls)
+        assertEquals(1, result.getOrNull()?.activityCount)
+        assertTrue(result.getOrNull()!!.csvContent.contains("\"false\""))
+    }
+
+    @Test
     fun `cloud sync fetches all pages and bikes`() {
         val repository = FakeBoschSmartSystemRepository().apply {
             bikesResult = Result.success(
@@ -335,5 +427,23 @@ class RefreshSmartSystemUseCasesTest {
         elevationGainMeters = null,
         elevationLossMeters = null,
         caloriesBurned = null,
+    )
+
+    private fun detailPoint(
+        distanceMeters: Double?,
+        altitudeMeters: Double?,
+        speedKmh: Double?,
+        cadenceRpm: Double?,
+        latitude: Double?,
+        longitude: Double?,
+        riderPowerWatts: Double?,
+    ) = info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint(
+        distanceMeters = distanceMeters,
+        altitudeMeters = altitudeMeters,
+        speedKmh = speedKmh,
+        cadenceRpm = cadenceRpm,
+        latitude = latitude,
+        longitude = longitude,
+        riderPowerWatts = riderPowerWatts,
     )
 }
