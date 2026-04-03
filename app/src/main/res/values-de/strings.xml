@@ -28,10 +28,10 @@
     <string name="setup_title">Setup</string>
     <string name="setup_subtitle">Hier liegen App-Einstellungen, die sich direkt auf Export und Bedienung auswirken.</string>
     <string name="setup_csv_title">CSV-Format</string>
-    <string name="setup_csv_subtitle">Lege fest, ob CSV-Exporte dem Systemstandard oder einem festen Export-Preset folgen.</string>
+    <string name="setup_csv_subtitle">Lege fest, ob CSV-Exporte automatisch aus den Gerätekonventionen abgeleitet werden oder einem festen Export-Preset folgen.</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
-    <string name="csv_export_format_system_default_label">Systemstandard</string>
-    <string name="csv_export_format_system_default_description">Verwendet die Sprachkonventionen des Geräts, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
+    <string name="csv_export_format_system_default_label">Automatisch</string>
+    <string name="csv_export_format_system_default_description">Leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
     <string name="csv_export_format_excel_de_label">Excel/Deutsch</string>
     <string name="csv_export_format_excel_de_description">Semikolon als Trennzeichen mit Dezimalkomma und konsistenten Anführungszeichen.</string>
     <string name="csv_export_format_standard_international_label">Standard/International</string>
@@ -153,6 +153,8 @@
     <string name="activities_empty_title">Keine Aktivitäten für diese Auswahl</string>
     <string name="activities_empty_subtitle">Passe Datumsbereich oder Sortierung an, um andere Touren anzuzeigen.</string>
     <string name="activities_load_more">Mehr Aktivitäten laden</string>
+    <string name="activities_loading_more_title">Weitere Aktivitäten werden geladen</string>
+    <string name="activities_loading_more_subtitle">Zusätzliche Fahrten werden aus der Cloud nachgeladen und im lokalen Cache gespeichert.</string>
 
     <string name="bike_list_hero_eyebrow">Bike-Profil</string>
     <string name="bike_list_empty_title">Kein Bike gefunden</string>
@@ -333,7 +335,6 @@
     <string name="dashboard_bike_summary_title">Bike-Überblick</string>
     <string name="dashboard_bike_detail_button">Bike-Details anzeigen</string>
     <string name="dashboard_bike_detail_hint">Öffnet den Detailscreen mit Komponenten-, Batterie- und Head-Unit-Informationen.</string>
-    <string name="home_latest_tour_button">Zu Aktivitäten</string>
     <string name="track_tab_map">Karte</string>
     <string name="track_tab_profiles">Profile</string>
     <string name="track_tab_gpx">GPX</string>

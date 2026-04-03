@@ -169,10 +169,11 @@ fun AppNavigation() {
                         HomeScreen(
                             uiState = dashboardUiState.toHomeUiState(),
                             onSyncCloudData = dashboardViewModel::syncCloudData,
-                            onNavigateToActivities = {
-                                shellNavController.navigate(MainDestination.ACTIVITIES.route) {
-                                    launchSingleTop = true
-                                }
+                            onNavigateToActivityDetail = { activityId ->
+                                shellNavController.navigate("activity/$activityId")
+                            },
+                            onNavigateToActivityTrack = { activityId ->
+                                shellNavController.navigate("activity/$activityId/track")
                             },
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )

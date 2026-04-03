@@ -30,20 +30,29 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
         return withValidAccessToken(authRepository) { token ->
             val detailRows = mutableListOf<String>()
             var exportedPointCount = 0
+            var exportedActivityCount = 0
             val dialect = appSettingsRepository.getSettings().csvExportFormat.resolve(localeProvider())
 
             normalizedIds.forEachIndexed { index, activityId ->
                 val activity = repository.getCachedActivity(activityId)
-                    ?: return@withValidAccessToken Result.failure(
-                        IllegalStateException("Aktivität $activityId ist nicht im Cache verfügbar")
-                    )
+                if (activity == null) {
+                    onProgress(index + 1, normalizedIds.size)
+                    return@forEachIndexed
+                }
 
                 val detail = loadActivityDetail(token, activityId)
                     .getOrElse { return@withValidAccessToken Result.failure(it) }
 
                 detailRows += buildRows(activity, detail, dialect)
                 exportedPointCount += detail.points.size
+                exportedActivityCount += 1
                 onProgress(index + 1, normalizedIds.size)
+            }
+
+            if (exportedActivityCount == 0) {
+                return@withValidAccessToken Result.failure(
+                    IllegalStateException("Keine ausgewählten Aktivitäten sind im Cache verfügbar")
+                )
             }
 
             val timestamp = LocalDateTime.now()
@@ -56,7 +65,7 @@ class ExportSmartSystemActivityDetailsCsvUseCase(
                         appendLine(dialect.row(CSV_COLUMNS))
                         detailRows.forEach(::appendLine)
                     },
-                    activityCount = normalizedIds.size,
+                    activityCount = exportedActivityCount,
                     detailPointCount = exportedPointCount,
                 )
             )

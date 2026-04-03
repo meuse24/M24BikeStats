@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
@@ -19,6 +20,7 @@ class DashboardFeedHandler(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
     private val observeCachedBikes: ObserveCachedSmartSystemBikesUseCase,
     private val observeAppSettings: ObserveAppSettingsUseCase,
+    private val getCachedActivityTotalCount: GetCachedSmartSystemActivityTotalCountUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
     private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
@@ -120,6 +122,8 @@ class DashboardFeedHandler(
                 return@launch
             }
 
+            val resolvedTotal = activityPage?.total ?: getCachedActivityTotalCount() ?: currentState().loadedActivityCount
+
             bikesResult.getOrElse { error ->
                 updateState {
                     it.copy(
@@ -133,9 +137,10 @@ class DashboardFeedHandler(
 
             if (activityPage != null) {
                 activityOffset = activityPage.offset + activityPage.items.size
-                activityTotalCount = activityPage.total
+                activityTotalCount = resolvedTotal
             } else {
                 activityOffset = currentState().loadedActivityCount
+                activityTotalCount = resolvedTotal
             }
 
             updateState {
@@ -143,7 +148,8 @@ class DashboardFeedHandler(
                     isInitialLoading = false,
                     isRefreshing = false,
                     isLoadingMoreActivities = false,
-                    activityTotalCount = activityPage?.total ?: activityTotalCount,
+                    activityTotalCount = resolvedTotal,
+                    canLoadMoreActivities = it.loadedActivityCount < resolvedTotal,
                     error = null,
                 )
             }

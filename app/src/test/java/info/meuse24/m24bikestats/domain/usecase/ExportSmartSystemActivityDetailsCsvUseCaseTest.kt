@@ -76,6 +76,49 @@ class ExportSmartSystemActivityDetailsCsvUseCaseTest {
         assertTrue(export.csvContent.contains("\"47,100000\";\"9,100000\";\"100,000000\""))
     }
 
+    @Test
+    fun `skips activities that are missing from cache instead of failing whole export`() = runTest {
+        val repository = FakeBoschSmartSystemRepository().apply {
+            cachedActivities = listOf(activity(id = "a1", title = "Morgenrunde"))
+            cachedActivityDetails["a1"] = detail(
+                "a1",
+                BoschActivityDetailPoint(100.0, 500.0, 23.4, 80.0, 47.1, 9.1, 210.0),
+            )
+            activityDetailFresh = true
+        }
+
+        val progressEvents = mutableListOf<Pair<Int, Int>>()
+        val export = ExportSmartSystemActivityDetailsCsvUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL),
+        )(listOf("a1", "missing")) { processed, total ->
+            progressEvents += processed to total
+        }.getOrThrow()
+
+        assertEquals(1, export.activityCount)
+        assertEquals(1, export.detailPointCount)
+        assertTrue(export.csvContent.contains("\"a1\",\"Morgenrunde\""))
+        assertTrue(progressEvents.containsAll(listOf(1 to 2, 2 to 2)))
+    }
+
+    @Test
+    fun `fails when none of the selected activities are available in cache`() = runTest {
+        val repository = FakeBoschSmartSystemRepository()
+
+        val result = ExportSmartSystemActivityDetailsCsvUseCase(
+            repository = repository,
+            authRepository = FakeAuthRepository(),
+            appSettingsRepository = FakeAppSettingsRepository(CsvExportFormat.STANDARD_INTERNATIONAL),
+        )(listOf("missing"))
+
+        assertTrue(result.isFailure)
+        assertEquals(
+            "Keine ausgewählten Aktivitäten sind im Cache verfügbar",
+            result.exceptionOrNull()?.message,
+        )
+    }
+
     private fun activity(id: String, title: String) = BoschActivity(
         id = id,
         title = title,

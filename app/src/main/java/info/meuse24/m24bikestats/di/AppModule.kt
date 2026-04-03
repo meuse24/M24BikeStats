@@ -22,6 +22,7 @@ import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUs
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
@@ -91,6 +92,7 @@ val appModule = module {
     factory { ObserveCachedSmartSystemBikeDetailUseCase(get()) }
     factory { GetCachedSmartSystemActivityUseCase(get()) }
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
+    factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { ObserveAppSettingsUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
@@ -106,7 +108,7 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get()) }
 
     // --- Presentation ---
-    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { DashboardOperationsHandler(get(), get(), get(), get()) }
     factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)

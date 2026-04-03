@@ -12,7 +12,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
 - Vollsync vom Home-Screen, der alle Aktivitätsseiten und die Bike-Liste neu in Room einliest
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
-- CSV-Format mit Presets `Systemstandard`, `Excel/Deutsch` und `Standard/International`
+- CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
 - GPX- und Track-Share-Funktionen
 - MapLibre/OpenFreeMap-Kartenansicht und Profilcharts für Tracks
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
@@ -57,7 +57,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Aktivitätsdetails kommen über `/activity/smart-system/v1/activities/{activityId}/details`.
 - Bikes kommen über `/bike-profile/smart-system/v1/bikes` und `/bikes/{bikeId}`.
 - CSV-Exporte nutzen den persistenten Setup-Wert für das Exportformat.
-- `Systemstandard` folgt der Geräte-Locale.
+- `Automatisch` leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab.
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
 - Der Home-Sync lädt die vollständige Aktivitätenliste seitenweise wie der CSV-Export, aber ohne Datei-Erzeugung.

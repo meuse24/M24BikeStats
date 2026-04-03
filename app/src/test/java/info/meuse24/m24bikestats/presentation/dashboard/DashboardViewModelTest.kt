@@ -12,6 +12,7 @@ import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUs
 import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
@@ -187,6 +188,25 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `can load more activities when cached total exceeds first loaded page`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                activities = (1..20).map { index -> testActivity(id = "a$index", title = "Ride $index") },
+                totalCount = 45,
+            )
+            setBikes(emptyList())
+        }
+        val viewModel = createViewModel(repository)
+
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(20, state.loadedActivityCount)
+        assertEquals(45, state.activityTotalCount)
+        assertTrue(state.canLoadMoreActivities)
+    }
+
+    @Test
     fun `cloud sync stores last sync summary`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -239,6 +259,7 @@ class DashboardViewModelTest {
                 observeCachedActivities = ObserveCachedSmartSystemActivitiesUseCase(repository),
                 observeCachedBikes = ObserveCachedSmartSystemBikesUseCase(repository),
                 observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
+                getCachedActivityTotalCount = GetCachedSmartSystemActivityTotalCountUseCase(repository),
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),

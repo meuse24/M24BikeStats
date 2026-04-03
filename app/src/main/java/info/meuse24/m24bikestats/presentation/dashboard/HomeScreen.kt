@@ -3,12 +3,16 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -17,13 +21,16 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 
@@ -31,9 +38,11 @@ import info.meuse24.m24bikestats.R
 fun HomeScreen(
     uiState: HomeUiState,
     onSyncCloudData: () -> Unit,
-    onNavigateToActivities: () -> Unit,
+    onNavigateToActivityDetail: (String) -> Unit,
+    onNavigateToActivityTrack: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     val latestActivity = remember(uiState.allActivities) {
         uiState.allActivities.maxByOrNull { it.startedAtEpochMillis ?: Long.MIN_VALUE }
     }
@@ -149,8 +158,9 @@ fun HomeScreen(
                     )
                     ActivityCard(
                         activity = latestActivity,
-                        onClick = onNavigateToActivities,
-                        primaryActionLabel = stringResource(R.string.home_latest_tour_button),
+                        onClick = { onNavigateToActivityDetail(latestActivity.id) },
+                        onMapClick = { onNavigateToActivityTrack(latestActivity.id) },
+                        onShareClick = { shareActivitySummary(context, latestActivity) },
                     )
                 }
             } else {
@@ -179,28 +189,38 @@ fun HomeScreen(
             }
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_bike_status),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                Text(
+                    text = stringResource(R.string.home_bike_status),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                HomeSummaryCard {
                     primaryBike?.let { bike ->
-                        SectionSurface {
-                            OptionalRow(stringResource(R.string.nav_bike), bike.title)
-                            OptionalRow(stringResource(R.string.home_head_unit), bike.subtitle)
-                            OptionalRow(stringResource(R.string.home_odometer), bike.odometerLabel)
-                            OptionalRow(stringResource(R.string.home_assist_limit), bike.assistSpeedLabel)
-                            OptionalRow(stringResource(R.string.home_battery), bike.batterySummary)
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text(
+                                text = bike.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            bike.subtitle?.let {
+                                Text(
+                                    text = it,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            HomeMetricGrid(
+                                items = buildList {
+                                    bike.odometerLabel?.let { add(stringResource(R.string.home_odometer) to it) }
+                                    bike.assistSpeedLabel?.let { add(stringResource(R.string.home_assist_limit) to it) }
+                                    bike.batterySummary?.let { add(stringResource(R.string.home_battery) to it) }
+                                },
+                            )
                         }
                     } ?: Text(
                         text = stringResource(R.string.home_no_bike_data),
@@ -211,39 +231,117 @@ fun HomeScreen(
             }
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_recent_exports),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
+                Text(
+                    text = stringResource(R.string.home_recent_exports),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                HomeSummaryCard {
+                    HomeMetricGrid(
+                        items = listOf(
+                            stringResource(R.string.home_export_activities_csv) to (
+                                uiState.lastActivitiesCsvExport?.fileName ?: stringResource(R.string.home_export_none)
+                            ),
+                            stringResource(R.string.home_export_details_csv) to (
+                                uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none)
+                            ),
+                            stringResource(R.string.home_export_last_time) to (
+                                uiState.lastActivityDetailsCsvExport?.exportedAtLabel
+                                    ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
+                                    ?: stringResource(R.string.home_export_none)
+                            ),
+                        ),
                     )
-                    SectionSurface {
-                        OptionalRow(
-                            stringResource(R.string.home_export_activities_csv),
-                            uiState.lastActivitiesCsvExport?.fileName ?: stringResource(R.string.home_export_none),
-                        )
-                        OptionalRow(
-                            stringResource(R.string.home_export_details_csv),
-                            uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none),
-                        )
-                        OptionalRow(
-                            stringResource(R.string.home_export_last_time),
-                            uiState.lastActivityDetailsCsvExport?.exportedAtLabel
-                                ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
-                                ?: stringResource(R.string.home_export_none),
-                        )
-                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeSummaryCard(
+    content: @Composable () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            content()
+        }
+    }
+}
+
+@Composable
+private fun HomeMetricGrid(
+    items: List<Pair<String, String>>,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowItems.forEach { (label, value) ->
+                    HomeMetricTile(
+                        label = label,
+                        value = value,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                }
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeMetricTile(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }

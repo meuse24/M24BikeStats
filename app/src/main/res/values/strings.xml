@@ -28,10 +28,10 @@
     <string name="setup_title">Setup</string>
     <string name="setup_subtitle">This is where app settings live that directly affect export and usage.</string>
     <string name="setup_csv_title">CSV format</string>
-    <string name="setup_csv_subtitle">Choose whether CSV exports follow the system default or a fixed export preset.</string>
+    <string name="setup_csv_subtitle">Choose whether CSV exports use the automatic device-based format or a fixed export preset.</string>
     <string name="setup_csv_example">Example: %1$s</string>
-    <string name="csv_export_format_system_default_label">System default</string>
-    <string name="csv_export_format_system_default_description">Uses the device language conventions, for example semicolon plus decimal comma on German systems.</string>
+    <string name="csv_export_format_system_default_label">Automatic</string>
+    <string name="csv_export_format_system_default_description">Uses the device decimal conventions to choose a fitting CSV preset, for example semicolon plus decimal comma on German systems.</string>
     <string name="csv_export_format_excel_de_label">Excel/German</string>
     <string name="csv_export_format_excel_de_description">Semicolon as separator with decimal comma and consistent quoting.</string>
     <string name="csv_export_format_standard_international_label">Standard/International</string>
@@ -153,6 +153,8 @@
     <string name="activities_empty_title">No activities for this selection</string>
     <string name="activities_empty_subtitle">Adjust date range or sorting to show other rides.</string>
     <string name="activities_load_more">Load more activities</string>
+    <string name="activities_loading_more_title">Loading more activities</string>
+    <string name="activities_loading_more_subtitle">Additional rides are being fetched from the cloud and added to the local cache.</string>
 
     <string name="bike_list_hero_eyebrow">Bike profile</string>
     <string name="bike_list_empty_title">No bike found</string>
@@ -333,7 +335,6 @@
     <string name="dashboard_bike_summary_title">Bike summary</string>
     <string name="dashboard_bike_detail_button">View bike details</string>
     <string name="dashboard_bike_detail_hint">Opens the detail screen with component, battery and head unit information.</string>
-    <string name="home_latest_tour_button">Open activities</string>
     <string name="track_tab_map">Map</string>
     <string name="track_tab_profiles">Profiles</string>
     <string name="track_tab_gpx">GPX</string>

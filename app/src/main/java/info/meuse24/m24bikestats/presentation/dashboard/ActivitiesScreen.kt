@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,13 +11,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -36,9 +41,37 @@ fun ActivitiesScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val listState = rememberLazyListState()
+    val shouldLoadMore by remember(
+        uiState.activities,
+        uiState.canLoadMoreActivities,
+        uiState.isLoadingMoreActivities,
+        uiState.isRefreshing,
+    ) {
+        derivedStateOf {
+            if (
+                uiState.activities.isEmpty() ||
+                !uiState.canLoadMoreActivities ||
+                uiState.isLoadingMoreActivities ||
+                uiState.isRefreshing
+            ) {
+                return@derivedStateOf false
+            }
+
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: return@derivedStateOf false
+            lastVisibleIndex >= uiState.activities.size + 1
+        }
+    }
+
+    LaunchedEffect(shouldLoadMore) {
+        if (shouldLoadMore) {
+            onLoadMore()
+        }
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -116,22 +149,36 @@ fun ActivitiesScreen(
         }
 
         item {
-            when {
-                uiState.isLoadingMoreActivities -> {
+            if (uiState.isLoadingMoreActivities) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 18.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
                         CircularProgressIndicator()
-                    }
-                }
-
-                uiState.canLoadMoreActivities -> {
-                    OutlinedButton(
-                        onClick = onLoadMore,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Text(stringResource(R.string.activities_load_more))
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.activities_loading_more_title),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = stringResource(R.string.activities_loading_more_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -139,7 +186,7 @@ fun ActivitiesScreen(
     }
 }
 
-private fun shareActivitySummary(
+internal fun shareActivitySummary(
     context: Context,
     activity: ActivityCardUiModel,
 ) {
