@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -61,6 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
@@ -301,106 +303,39 @@ fun TrackScreen(
             }
             uiState.selectedActivityId == activityId && uiState.selectedActivityDetail != null -> {
                 val activity = uiState.selectedActivityDetail
-                var selectedTrackTab by rememberSaveable(activity.id) { mutableIntStateOf(0) }
-                LazyColumn(
+                var showExportDialog by rememberSaveable(activity.id) { mutableStateOf(false) }
+                val clipboardManager = LocalClipboardManager.current
+                val context = LocalContext.current
+                val trackBounds = remember(activity.trackPoints) { calculateTrackBounds(activity.trackPoints) }
+
+                TrackMapFullScreen(
+                    activity = activity,
+                    trackBounds = trackBounds,
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    item {
-                        HeroCard(
-                            eyebrow = "Trackansicht",
-                            title = activity.title,
-                            subtitle = "${activity.trackPoints.size} GPS-Punkte und ${activity.profilePoints.size} Profilpunkte",
-                        )
-                    }
-                    item {
-                        TrackModeSelector(
-                            selectedTabIndex = selectedTrackTab,
-                            onTabSelected = { selectedTrackTab = it },
-                        )
-                    }
-                    when (selectedTrackTab) {
-                        0 -> {
-                            item {
-                                TrackMapCard(activity = activity)
+                    onShare = { showExportDialog = true },
+                )
+
+                if (showExportDialog) {
+                    TrackExportDialog(
+                        activity = activity,
+                        onDismiss = { showExportDialog = false },
+                        onShare = {
+                            val gpxUri = createTrackGpxUri(context, activity)
+                            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/gpx+xml"
+                                putExtra(Intent.EXTRA_STREAM, gpxUri)
+                                putExtra(Intent.EXTRA_SUBJECT, activity.title)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                             }
-                        }
-                        1 -> {
-                            item {
-                                TrackCanvasCard(trackPoints = activity.trackPoints)
-                            }
-                            if (activity.profilePoints.hasMetric { it.altitudeMeters }) {
-                                item {
-                                    ProfileChartCard(
-                                        title = "Höhenprofil",
-                                        subtitle = activity.profilePoints.metricSummary(
-                                            selector = { it.altitudeMeters },
-                                            unit = "m",
-                                        ),
-                                        points = activity.profilePoints,
-                                        selector = { it.altitudeMeters },
-                                        color = MaterialTheme.colorScheme.tertiary,
-                                        valueFormatter = { "${it.toInt()} m" },
-                                    )
-                                }
-                            }
-                            if (activity.profilePoints.hasMetric { it.riderPowerWatts }) {
-                                item {
-                                    ProfileChartCard(
-                                        title = "Leistungsverlauf",
-                                        subtitle = activity.profilePoints.metricSummary(
-                                            selector = { it.riderPowerWatts },
-                                            unit = "W",
-                                        ),
-                                        points = activity.profilePoints,
-                                        selector = { it.riderPowerWatts },
-                                        color = MaterialTheme.colorScheme.primary,
-                                        valueFormatter = { "${it.toInt()} W" },
-                                    )
-                                }
-                            }
-                            if (activity.profilePoints.hasMetric { it.speedKmh }) {
-                                item {
-                                    ProfileChartCard(
-                                        title = "Geschwindigkeitsverlauf",
-                                        subtitle = activity.profilePoints.metricSummary(
-                                            selector = { it.speedKmh },
-                                            unit = "km/h",
-                                        ),
-                                        points = activity.profilePoints,
-                                        selector = { it.speedKmh },
-                                        color = MaterialTheme.colorScheme.secondary,
-                                        valueFormatter = { String.format("%.1f km/h", it) },
-                                    )
-                                }
-                            }
-                        }
-                        else -> {
-                            item {
-                                GpxPreviewCard(activity = activity)
-                            }
-                        }
-                    }
-                    item {
-                        DetailSectionCard(
-                            section = DetailSectionUiModel(
-                                title = "Trackdaten",
-                                rows = listOf(
-                                    "GPS-Punkte" to activity.trackPoints.size.toString(),
-                                    "Start" to activity.trackPoints.firstOrNull()?.let { "${it.latitude}, ${it.longitude}" }.orEmpty(),
-                                    "Ziel" to activity.trackPoints.lastOrNull()?.let { "${it.latitude}, ${it.longitude}" }.orEmpty(),
-                                ),
-                                actions = listOf(
-                                    DetailSectionActionUiModel("Teilen", DetailSectionActionType.SHARE),
-                                )
-                            ),
-                            activity = activity,
-                            onNavigateToTrack = { onNavigateBack() },
-                        )
-                    }
+                            context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
+                        },
+                        onCopyGpx = {
+                            clipboardManager.setText(AnnotatedString(buildTrackGpx(activity)))
+                            Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+                        },
+                    )
                 }
             }
             else -> {
@@ -412,6 +347,120 @@ fun TrackScreen(
                 ) {
                     Text("Track nicht verfügbar")
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TrackMapFullScreen(
+    activity: ActivityDetailUiModel,
+    trackBounds: TrackBounds,
+    modifier: Modifier = Modifier,
+    onShare: () -> Unit,
+) {
+    var autoFitRequestId by rememberSaveable(activity.id) { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val trackSourceData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildTrackGeoJson(activity))
+    }
+    val startPointData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildSingleTrackPointGeoJson(activity.trackPoints.first(), "start"))
+    }
+    val endPointData = remember(activity.id, activity.trackPoints.size) {
+        GeoJsonData.JsonString(buildSingleTrackPointGeoJson(activity.trackPoints.last(), "end"))
+    }
+
+    BoxWithConstraints(modifier = modifier) {
+        val viewportWidth = with(density) { maxWidth.toPx().toDouble() }
+        val viewportHeight = with(density) { maxHeight.toPx().toDouble() }
+        val autoFitPosition = remember(trackBounds, viewportWidth, viewportHeight, autoFitRequestId) {
+            CameraPosition(
+                target = Position(
+                    longitude = trackBounds.centerLongitude,
+                    latitude = trackBounds.centerLatitude,
+                ),
+                zoom = estimateTrackZoom(trackBounds, viewportWidth, viewportHeight),
+            )
+        }
+        val cameraState = rememberCameraState(firstPosition = autoFitPosition)
+
+        LaunchedEffect(activity.id) {
+            cameraState.position = autoFitPosition
+        }
+
+        MaplibreMap(
+            modifier = Modifier.fillMaxSize(),
+            baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+            cameraState = cameraState,
+        ) {
+            val trackSource = rememberGeoJsonSource(data = trackSourceData)
+            val startPointSource = rememberGeoJsonSource(data = startPointData)
+            val endPointSource = rememberGeoJsonSource(data = endPointData)
+            LineLayer(
+                id = "activity-track",
+                source = trackSource,
+                color = const(MaterialTheme.colorScheme.primary),
+                width = const(5.dp),
+            )
+            CircleLayer(
+                id = "activity-track-start",
+                source = startPointSource,
+                color = const(MaterialTheme.colorScheme.secondary),
+                radius = const(7.dp),
+                strokeColor = const(Color.White),
+                strokeWidth = const(2.dp),
+            )
+            CircleLayer(
+                id = "activity-track-end",
+                source = endPointSource,
+                color = const(MaterialTheme.colorScheme.tertiary),
+                radius = const(6.dp),
+                strokeColor = const(Color.White),
+                strokeWidth = const(2.dp),
+            )
+        }
+
+        TrackMapBottomBar(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            onShare = onShare,
+            onAutoFit = {
+                autoFitRequestId += 1
+                cameraState.position = autoFitPosition
+            },
+        )
+    }
+}
+
+@Composable
+private fun TrackMapBottomBar(
+    modifier: Modifier = Modifier,
+    onShare: () -> Unit,
+    onAutoFit: () -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.96f),
+        tonalElevation = 8.dp,
+        shadowElevation = 8.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedButton(
+                onClick = onShare,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Teilen")
+            }
+            OutlinedButton(
+                onClick = onAutoFit,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text("Autofit")
             }
         }
     }
