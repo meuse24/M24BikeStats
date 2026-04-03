@@ -5,7 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import info.meuse24.m24bikestats.auth.LoginRepository
+import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService
@@ -29,7 +29,7 @@ import kotlin.coroutines.resume
  * 2. Ergebnis in [handleAuthResponse] übergeben
  * 3. Token über [getAccessToken] abrufbar
  */
-class AuthManager(private val context: Context) : LoginRepository {
+class AuthManager(private val context: Context) : AuthRepository, AuthFlowCoordinator {
 
     private val authService = AuthorizationService(context)
     private val refreshMutex = Mutex()

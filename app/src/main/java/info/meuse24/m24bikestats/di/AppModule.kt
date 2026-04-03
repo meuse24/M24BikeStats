@@ -2,7 +2,7 @@ package info.meuse24.m24bikestats.di
 
 import androidx.room.Room
 import info.meuse24.m24bikestats.auth.AuthManager
-import info.meuse24.m24bikestats.auth.LoginRepository
+import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
@@ -17,11 +17,13 @@ import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
+import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
@@ -73,11 +75,13 @@ val appModule = module {
     single<BoschSmartSystemRepository> { BoschSmartSystemRepositoryImpl(get(), get(), get(), get(), get(), get()) }
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
-    single<LoginRepository> { get<AuthManager>() }
+    single<AuthFlowCoordinator> { get<AuthManager>() }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
     single { DashboardUiModelMapper(get()) }
 
     // --- Domain ---
+    factory { IsAuthenticatedUseCase(get()) }
+    factory { ClearAuthenticationUseCase(get()) }
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
     factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
