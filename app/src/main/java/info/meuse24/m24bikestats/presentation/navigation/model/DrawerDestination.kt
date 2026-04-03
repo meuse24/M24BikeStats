@@ -12,7 +12,7 @@ import info.meuse24.m24bikestats.R
 
 enum class DrawerDestination(
     val route: String?,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
     SETUP(

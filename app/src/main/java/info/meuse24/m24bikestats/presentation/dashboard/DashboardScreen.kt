@@ -75,10 +75,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.ln
@@ -404,15 +406,15 @@ fun ActivityDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.selectedActivityDetail?.title ?: "Aktivität") },
+                title = { Text(uiState.selectedActivityDetail?.title ?: stringResource(R.string.activity_detail_fallback_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { onRefreshActivity(activityId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Aktivitätsdetails aktualisieren")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.activity_detail_refresh))
                     }
                 }
             )
@@ -447,9 +449,9 @@ fun ActivityDetailScreen(
                     }
                     item {
                         HeroCard(
-                            eyebrow = "Aktivität",
+                            eyebrow = stringResource(R.string.activity_detail_eyebrow),
                             title = activity.title,
-                            subtitle = activity.subtitle ?: "Detaildaten aus Bosch Smart System",
+                            subtitle = activity.subtitle ?: stringResource(R.string.activity_detail_subtitle),
                         ) {
                             SummaryChipRow(activity.summary)
                         }
@@ -470,7 +472,7 @@ fun ActivityDetailScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Aktivität nicht gefunden")
+                    Text(stringResource(R.string.activity_detail_not_found))
                 }
             }
         }
@@ -493,15 +495,15 @@ fun TrackScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.selectedActivityDetail?.title ?: "Track") },
+                title = { Text(uiState.selectedActivityDetail?.title ?: stringResource(R.string.track_fallback_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { onRefreshActivity(activityId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Track aktualisieren")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.track_refresh))
                     }
                 }
             )
@@ -533,10 +535,10 @@ fun TrackScreen(
                         trackBounds = trackBounds,
                         modifier = Modifier.fillMaxSize(),
                         onShare = { shareTrackGpx(context, activity) },
-                onShareCsv = { shareTrackCsv(context, activity, uiState.csvSeparator) },
+                        onShareCsv = { shareTrackCsv(context, activity, uiState.csvSeparator) },
                         onCopyGpx = {
                             copyTrackGpxToClipboard(context, activity)
-                            Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.track_gpx_copied), Toast.LENGTH_SHORT).show()
                         },
                     )
                     if (uiState.isActivityDetailRefreshing) {
@@ -555,7 +557,7 @@ fun TrackScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Track nicht verfügbar")
+                    Text(stringResource(R.string.track_not_available))
                 }
             }
         }
@@ -648,12 +650,12 @@ private fun TrackMapFullScreen(
             onShare = onShare,
             onShareCsv = onShareCsv,
             onCopyGpx = onCopyGpx,
-            onAutoFit = {
-                cameraState.position = autoFitPosition
-                Toast.makeText(context, "Karte auf den Track ausgerichtet", Toast.LENGTH_SHORT).show()
-            },
-        )
-    }
+                onAutoFit = {
+                    cameraState.position = autoFitPosition
+                    Toast.makeText(context, context.getString(R.string.track_map_fitted), Toast.LENGTH_SHORT).show()
+                },
+            )
+        }
 }
 
 @Composable
@@ -681,42 +683,42 @@ private fun TrackMapBottomBar(
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "GPX teilen",
+                        contentDescription = stringResource(R.string.track_action_gpx_share_cd),
                     )
                 },
-                label = "Teilen",
+                label = stringResource(R.string.track_action_share),
                 onClick = onShare,
             )
             TrackMapActionButton(
                 icon = {
                     Text(
-                        text = "GPX",
+                        text = stringResource(R.string.track_action_gpx_label),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                     )
                 },
-                label = "GPX",
+                label = stringResource(R.string.track_action_gpx_label),
                 onClick = onCopyGpx,
             )
             TrackMapActionButton(
                 icon = {
                     Text(
-                        text = "CSV",
+                        text = stringResource(R.string.track_action_csv_label),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                     )
                 },
-                label = "CSV",
+                label = stringResource(R.string.track_action_csv_label),
                 onClick = onShareCsv,
             )
             TrackMapActionButton(
                 icon = {
                     Icon(
                         imageVector = Icons.Default.Refresh,
-                        contentDescription = "Track einpassen",
+                        contentDescription = stringResource(R.string.track_action_autofit_cd),
                     )
                 },
-                label = "Autofit",
+                label = stringResource(R.string.track_action_autofit),
                 onClick = onAutoFit,
             )
         }
@@ -760,15 +762,15 @@ fun BikeDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(uiState.selectedBikeDetail?.title ?: "Bike") },
+                title = { Text(uiState.selectedBikeDetail?.title ?: stringResource(R.string.bike_detail_fallback_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = { onRefreshBike(bikeId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Bike-Details aktualisieren")
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.bike_detail_refresh))
                     }
                 }
             )
@@ -802,9 +804,9 @@ fun BikeDetailScreen(
                     }
                     item {
                         HeroCard(
-                            eyebrow = "Smart System Bike",
+                            eyebrow = stringResource(R.string.bike_detail_eyebrow),
                             title = uiState.selectedBikeDetail.title,
-                            subtitle = uiState.selectedBikeDetail.subtitle ?: "Komponenten und Batteriesystem",
+                            subtitle = uiState.selectedBikeDetail.subtitle ?: stringResource(R.string.bike_detail_subtitle),
                         )
                     }
                     items(uiState.selectedBikeDetail.sections) { section ->
@@ -819,7 +821,7 @@ fun BikeDetailScreen(
                         .padding(padding),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("Bike-Details nicht verfügbar")
+                    Text(stringResource(R.string.bike_detail_not_available))
                 }
             }
         }
@@ -962,7 +964,7 @@ internal fun ActivityFilterSection(
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Text(
-                text = "Filter & Sortierung",
+                text = stringResource(R.string.filter_section_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -971,15 +973,15 @@ internal fun ActivityFilterSection(
                 onValueChange = onSearchQueryChanged,
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Aktivität suchen") },
-                placeholder = { Text("Titel, Datum oder Distanz") },
+                label = { Text(stringResource(R.string.filter_search_label)) },
+                placeholder = { Text(stringResource(R.string.filter_search_placeholder)) },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = null)
                 },
                 trailingIcon = if (searchQuery.isNotBlank()) {
                     {
                         IconButton(onClick = { onSearchQueryChanged("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Suche löschen")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_search_clear))
                         }
                     }
                 } else {
@@ -988,7 +990,7 @@ internal fun ActivityFilterSection(
             )
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Zeitraum",
+                    text = stringResource(R.string.filter_date_range),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -997,14 +999,14 @@ internal fun ActivityFilterSection(
                         FilterChip(
                             selected = option == selectedDateRange,
                             onClick = { onDateRangeSelected(option) },
-                            label = { Text(option.label) },
+                            label = { Text(stringResource(option.labelRes)) },
                         )
                     }
                 }
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "Sortierung",
+                    text = stringResource(R.string.filter_sorting),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1013,7 +1015,7 @@ internal fun ActivityFilterSection(
                         FilterChip(
                             selected = option == selectedSortOption,
                             onClick = { onSortOptionSelected(option) },
-                            label = { Text(option.label) },
+                            label = { Text(stringResource(option.labelRes)) },
                         )
                     }
                 }
@@ -1265,7 +1267,7 @@ private fun DetailSectionCard(
             },
             onCopyGpx = {
                 copyTrackGpxToClipboard(context, activity)
-                Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.track_gpx_copied), Toast.LENGTH_SHORT).show()
             },
         )
     }
@@ -1333,30 +1335,30 @@ private fun TrackExportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("GPX-Export") },
+        title = { Text(stringResource(R.string.track_export_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DetailRow(label = "Aktivität", value = metadata.title)
-                metadata.distanceLabel?.let { DetailRow(label = "Distanz", value = it) }
-                DetailRow(label = "GPS-Punkte", value = metadata.trackPointCount.toString())
-                DetailRow(label = "Profilpunkte", value = metadata.profilePointCount.toString())
-                metadata.startCoordinateLabel?.let { DetailRow(label = "Start", value = it) }
-                metadata.endCoordinateLabel?.let { DetailRow(label = "Ziel", value = it) }
-                DetailRow(label = "Format", value = "GPX 1.1 mit Tracksegment, Höhe und Distanzpunkten")
+                DetailRow(label = stringResource(R.string.track_export_label_activity), value = metadata.title)
+                metadata.distanceLabel?.let { DetailRow(label = stringResource(R.string.track_export_label_distance), value = it) }
+                DetailRow(label = stringResource(R.string.track_export_label_gps_points), value = metadata.trackPointCount.toString())
+                DetailRow(label = stringResource(R.string.track_export_label_profile_points), value = metadata.profilePointCount.toString())
+                metadata.startCoordinateLabel?.let { DetailRow(label = stringResource(R.string.track_export_label_start), value = it) }
+                metadata.endCoordinateLabel?.let { DetailRow(label = stringResource(R.string.track_export_label_end), value = it) }
+                DetailRow(label = stringResource(R.string.track_export_label_format), value = stringResource(R.string.track_export_format_value))
             }
         },
         confirmButton = {
             TextButton(onClick = onShare) {
-                Text("GPX teilen")
+                Text(stringResource(R.string.track_export_share_gpx))
             }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = onCopyGpx) {
-                    Text("GPX kopieren")
+                    Text(stringResource(R.string.track_export_copy_gpx))
                 }
                 TextButton(onClick = onDismiss) {
-                    Text("Schließen")
+                    Text(stringResource(R.string.common_close))
                 }
             }
         },
@@ -1786,7 +1788,7 @@ private fun shareTrackGpx(
         putExtra(Intent.EXTRA_SUBJECT, activity.title)
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(shareIntent, "GPX exportieren"))
+    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.track_share_chooser_gpx)))
 }
 
 private fun copyTrackGpxToClipboard(
@@ -1811,7 +1813,7 @@ private fun shareTrackCsv(
         putExtra(Intent.EXTRA_SUBJECT, "${activity.title}.csv")
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
-    context.startActivity(Intent.createChooser(shareIntent, "Track als CSV exportieren"))
+    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.track_share_chooser_csv)))
 }
 
 @Composable

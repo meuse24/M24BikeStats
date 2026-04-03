@@ -17,8 +17,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 
 @Composable
 fun ActivitiesScreen(
@@ -37,33 +39,33 @@ fun ActivitiesScreen(
     ) {
         item {
             HeroCard(
-                eyebrow = "Tourenübersicht",
-                title = "${uiState.visibleActivityCount} sichtbar • ${uiState.loadedActivityCount} geladen",
-                subtitle = "Die App liest aktuell die bestätigten Summary-Daten aus Bosch Smart System.",
+                eyebrow = stringResource(R.string.activities_hero_eyebrow),
+                title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
+                subtitle = stringResource(R.string.activities_hero_subtitle),
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item {
                         MetricPill(
-                            label = "Sichtbar",
+                            label = stringResource(R.string.activities_metric_visible),
                             value = uiState.visibleActivityCount.toString(),
                         )
                     }
                     item {
                         MetricPill(
-                            label = "Geladen",
+                            label = stringResource(R.string.activities_metric_loaded),
                             value = uiState.loadedActivityCount.toString(),
                         )
                     }
                     item {
                         MetricPill(
-                            label = "Gesamt",
+                            label = stringResource(R.string.activities_metric_total),
                             value = uiState.activityTotalCount.toString(),
                         )
                     }
                     item {
                         MetricPill(
-                            label = "Status",
-                            value = if (uiState.isRefreshing) "Aktualisiert..." else "Bereit",
+                            label = stringResource(R.string.activities_metric_status),
+                            value = if (uiState.isRefreshing) stringResource(R.string.activities_status_refreshing) else stringResource(R.string.activities_status_ready),
                         )
                     }
                 }
@@ -95,12 +97,12 @@ fun ActivitiesScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Keine Aktivitäten für diese Auswahl",
+                            text = stringResource(R.string.activities_empty_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Passe Datumsbereich oder Sortierung an, um andere Touren anzuzeigen.",
+                            text = stringResource(R.string.activities_empty_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -132,7 +134,7 @@ fun ActivitiesScreen(
                         onClick = onLoadMore,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Mehr Aktivitäten laden")
+                        Text(stringResource(R.string.activities_load_more))
                     }
                 }
             }

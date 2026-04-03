@@ -7,7 +7,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import info.meuse24.m24bikestats.R
 
 @Composable
 fun BikeListScreen(
@@ -23,16 +25,16 @@ fun BikeListScreen(
     ) {
         item {
             HeroCard(
-                eyebrow = "Bike-Profil",
+                eyebrow = stringResource(R.string.bike_list_hero_eyebrow),
                 title = if (bikes.isEmpty()) {
-                    "Kein Bike gefunden"
+                    stringResource(R.string.bike_list_empty_title)
                 } else {
-                    "${bikes.size} Bike${if (bikes.size == 1) "" else "s"} verfügbar"
+                    stringResource(if (bikes.size == 1) R.string.bike_list_count_title else R.string.bike_list_count_title_plural, bikes.size)
                 },
                 subtitle = if (isRefreshing) {
-                    "Bike-Daten werden aktualisiert."
+                    stringResource(R.string.bike_list_refreshing_subtitle)
                 } else {
-                    "Komponenten-, Assist- und Batterieinformationen aus Bosch Smart System."
+                    stringResource(R.string.bike_list_default_subtitle)
                 },
             )
         }

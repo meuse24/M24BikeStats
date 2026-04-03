@@ -52,7 +52,7 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text(text = "M24 Bike Stats", style = MaterialTheme.typography.headlineLarge)
+        Text(text = stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = stringResource(R.string.login_subtitle),

@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 
 enum class MainDestination(
     val route: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val icon: ImageVector,
 ) {
     HOME(

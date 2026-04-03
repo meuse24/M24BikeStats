@@ -219,31 +219,31 @@ private fun ReadableResultSection(result: BoschReadableResult) {
             is BoschReadableResult.BikeList -> BikeListSection(result)
             is BoschReadableResult.BikeDetail -> BikeDetailSection(result)
             is BoschReadableResult.UserInfo -> SimpleInfoCard(
-                title = "Bosch Nutzerprofil",
+                title = stringResource(R.string.api_test_user_profile_title),
                 lines = listOf(
-                    "E-Mail: ${result.email}",
-                    "Benutzer: ${result.username}",
-                    "Subject: ${result.subject}",
+                    stringResource(R.string.api_test_user_profile_email, result.email),
+                    stringResource(R.string.api_test_user_profile_username, result.username),
+                    stringResource(R.string.api_test_user_profile_subject, result.subject),
                 )
             )
             is BoschReadableResult.TokenInfo -> SimpleInfoCard(
-                title = "Token-Überblick",
+                title = stringResource(R.string.api_test_token_overview_title),
                 lines = listOfNotNull(
-                    "Audience: ${result.audience.joinToString()}",
-                    "Scope: ${result.scope}",
-                    result.expiresAt?.let { "Läuft ab: $it" },
-                    result.boschId?.let { "Bosch-ID: $it" },
-                    result.riderId?.let { "Rider-ID: $it" },
+                    stringResource(R.string.api_test_token_audience, result.audience.joinToString()),
+                    stringResource(R.string.api_test_token_scope, result.scope),
+                    result.expiresAt?.let { stringResource(R.string.api_test_token_expires, it) },
+                    result.boschId?.let { stringResource(R.string.api_test_token_bosch_id, it) },
+                    result.riderId?.let { stringResource(R.string.api_test_token_rider_id, it) },
                 )
             )
             is BoschReadableResult.OidcDiscovery -> SimpleInfoCard(
-                title = "OIDC Discovery",
+                title = stringResource(R.string.api_test_oidc_title),
                 lines = listOf(
-                    "Issuer: ${result.issuer}",
-                    "Authorization: ${result.authorizationEndpoint}",
-                    "Token: ${result.tokenEndpoint}",
-                    "UserInfo: ${result.userInfoEndpoint}",
-                    "Grant Types: ${result.supportedGrants.joinToString()}",
+                    stringResource(R.string.api_test_oidc_issuer, result.issuer),
+                    stringResource(R.string.api_test_oidc_authorization, result.authorizationEndpoint),
+                    stringResource(R.string.api_test_oidc_token, result.tokenEndpoint),
+                    stringResource(R.string.api_test_oidc_userinfo, result.userInfoEndpoint),
+                    stringResource(R.string.api_test_oidc_grant_types, result.supportedGrants.joinToString()),
                 )
             )
         }
@@ -253,8 +253,8 @@ private fun ReadableResultSection(result: BoschReadableResult) {
 @Composable
 private fun ActivitiesSection(result: BoschReadableResult.Activities) {
     SimpleInfoCard(
-        title = "Aktivitäten (${result.total})",
-        lines = listOf("Angezeigt: ${result.items.size}")
+        title = stringResource(R.string.api_test_activities_title, result.total),
+        lines = listOf(stringResource(R.string.api_test_activities_shown, result.items.size))
     )
     Spacer(modifier = Modifier.height(8.dp))
     result.items.take(5).forEach { activity ->
@@ -262,13 +262,13 @@ private fun ActivitiesSection(result: BoschReadableResult.Activities) {
             title = activity.title,
             subtitle = activity.startedAt,
             lines = listOfNotNull(
-                "Distanz: ${activity.distanceKm}",
-                "Dauer: ${activity.duration}",
-                "Geschwindigkeit: ${activity.averageSpeed} Ø, ${activity.maxSpeed} max",
-                activity.cadence?.let { "Kadenz: $it" },
-                activity.riderPower?.let { "Leistung: $it" },
-                activity.elevation?.let { "Höhenmeter: $it" },
-                activity.calories?.let { "Kalorien: $it" },
+                stringResource(R.string.api_test_activity_distance, activity.distanceKm),
+                stringResource(R.string.api_test_activity_duration, activity.duration),
+                stringResource(R.string.api_test_activity_speed, activity.averageSpeed, activity.maxSpeed),
+                activity.cadence?.let { stringResource(R.string.api_test_activity_cadence, it) },
+                activity.riderPower?.let { stringResource(R.string.api_test_activity_power, it) },
+                activity.elevation?.let { stringResource(R.string.api_test_activity_elevation, it) },
+                activity.calories?.let { stringResource(R.string.api_test_activity_calories, it) },
             )
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -296,15 +296,15 @@ private fun BikeCard(bike: BikeItem) {
         title = bike.driveUnitName,
         subtitle = bike.headUnitName,
         lines = buildList {
-            add("Bike-ID: ${bike.id}")
-            bike.remoteName?.let { add("Remote: $it") }
-            bike.odometerKm?.let { add("Kilometerstand: $it") }
-            bike.assistSpeedKmh?.let { add("Max. Unterstützungs-Geschwindigkeit: $it") }
+            add(stringResource(R.string.api_test_bike_id, bike.id))
+            bike.remoteName?.let { add(stringResource(R.string.api_test_bike_remote, it)) }
+            bike.odometerKm?.let { add(stringResource(R.string.api_test_bike_odometer, it)) }
+            bike.assistSpeedKmh?.let { add(stringResource(R.string.api_test_bike_assist_speed, it)) }
             if (bike.batterySummary.isNotEmpty()) {
-                add("Batterien: ${bike.batterySummary.joinToString(" | ")}")
+                add(stringResource(R.string.api_test_bike_batteries, bike.batterySummary.joinToString(" | ")))
             }
             if (bike.assistModes.isNotEmpty()) {
-                add("Assist Modes: ${bike.assistModes.joinToString()}")
+                add(stringResource(R.string.api_test_bike_assist_modes, bike.assistModes.joinToString()))
             }
         }
     )

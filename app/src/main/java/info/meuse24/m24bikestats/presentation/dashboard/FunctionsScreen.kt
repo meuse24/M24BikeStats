@@ -47,7 +47,7 @@ fun FunctionsScreen(
             putExtra(Intent.EXTRA_SUBJECT, export.fileName)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(shareIntent, "CSV exportieren"))
+        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.functions_share_chooser_csv)))
         onActivitiesCsvExportHandled()
     }
 
@@ -60,7 +60,7 @@ fun FunctionsScreen(
             putExtra(Intent.EXTRA_SUBJECT, export.fileName)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        context.startActivity(Intent.createChooser(shareIntent, "Detail-CSV exportieren"))
+        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.functions_share_chooser_detail_csv)))
         onActivityDetailsCsvExportHandled()
     }
 
@@ -71,15 +71,15 @@ fun FunctionsScreen(
     ) {
         item {
             HeroCard(
-                eyebrow = "Funktionen",
-                title = "Datenexport",
-                subtitle = "Aktivitätenlisten und Detailpunkte als teilbare CSV-Dateien exportieren.",
+                eyebrow = stringResource(R.string.functions_hero_eyebrow),
+                title = stringResource(R.string.functions_hero_title),
+                subtitle = stringResource(R.string.functions_hero_subtitle),
             ) {
                 SummaryChipRow(
                     listOf(
-                        "Geladen" to uiState.loadedActivityCount.toString(),
-                        "Gesamt" to uiState.activityTotalCount.toString(),
-                        "Sichtbar" to uiState.visibleActivityCount.toString(),
+                        stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
+                        stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
+                        stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
                     )
                 )
             }
@@ -97,28 +97,28 @@ fun FunctionsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Aktivitäten als CSV exportieren",
+                        text = stringResource(R.string.functions_export_activities_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Die Funktion ruft alle Seiten der Aktivitätenliste ab und erstellt daraus eine teilbare CSV-Datei mit den bekannten Metriken.",
+                        text = stringResource(R.string.functions_export_activities_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow("CSV-Trennzeichen", stringResource(uiState.csvSeparator.labelRes()))
+                        OptionalRow(stringResource(R.string.functions_label_csv_separator), stringResource(uiState.csvSeparator.labelRes()))
                     }
                     uiState.lastActivitiesCsvExport?.let { exportSummary ->
                         SectionSurface {
                             Text(
-                                text = "Zuletzt exportiert",
+                                text = stringResource(R.string.functions_last_exported),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            OptionalRow("Datei", exportSummary.fileName)
-                            OptionalRow("Aktivitäten", exportSummary.activityCount.toString())
-                            OptionalRow("Zeitpunkt", exportSummary.exportedAtLabel)
+                            OptionalRow(stringResource(R.string.functions_label_file), exportSummary.fileName)
+                            OptionalRow(stringResource(R.string.functions_label_activities), exportSummary.activityCount.toString())
+                            OptionalRow(stringResource(R.string.functions_label_exported_at), exportSummary.exportedAtLabel)
                         }
                     }
                     if (uiState.isExportingActivitiesCsv) {
@@ -131,7 +131,7 @@ fun FunctionsScreen(
                         }
 
                         Text(
-                            text = "$loadedCount von $totalCount Aktivitäten geladen",
+                            text = stringResource(R.string.functions_progress_loaded, loadedCount, totalCount),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -155,9 +155,9 @@ fun FunctionsScreen(
                                 strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Export läuft")
+                            Text(stringResource(R.string.functions_export_running))
                         } else {
-                            Text("CSV exportieren")
+                            Text(stringResource(R.string.functions_export_button))
                         }
                     }
                 }
@@ -176,31 +176,31 @@ fun FunctionsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     Text(
-                        text = "Sichtbare Detailpunkte als CSV exportieren",
+                        text = stringResource(R.string.functions_export_details_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
                     Text(
-                        text = "Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert alle Detailpunkte aus Cache und bei Bedarf per Live-Nachladen.",
+                        text = stringResource(R.string.functions_export_details_subtitle),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     SectionSurface {
-                        OptionalRow("CSV-Trennzeichen", stringResource(uiState.csvSeparator.labelRes()))
-                        OptionalRow("Sichtbare Aktivitäten", uiState.visibleActivityCount.toString())
-                        OptionalRow("Geladene Aktivitäten", uiState.loadedActivityCount.toString())
+                        OptionalRow(stringResource(R.string.functions_label_csv_separator), stringResource(uiState.csvSeparator.labelRes()))
+                        OptionalRow(stringResource(R.string.functions_label_visible_activities), uiState.visibleActivityCount.toString())
+                        OptionalRow(stringResource(R.string.functions_label_loaded_activities), uiState.loadedActivityCount.toString())
                     }
                     uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
                         SectionSurface {
                             Text(
-                                text = "Zuletzt exportiert",
+                                text = stringResource(R.string.functions_last_exported),
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            OptionalRow("Datei", exportSummary.fileName)
-                            OptionalRow("Aktivitäten", exportSummary.activityCount.toString())
-                            OptionalRow("Detailpunkte", exportSummary.detailPointCount.toString())
-                            OptionalRow("Zeitpunkt", exportSummary.exportedAtLabel)
+                            OptionalRow(stringResource(R.string.functions_label_file), exportSummary.fileName)
+                            OptionalRow(stringResource(R.string.functions_label_activities), exportSummary.activityCount.toString())
+                            OptionalRow(stringResource(R.string.functions_label_detail_points), exportSummary.detailPointCount.toString())
+                            OptionalRow(stringResource(R.string.functions_label_exported_at), exportSummary.exportedAtLabel)
                         }
                     }
                     if (uiState.isExportingActivityDetailsCsv) {
@@ -213,7 +213,7 @@ fun FunctionsScreen(
                         }
 
                         Text(
-                            text = "$loadedCount von $totalCount Aktivitäten geladen",
+                            text = stringResource(R.string.functions_progress_loaded, loadedCount, totalCount),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurface,
                         )
@@ -238,9 +238,9 @@ fun FunctionsScreen(
                                 strokeWidth = 2.dp,
                             )
                             Spacer(modifier = Modifier.width(10.dp))
-                            Text("Detail-Export läuft")
+                            Text(stringResource(R.string.functions_detail_export_running))
                         } else {
-                            Text("Detail-CSV exportieren")
+                            Text(stringResource(R.string.functions_detail_export_button))
                         }
                     }
                 }

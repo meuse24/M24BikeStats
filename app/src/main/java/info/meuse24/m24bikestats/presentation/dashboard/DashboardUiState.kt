@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvSeparator
 
 data class DashboardUiState(
@@ -146,15 +148,15 @@ data class CloudSyncSummaryUiModel(
     val syncedAtLabel: String,
 )
 
-enum class ActivityDateRangeFilter(val label: String) {
-    ALL("Alle"),
-    LAST_30_DAYS("30 Tage"),
-    LAST_12_MONTHS("12 Monate"),
+enum class ActivityDateRangeFilter(@param:StringRes val labelRes: Int) {
+    ALL(R.string.date_filter_all),
+    LAST_30_DAYS(R.string.date_filter_last_30_days),
+    LAST_12_MONTHS(R.string.date_filter_last_12_months),
 }
 
-enum class ActivitySortOption(val label: String) {
-    NEWEST_FIRST("Neueste"),
-    OLDEST_FIRST("Älteste"),
-    LONGEST_DISTANCE("Distanz"),
-    LONGEST_DURATION("Dauer"),
+enum class ActivitySortOption(@param:StringRes val labelRes: Int) {
+    NEWEST_FIRST(R.string.sort_newest),
+    OLDEST_FIRST(R.string.sort_oldest),
+    LONGEST_DISTANCE(R.string.sort_distance),
+    LONGEST_DURATION(R.string.sort_duration),
 }
