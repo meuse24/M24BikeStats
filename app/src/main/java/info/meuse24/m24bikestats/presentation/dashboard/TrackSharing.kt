@@ -21,21 +21,12 @@ data class TrackExportMetadata(
 fun createTrackGpxUri(
     context: Context,
     activity: ActivityDetailUiModel,
-): Uri {
-    val exportDir = File(context.cacheDir, "shared_tracks").apply { mkdirs() }
-    val safeName = activity.title
-        .lowercase(Locale.US)
-        .replace(Regex("[^a-z0-9]+"), "-")
-        .trim('-')
-        .ifBlank { "activity-track" }
-    val file = File(exportDir, "$safeName.gpx")
-    file.writeText(buildTrackGpx(activity))
-    return FileProvider.getUriForFile(
-        context,
-        "${context.packageName}.fileprovider",
-        file
-    )
-}
+): Uri = createSharedTrackFileUri(context, "${sanitizeTrackFileName(activity.title)}.gpx", buildTrackGpx(activity))
+
+fun createTrackCsvUri(
+    context: Context,
+    activity: ActivityDetailUiModel,
+): Uri = createSharedTrackFileUri(context, "${sanitizeTrackFileName(activity.title)}.csv", buildTrackCsv(activity))
 
 fun buildTrackGpx(activity: ActivityDetailUiModel): String {
     val timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now().atOffset(ZoneOffset.UTC))
@@ -63,6 +54,43 @@ fun buildTrackGpx(activity: ActivityDetailUiModel): String {
         |  </trk>
         |</gpx>
     """.trimMargin()
+}
+
+fun buildTrackCsv(activity: ActivityDetailUiModel): String {
+    val header = listOf(
+        "point_index",
+        "latitude",
+        "longitude",
+        "distance_meters",
+        "altitude_meters",
+        "speed_kmh",
+        "cadence_rpm",
+        "rider_power_watts",
+    ).joinToString(",")
+
+    val rows = activity.trackPoints.mapIndexed { index, point ->
+        val profilePoint = point.distanceMeters?.let { distance ->
+            activity.profilePoints.minByOrNull { candidate ->
+                kotlin.math.abs(candidate.distanceMeters - distance)
+            }
+        }
+
+        listOf(
+            index.toString(),
+            point.latitude.toCsvValue(),
+            point.longitude.toCsvValue(),
+            point.distanceMeters.toCsvValue(),
+            point.altitudeMeters.toCsvValue(),
+            profilePoint?.speedKmh.toCsvValue(),
+            profilePoint?.cadenceRpm.toCsvValue(),
+            profilePoint?.riderPowerWatts.toCsvValue(),
+        ).joinToString(",")
+    }
+
+    return buildString {
+        appendLine(header)
+        rows.forEach(::appendLine)
+    }
 }
 
 fun buildTrackGeoJson(activity: ActivityDetailUiModel): String {
@@ -125,3 +153,31 @@ private fun formatCoordinatePair(latitude: Double, longitude: Double): String =
 
 private fun formatKilometers(distanceMeters: Double): String =
     String.format(Locale.US, "%.1f km", distanceMeters / 1000.0)
+
+private fun sanitizeTrackFileName(title: String): String =
+    title
+        .lowercase(Locale.US)
+        .replace(Regex("[^a-z0-9]+"), "-")
+        .trim('-')
+        .ifBlank { "activity-track" }
+
+private fun createSharedTrackFileUri(
+    context: Context,
+    fileName: String,
+    content: String,
+): Uri {
+    val exportDir = File(context.cacheDir, "shared_tracks").apply { mkdirs() }
+    val file = File(exportDir, fileName)
+    file.writeText(content)
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        file
+    )
+}
+
+private fun Double?.toCsvValue(): String = when {
+    this == null -> ""
+    this.isNaN() -> ""
+    else -> String.format(Locale.US, "%.6f", this)
+}

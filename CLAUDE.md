@@ -150,6 +150,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Aktivitätsdetail- und Bike-Detail-Screens beobachten Room direkt per Flow
 - Remote-Refresh für Listen und Details läuft nur bei veraltetem Cache oder explizitem Refresh
 - Aktivitätsdetails können den vollständigen Track als GPX teilen
+- Aktivitätsdetails können die vollständigen Detailpunkte zusätzlich als CSV exportieren
 - Es gibt einen eigenen Track-Screen mit Polyline aus allen bestätigten GPS-Punkten
 - Der Track-Screen enthält zusätzlich eine MapLibre/OpenFreeMap-Kartenansicht mit Track-Overlay
 - Der Track-Screen ist eine fullscreen Kartenansicht mit Top-Bar und Action-Bottom-Bar

@@ -455,6 +455,7 @@ fun TrackScreen(
                         trackBounds = trackBounds,
                         modifier = Modifier.fillMaxSize(),
                         onShare = { shareTrackGpx(context, activity) },
+                        onShareCsv = { shareTrackCsv(context, activity) },
                         onCopyGpx = {
                             copyTrackGpxToClipboard(context, activity)
                             Toast.makeText(context, "GPX in die Zwischenablage kopiert", Toast.LENGTH_SHORT).show()
@@ -489,6 +490,7 @@ private fun TrackMapFullScreen(
     trackBounds: TrackBounds,
     modifier: Modifier = Modifier,
     onShare: () -> Unit,
+    onShareCsv: () -> Unit,
     onCopyGpx: () -> Unit,
 ) {
     val density = LocalDensity.current
@@ -566,6 +568,7 @@ private fun TrackMapFullScreen(
         TrackMapBottomBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             onShare = onShare,
+            onShareCsv = onShareCsv,
             onCopyGpx = onCopyGpx,
             onAutoFit = {
                 cameraState.position = autoFitPosition
@@ -579,6 +582,7 @@ private fun TrackMapFullScreen(
 private fun TrackMapBottomBar(
     modifier: Modifier = Modifier,
     onShare: () -> Unit,
+    onShareCsv: () -> Unit,
     onCopyGpx: () -> Unit,
     onAutoFit: () -> Unit,
 ) {
@@ -615,6 +619,17 @@ private fun TrackMapBottomBar(
                 },
                 label = "GPX",
                 onClick = onCopyGpx,
+            )
+            TrackMapActionButton(
+                icon = {
+                    Text(
+                        text = "CSV",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                },
+                label = "CSV",
+                onClick = onShareCsv,
             )
             TrackMapActionButton(
                 icon = {
@@ -1690,6 +1705,20 @@ private fun copyTrackGpxToClipboard(
     clipboard.setPrimaryClip(
         ClipData.newPlainText("track.gpx", buildTrackGpx(activity))
     )
+}
+
+private fun shareTrackCsv(
+    context: Context,
+    activity: ActivityDetailUiModel,
+) {
+    val csvUri = createTrackCsvUri(context, activity)
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/csv"
+        putExtra(Intent.EXTRA_STREAM, csvUri)
+        putExtra(Intent.EXTRA_SUBJECT, "${activity.title}.csv")
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    context.startActivity(Intent.createChooser(shareIntent, "Track als CSV exportieren"))
 }
 
 @Composable
