@@ -50,8 +50,8 @@ auth/            ← OAuth2-Brücke (plattformspezifisch)
 presentation/    ← stateless Screens, ViewModels, Navigation
   login/         ← LoginViewModel, LoginScreen, LoginStatus
   apitest/       ← ApiTestViewModel (StateFlow), ApiTestScreen, ApiTestUiState
-  dashboard/     ← DashboardViewModel, DashboardScreen, Detail-Screens
-  navigation/    ← AppNavigation (verbindet VMs mit Screens)
+  dashboard/     ← DashboardViewModel, Home/Activities/Bike/Functions, Detail-Screens
+  navigation/    ← AppNavigation + MainShell (adaptive Navigation)
 
 di/              ← AppModule (Koin)
 M24BikeStatsApp  ← Application, startet Koin
@@ -84,7 +84,7 @@ Koin (`AppModule`):
 2. Bosch-Login → Redirect auf `m24bikestats://oauth-callback`
 3. `RedirectUriReceiverActivity` fängt Callback ab, liefert Result zurück
 4. `LoginViewModel.handleAuthResult()` → Token-Austausch → Token in `EncryptedSharedPreferences`
-5. Navigation → `dashboard`
+5. Navigation → `home` innerhalb der authentifizierten Main-Shell
 6. Logout versucht zusätzlich einen OIDC-End-Session-Flow gegen Bosch, bevor die App lokal auf `login` zurückkehrt
 
 ### Compose-Muster
@@ -140,14 +140,15 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 
 ### Aktueller UI-Stand
 
-- Startziel nach Login ist `dashboard`
-- Dashboard zeigt Aktivitäten, Bike und Funktionen in einer gemeinsamen Tab-Navigation
+- Startziel nach Login ist `home`
+- Die Hauptnavigation nutzt `NavigationSuiteScaffold` adaptiv für Home, Aktivitäten, Bike und Funktionen
+- Auf Compact-Geräten liegen Hilfe, Info, API-Test und Logout im `ModalNavigationDrawer`
+- Auf größeren Breiten liegen Hilfe, Info, API-Test und Logout im Overflow-Menü der `TopAppBar`
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
 - Aktivitätenlisten-UI arbeitet ohne separate Domain-In-Memory-Kopie; Filter/Sortierung basieren auf `allActivities` im UiState
 - Room nutzt echte Migrationen für die bekannten Cache-Schema-Stände ab Version 2
-- Aktivitätenliste unterstützt Datumsfilter und Sortierung direkt im Dashboard
-- Aktivitätenliste unterstützt zusätzlich freie Textsuche im Dashboard
+- Aktivitätenliste unterstützt Datumsfilter, Sortierung und freie Textsuche im eigenen Activities-Screen
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
 - Aktivitätsdetails und Trackpunkte werden in Room gecacht und cache-first geladen
 - Aktivitätsdetail- und Bike-Detail-Screens beobachten Room direkt per Flow
@@ -161,9 +162,9 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Der Track-Screen zeigt zusätzlich Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit
 - Bike-Liste und Bike-Details kommen cache-first aus Room
 - Bike-Details kommen über `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
-- Der Funktionen-Tab enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
-- Der Funktionen-Tab enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
-- Der Funktionen-Tab zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
+- Der Functions-Screen enthält den CSV-Export aller Aktivitäten und nutzt zuerst den lokalen Aktivitäten-Cache
+- Der Functions-Screen enthält zusätzlich einen Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz
+- Der Functions-Screen zeigt zusätzlich den letzten erfolgreichen CSV-Export mit Dateiname, Anzahl und Zeitpunkt
 - Login-Hinweis erklärt Bosch SingleKey ID kurz aus Sicht der eigenen App
 - Repository-, Mapper-, ViewModel-, Room-, Migrations- und Exportpfade sind testseitig abgedeckt
 

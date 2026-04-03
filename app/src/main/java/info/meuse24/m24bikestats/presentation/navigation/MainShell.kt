@@ -13,23 +13,25 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.adaptive.ExperimentalMaterial3AdaptiveApi
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteScaffold
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.window.core.layout.WindowSizeClass
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.window.core.layout.WindowSizeClass
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -43,14 +45,15 @@ fun MainShell(
     onMainDestinationSelected: (MainDestination) -> Unit,
     onDrawerDestinationSelected: (DrawerDestination) -> Unit,
     modifier: Modifier = Modifier,
+    showTopBar: Boolean = true,
+    snackbarHostState: SnackbarHostState? = null,
     topBarActions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val adaptiveInfo = currentWindowAdaptiveInfo()
-    val isCompact =
-        !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
-            WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
-        )
+    val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
+        WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
+    )
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var overflowExpanded by remember { mutableStateOf(false) }
@@ -76,56 +79,61 @@ fun MainShell(
         ) {
             Scaffold(
                 topBar = {
-                    TopAppBar(
-                        title = { Text(topBarTitle) },
-                        navigationIcon = {
-                            if (isCompact) {
-                                IconButton(
-                                    onClick = {
-                                        coroutineScope.launch {
-                                            drawerState.open()
-                                        }
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.MenuOpen,
-                                        contentDescription = "Menü öffnen",
-                                    )
-                                }
-                            }
-                        },
-                        actions = {
-                            topBarActions()
-                            if (!isCompact) {
-                                IconButton(onClick = { overflowExpanded = true }) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.MenuOpen,
-                                        contentDescription = "Weitere Ziele",
-                                    )
-                                }
-                                DropdownMenu(
-                                    expanded = overflowExpanded,
-                                    onDismissRequest = { overflowExpanded = false },
-                                ) {
-                                    DrawerDestination.entries.forEach { destination ->
-                                        DropdownMenuItem(
-                                            text = { Text(destination.label) },
-                                            onClick = {
-                                                overflowExpanded = false
-                                                onDrawerDestinationSelected(destination)
-                                            },
-                                            leadingIcon = {
-                                                Icon(
-                                                    imageVector = destination.icon,
-                                                    contentDescription = destination.label,
-                                                )
-                                            },
+                    if (showTopBar) {
+                        TopAppBar(
+                            title = { Text(topBarTitle) },
+                            navigationIcon = {
+                                if (isCompact) {
+                                    IconButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                drawerState.open()
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.MenuOpen,
+                                            contentDescription = "Menü öffnen",
                                         )
                                     }
                                 }
-                            }
-                        },
-                    )
+                            },
+                            actions = {
+                                topBarActions()
+                                if (!isCompact) {
+                                    IconButton(onClick = { overflowExpanded = true }) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.MenuOpen,
+                                            contentDescription = "Weitere Ziele",
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = overflowExpanded,
+                                        onDismissRequest = { overflowExpanded = false },
+                                    ) {
+                                        DrawerDestination.entries.forEach { destination ->
+                                            DropdownMenuItem(
+                                                text = { Text(destination.label) },
+                                                onClick = {
+                                                    overflowExpanded = false
+                                                    onDrawerDestinationSelected(destination)
+                                                },
+                                                leadingIcon = {
+                                                    Icon(
+                                                        imageVector = destination.icon,
+                                                        contentDescription = destination.label,
+                                                    )
+                                                },
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                        )
+                    }
+                },
+                snackbarHost = {
+                    snackbarHostState?.let { SnackbarHost(hostState = it) }
                 },
             ) { innerPadding ->
                 content(innerPadding)
@@ -143,7 +151,7 @@ fun MainShell(
                             drawerState.close()
                         }
                         onDrawerDestinationSelected(destination)
-                    }
+                    },
                 )
             },
         ) {

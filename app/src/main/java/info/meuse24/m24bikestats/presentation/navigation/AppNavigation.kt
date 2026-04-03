@@ -2,136 +2,300 @@ package info.meuse24.m24bikestats.presentation.navigation
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
+import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
+import info.meuse24.m24bikestats.presentation.dashboard.ActivitiesScreen
 import info.meuse24.m24bikestats.presentation.dashboard.ActivityDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeDetailScreen
-import info.meuse24.m24bikestats.presentation.dashboard.DashboardScreen
+import info.meuse24.m24bikestats.presentation.dashboard.BikeListScreen
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
+import info.meuse24.m24bikestats.presentation.dashboard.FunctionsScreen
+import info.meuse24.m24bikestats.presentation.dashboard.HomeScreen
 import info.meuse24.m24bikestats.presentation.dashboard.TrackScreen
 import info.meuse24.m24bikestats.presentation.login.LoginScreen
 import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
+import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
+import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
 import org.koin.androidx.compose.koinViewModel
+
+private const val ROOT_LOGIN_ROUTE = "login"
+private const val ROOT_MAIN_ROUTE = "main"
 
 @Composable
 fun AppNavigation() {
-    val navController = rememberNavController()
-
+    val rootNavController = rememberNavController()
     val loginViewModel: LoginViewModel = koinViewModel()
     val isAuthenticated = loginViewModel.status is LoginStatus.Authenticated
-    val dashboardViewModel: DashboardViewModel? = if (isAuthenticated) koinViewModel() else null
     val logoutLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
+        contract = ActivityResultContracts.StartActivityForResult(),
     ) {
         loginViewModel.handleLogoutResult(it.resultCode, it.data)
-        navController.navigate("login") {
-            popUpTo("dashboard") { inclusive = true }
+        rootNavController.navigate(ROOT_LOGIN_ROUTE) {
+            popUpTo(rootNavController.graph.id) { inclusive = true }
         }
     }
 
-    val startDestination = if (isAuthenticated)
-        "dashboard" else "login"
+    val startDestination = if (isAuthenticated) ROOT_MAIN_ROUTE else ROOT_LOGIN_ROUTE
 
-    NavHost(navController = navController, startDestination = startDestination) {
-
-        composable("login") {
+    NavHost(
+        navController = rootNavController,
+        startDestination = startDestination,
+    ) {
+        composable(ROOT_LOGIN_ROUTE) {
             LoginScreen(
                 status = loginViewModel.status,
                 onBuildAuthIntent = loginViewModel::buildAuthIntent,
                 onAuthResult = loginViewModel::handleAuthResult,
                 onAuthenticated = {
-                    navController.navigate("dashboard") {
-                        popUpTo("login") { inclusive = true }
+                    rootNavController.navigate(ROOT_MAIN_ROUTE) {
+                        popUpTo(ROOT_LOGIN_ROUTE) { inclusive = true }
                     }
-                }
+                },
             )
         }
 
-        composable("dashboard") {
-            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
-            DashboardScreen(
-                uiState = uiState,
-                onRefresh = dashboardViewModel::refresh,
-                onLoadMoreActivities = dashboardViewModel::loadMoreActivities,
-                onActivitySearchQueryChanged = dashboardViewModel::updateActivitySearchQuery,
-                onActivityDateRangeFilterChanged = dashboardViewModel::updateActivityDateRangeFilter,
-                onActivitySortOptionChanged = dashboardViewModel::updateActivitySortOption,
-                onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
-                onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
-                onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
-                onActivityDetailsCsvExportHandled = dashboardViewModel::onActivityDetailsCsvExportHandled,
-                onNavigateToActivityDetail = { activityId ->
-                    navController.navigate("activity/$activityId")
+        composable(ROOT_MAIN_ROUTE) {
+            val shellNavController = rememberNavController()
+            val shellBackStackEntry by shellNavController.currentBackStackEntryAsState()
+            val currentRoute = shellBackStackEntry?.destination?.route
+            val currentMainDestination = currentRoute.toMainDestination()
+            val topBarTitle = currentRoute.toTopBarTitle()
+            val showTopBar = currentRoute.shouldShowShellTopBar()
+            val snackbarHostState = remember { SnackbarHostState() }
+            val dashboardViewModel: DashboardViewModel = koinViewModel()
+            val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+
+            LaunchedEffect(dashboardUiState.error) {
+                dashboardUiState.error?.let { message ->
+                    snackbarHostState.showSnackbar(message)
+                    dashboardViewModel.clearError()
+                }
+            }
+
+            MainShell(
+                currentMainDestination = currentMainDestination,
+                currentRoute = currentRoute,
+                topBarTitle = topBarTitle,
+                showTopBar = showTopBar,
+                snackbarHostState = snackbarHostState,
+                onMainDestinationSelected = { destination ->
+                    shellNavController.navigate(destination.route) {
+                        popUpTo(shellNavController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 },
-                onNavigateToBikeDetail = { bikeId ->
-                    navController.navigate("bike/$bikeId")
-                },
-                onLogout = {
-                    val logoutIntent = loginViewModel.buildLogoutIntent()
-                    if (logoutIntent != null) {
-                        logoutLauncher.launch(logoutIntent)
-                    } else {
-                        loginViewModel.logoutLocally()
-                        navController.navigate("login") {
-                            popUpTo("dashboard") { inclusive = true }
+                onDrawerDestinationSelected = { destination ->
+                    when (destination) {
+                        DrawerDestination.LOGOUT -> {
+                            val logoutIntent = loginViewModel.buildLogoutIntent()
+                            if (logoutIntent != null) {
+                                logoutLauncher.launch(logoutIntent)
+                            } else {
+                                loginViewModel.logoutLocally()
+                                rootNavController.navigate(ROOT_LOGIN_ROUTE) {
+                                    popUpTo(rootNavController.graph.id) { inclusive = true }
+                                }
+                            }
+                        }
+
+                        else -> {
+                            shellNavController.navigate(destination.route) {
+                                launchSingleTop = true
+                            }
                         }
                     }
                 },
-                onErrorShown = dashboardViewModel::clearError,
-            )
-        }
+                topBarActions = {
+                    if (currentRoute.shouldShowRefreshAction()) {
+                        IconButton(onClick = dashboardViewModel::refresh) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Aktualisieren",
+                            )
+                        }
+                    }
+                },
+            ) { innerPadding ->
+                NavHost(
+                    navController = shellNavController,
+                    startDestination = MainDestination.HOME.route,
+                ) {
+                    composable(MainDestination.HOME.route) {
+                        HomeScreen(
+                            uiState = dashboardUiState,
+                            onNavigateToActivities = {
+                                shellNavController.navigate(MainDestination.ACTIVITIES.route) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onNavigateToBike = { bikeId ->
+                                shellNavController.navigate("bike/$bikeId")
+                            },
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
 
-        composable(
-            route = "activity/{activityId}",
-            arguments = listOf(navArgument("activityId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
-            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
-            ActivityDetailScreen(
-                uiState = uiState,
-                onLoadActivity = dashboardViewModel::loadActivityDetail,
-                onRefreshActivity = dashboardViewModel::refreshActivityDetail,
-                activityId = activityId,
-                onNavigateToTrack = { navController.navigate("activity/$activityId/track") },
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
+                    composable(MainDestination.ACTIVITIES.route) {
+                        ActivitiesScreen(
+                            uiState = dashboardUiState,
+                            onActivitySearchQueryChanged = dashboardViewModel::updateActivitySearchQuery,
+                            onActivityDateRangeFilterChanged = dashboardViewModel::updateActivityDateRangeFilter,
+                            onActivitySortOptionChanged = dashboardViewModel::updateActivitySortOption,
+                            onActivityClick = { activityId ->
+                                shellNavController.navigate("activity/$activityId")
+                            },
+                            onLoadMore = dashboardViewModel::loadMoreActivities,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
 
-        composable(
-            route = "activity/{activityId}/track",
-            arguments = listOf(navArgument("activityId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
-            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
-            TrackScreen(
-                uiState = uiState,
-                onLoadActivity = dashboardViewModel::loadActivityDetail,
-                onRefreshActivity = dashboardViewModel::refreshActivityDetail,
-                activityId = activityId,
-                onNavigateBack = { navController.popBackStack() },
-            )
-        }
+                    composable(MainDestination.BIKE.route) {
+                        BikeListScreen(
+                            bikes = dashboardUiState.bikes,
+                            isRefreshing = dashboardUiState.isRefreshing,
+                            onBikeClick = { bikeId ->
+                                shellNavController.navigate("bike/$bikeId")
+                            },
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
 
-        composable(
-            route = "bike/{bikeId}",
-            arguments = listOf(navArgument("bikeId") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val bikeId = backStackEntry.arguments?.getString("bikeId").orEmpty()
-            val uiState by dashboardViewModel!!.uiState.collectAsStateWithLifecycle()
-            BikeDetailScreen(
-                uiState = uiState,
-                onLoadBike = dashboardViewModel::loadBikeDetail,
-                onRefreshBike = dashboardViewModel::refreshBikeDetail,
-                bikeId = bikeId,
-                onNavigateBack = { navController.popBackStack() },
-            )
+                    composable(MainDestination.FUNCTIONS.route) {
+                        FunctionsScreen(
+                            uiState = dashboardUiState,
+                            onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
+                            onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
+                            onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
+                            onActivityDetailsCsvExportHandled = dashboardViewModel::onActivityDetailsCsvExportHandled,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
+
+                    composable(DrawerDestination.HELP.route) {
+                        HelpScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
+                    }
+
+                    composable(DrawerDestination.INFO.route) {
+                        InfoScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
+                    }
+
+                    composable(DrawerDestination.API_TEST.route) {
+                        val apiTestViewModel: ApiTestViewModel = koinViewModel()
+                        val apiTestUiState by apiTestViewModel.uiState.collectAsStateWithLifecycle()
+                        ApiTestContent(
+                            uiState = apiTestUiState,
+                            onSelectEndpoint = apiTestViewModel::selectEndpoint,
+                            onFetch = apiTestViewModel::fetch,
+                            onRunAll = apiTestViewModel::runAllEndpoints,
+                            onClear = apiTestViewModel::clear,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
+
+                    composable(
+                        route = "activity/{activityId}",
+                        arguments = listOf(navArgument("activityId") { type = NavType.StringType }),
+                    ) { backStackEntry ->
+                        val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
+                        ActivityDetailScreen(
+                            uiState = dashboardUiState,
+                            onLoadActivity = dashboardViewModel::loadActivityDetail,
+                            onRefreshActivity = dashboardViewModel::refreshActivityDetail,
+                            activityId = activityId,
+                            onNavigateToTrack = { shellNavController.navigate("activity/$activityId/track") },
+                            onNavigateBack = { shellNavController.popBackStack() },
+                        )
+                    }
+
+                    composable(
+                        route = "activity/{activityId}/track",
+                        arguments = listOf(navArgument("activityId") { type = NavType.StringType }),
+                    ) { backStackEntry ->
+                        val activityId = backStackEntry.arguments?.getString("activityId").orEmpty()
+                        TrackScreen(
+                            uiState = dashboardUiState,
+                            onLoadActivity = dashboardViewModel::loadActivityDetail,
+                            onRefreshActivity = dashboardViewModel::refreshActivityDetail,
+                            activityId = activityId,
+                            onNavigateBack = { shellNavController.popBackStack() },
+                        )
+                    }
+
+                    composable(
+                        route = "bike/{bikeId}",
+                        arguments = listOf(navArgument("bikeId") { type = NavType.StringType }),
+                    ) { backStackEntry ->
+                        val bikeId = backStackEntry.arguments?.getString("bikeId").orEmpty()
+                        BikeDetailScreen(
+                            uiState = dashboardUiState,
+                            onLoadBike = dashboardViewModel::loadBikeDetail,
+                            onRefreshBike = dashboardViewModel::refreshBikeDetail,
+                            bikeId = bikeId,
+                            onNavigateBack = { shellNavController.popBackStack() },
+                        )
+                    }
+                }
+            }
         }
     }
+}
+
+internal fun String?.toMainDestination(): MainDestination = when {
+    this == MainDestination.ACTIVITIES.route || this?.startsWith("activity/") == true ->
+        MainDestination.ACTIVITIES
+
+    this == MainDestination.BIKE.route || this?.startsWith("bike/") == true ->
+        MainDestination.BIKE
+
+    this == MainDestination.FUNCTIONS.route ->
+        MainDestination.FUNCTIONS
+
+    else -> MainDestination.HOME
+}
+
+internal fun String?.toTopBarTitle(): String = when {
+    this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.label
+    this == MainDestination.BIKE.route -> MainDestination.BIKE.label
+    this == MainDestination.FUNCTIONS.route -> MainDestination.FUNCTIONS.label
+    this == DrawerDestination.HELP.route -> DrawerDestination.HELP.label
+    this == DrawerDestination.INFO.route -> DrawerDestination.INFO.label
+    this == DrawerDestination.API_TEST.route -> DrawerDestination.API_TEST.label
+    else -> MainDestination.HOME.label
+}
+
+internal fun String?.shouldShowShellTopBar(): Boolean = when {
+    this?.startsWith("activity/") == true -> false
+    this?.startsWith("bike/") == true -> false
+    else -> true
+}
+
+internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
+    MainDestination.HOME.route,
+    MainDestination.ACTIVITIES.route,
+    MainDestination.BIKE.route,
+    -> true
+
+    else -> false
 }

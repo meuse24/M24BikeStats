@@ -8,14 +8,14 @@ Android-App zum Abrufen und Anzeigen von Fahrtdaten aus dem **Bosch eBike Data A
 - Sicherer Token-Speicher via Android Keystore (`EncryptedSharedPreferences`)
 - Automatischer Access-Token-Refresh über den Bosch-OIDC-Token-Endpunkt
 - Best-Effort-Logout über den Bosch-OIDC-End-Session-Endpunkt
-- Fachliches Dashboard mit Aktivitätenübersicht, Aktivitätsdetail und Bike-Ansicht
+- Adaptive Hauptnavigation mit Home, Aktivitäten, Bike und Funktionen
 - Lokaler Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - Explizite Room-Migrationen für die bekannten Cache-Schema-Versionen ab v2
 - Cache-first Detail- und Bike-Screens mit Hintergrund-Refresh aus Room
 - Cache-first Listen-, Detail- und Bike-Flows mit `observe + refreshIfStale`
 - Aktivitäten-Paginierung auf Basis von `limit`/`offset`
-- Funktionen-Tab mit CSV-Export aller Aktivitäten
-- Funktionen-Tab mit CSV-Export aller Aktivitäten und sichtbarer Aktivitätsdetails
+- Functions-Screen mit CSV-Export aller Aktivitäten
+- Functions-Screen mit CSV-Export aller Aktivitäten und sichtbarer Aktivitätsdetails
 - Aktivitätenliste mit Datumsfilter und Sortierung
 - Aktivitätenliste mit zusätzlicher Textsuche
 - Trackansicht mit vollständigem Verlauf auf Basis der bestätigten GPS-Punkte
@@ -123,12 +123,12 @@ Die Antwort auf `activities` enthält:
 - `activitySummaries[]`
 - pro Aktivität u. a. `id`, `startTime`, `endTime`, `timeZone`, `durationWithoutStops`, `title`, `bikeId`, `startOdometer`, `distance`, `speed`, `cadence`, `riderPower`, `elevation`, `caloriesBurned`
 
-Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch für ein fachliches Dashboard:
+Die App nutzt diese Werte inzwischen nicht nur im API-Test-Screen, sondern auch in einer adaptiven Hauptnavigation:
 - paginierte Aktivitätenübersicht
 - Aktivitätsdetailseite auf Basis der Summary-Daten
 - `Mehr Aktivitäten laden` über `limit`/`offset`
-- CSV-Export aller Aktivitäten über den Funktionen-Tab
-- Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz über den Funktionen-Tab
+- CSV-Export aller Aktivitäten über den Functions-Screen
+- Detail-CSV-Export für den aktuell sichtbaren Aktivitätssatz über den Functions-Screen
 - Datumsfilter für `Alle`, `30 Tage` und `12 Monate`
 - Sortierung nach neuesten/ältesten Touren sowie Distanz und Dauer
 - Textsuche über Titel, Datum und Distanzlabel
@@ -152,7 +152,7 @@ Die App nutzt diese Detaildaten jetzt für die Aktivitätsdetailseite:
 - Linienprofile für Höhe, Fahrerleistung und Geschwindigkeit entlang der Strecke
 - GPX-Datei direkt über das Android-Share-Sheet sowie GPX-Kopierfunktion
 - CSV-Datei mit allen Detailpunkten inklusive GPS-, Distanz-, Höhen-, Geschwindigkeits-, Kadenz- und Leistungswerten
-- Detail-CSV auch gesammelt für mehrere sichtbare Aktivitäten über den Funktionen-Tab
+- Detail-CSV auch gesammelt für mehrere sichtbare Aktivitäten über den Functions-Screen
 - direkter CSV-Export des aktuell geöffneten Tracks im fullscreen Track-Screen
 - persistente Zwischenspeicherung der Detaildaten und Trackpunkte in Room
 - Detailscreen zeigt lokale Daten sofort und aktualisiert sie bei Bedarf im Hintergrund
@@ -167,7 +167,7 @@ Die Antwort auf `bikes` bzw. `bikes/{bikeId}` enthält:
 - `headUnit`
 - `serviceDue`
 
-Die App cached Bike-Liste und Bike-Details ebenfalls in Room, sodass der Bike-Tab lokale Daten sofort anzeigen und danach im Hintergrund aktualisieren kann.
+Die App cached Bike-Liste und Bike-Details ebenfalls in Room, sodass der Bike-Screen lokale Daten sofort anzeigen und danach im Hintergrund aktualisieren kann.
 
 ## Teststand
 

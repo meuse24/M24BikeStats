@@ -4,10 +4,13 @@
 - [x] Phase 1: Fundament & Dependencies
 - [x] Phase 2: Main-Shell & Drawer
 - [x] Phase 3: Screen-Refactoring
-- [ ] Phase 4: Navigation verdrahten
-- [ ] Phase 5: Validierung & Tests
+- [x] Phase 4: Navigation verdrahten
+- [x] Phase 5: Validierung & Tests
 
 ### Letztes Ergebnis
+- 2026-04-03: `AppNavigation` auf Login-Root plus adaptive `MainShell` umgestellt. Startziel nach Login ist jetzt `home`; Detailrouten bleiben innerhalb der Shell erhalten.
+- 2026-04-03: Navigationstests für Routen-Mapping ergänzt und `README.md` / `CLAUDE.md` auf die neue adaptive Struktur aktualisiert.
+- Validierung nach Phase 4/5: `./gradlew test`, `./gradlew lint`, `./gradlew build` erfolgreich.
 - 2026-04-03: `HomeScreen`, `ActivitiesScreen`, `BikeListScreen` und `FunctionsScreen` angelegt. `DashboardScreen` nutzt diese neuen Bereichs-Screens bereits als Alt-Host.
 - Validierung nach Phase 3: `./gradlew test`, `./gradlew lint`, `./gradlew build` erfolgreich.
 - 2026-04-03: `MainShell`, `AppDrawer` sowie Hilfe-/Info-Screens ergänzt. Compact nutzt einen `ModalNavigationDrawer`, größere Breiten ein Overflow-Menü für sekundäre Ziele.
