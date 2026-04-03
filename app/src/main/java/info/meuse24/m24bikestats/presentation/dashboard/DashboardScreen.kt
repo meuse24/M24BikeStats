@@ -125,32 +125,6 @@ fun DashboardScreen(
         }
     }
 
-    val context = LocalContext.current
-    LaunchedEffect(uiState.pendingActivitiesCsvExport) {
-        val export = uiState.pendingActivitiesCsvExport ?: return@LaunchedEffect
-        val csvUri = createActivitiesCsvUri(context, export)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/csv"
-            putExtra(Intent.EXTRA_STREAM, csvUri)
-            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "CSV exportieren"))
-        onActivitiesCsvExportHandled()
-    }
-    LaunchedEffect(uiState.pendingActivityDetailsCsvExport) {
-        val export = uiState.pendingActivityDetailsCsvExport ?: return@LaunchedEffect
-        val csvUri = createActivityDetailsCsvUri(context, export)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/csv"
-            putExtra(Intent.EXTRA_STREAM, csvUri)
-            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "Detail-CSV exportieren"))
-        onActivityDetailsCsvExportHandled()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -198,24 +172,25 @@ fun DashboardScreen(
                     }
 
                     when (selectedTabIndex) {
-                        0 -> ActivitiesOverview(
+                        0 -> ActivitiesScreen(
                             uiState = uiState,
-                            activities = uiState.activities,
                             onActivitySearchQueryChanged = onActivitySearchQueryChanged,
                             onActivityDateRangeFilterChanged = onActivityDateRangeFilterChanged,
                             onActivitySortOptionChanged = onActivitySortOptionChanged,
                             onActivityClick = onNavigateToActivityDetail,
                             onLoadMore = onLoadMoreActivities,
                         )
-                        1 -> BikesOverview(
+                        1 -> BikeListScreen(
                             bikes = uiState.bikes,
                             isRefreshing = uiState.isRefreshing,
                             onBikeClick = onNavigateToBikeDetail,
                         )
-                        else -> FunctionsOverview(
+                        else -> FunctionsScreen(
                             uiState = uiState,
                             onExportActivitiesCsv = onExportActivitiesCsv,
                             onExportActivityDetailsCsv = onExportActivityDetailsCsv,
+                            onActivitiesCsvExportHandled = onActivitiesCsvExportHandled,
+                            onActivityDetailsCsvExportHandled = onActivityDetailsCsvExportHandled,
                         )
                     }
                 }
@@ -225,7 +200,7 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun FunctionsOverview(
+internal fun FunctionsOverview(
     uiState: DashboardUiState,
     onExportActivitiesCsv: () -> Unit,
     onExportActivityDetailsCsv: () -> Unit,
@@ -851,7 +826,7 @@ fun BikeDetailScreen(
 }
 
 @Composable
-private fun ActivitiesOverview(
+internal fun ActivitiesOverview(
     uiState: DashboardUiState,
     activities: List<ActivityCardUiModel>,
     onActivitySearchQueryChanged: (String) -> Unit,
@@ -968,7 +943,7 @@ private fun ActivitiesOverview(
 }
 
 @Composable
-private fun ActivityFilterSection(
+internal fun ActivityFilterSection(
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
     selectedDateRange: ActivityDateRangeFilter,
@@ -1047,7 +1022,7 @@ private fun ActivityFilterSection(
 }
 
 @Composable
-private fun BikesOverview(
+internal fun BikesOverview(
     bikes: List<BikeCardUiModel>,
     isRefreshing: Boolean,
     onBikeClick: (String) -> Unit,
@@ -1075,7 +1050,7 @@ private fun BikesOverview(
 }
 
 @Composable
-private fun HeroCard(
+internal fun HeroCard(
     eyebrow: String,
     title: String,
     subtitle: String,
@@ -1123,7 +1098,7 @@ private fun HeroCard(
 }
 
 @Composable
-private fun ActivityCard(
+internal fun ActivityCard(
     activity: ActivityCardUiModel,
     onClick: () -> Unit,
 ) {
@@ -1176,7 +1151,7 @@ private fun ActivityCard(
 }
 
 @Composable
-private fun BikeOverviewCard(
+internal fun BikeOverviewCard(
     bike: BikeCardUiModel,
     onClick: () -> Unit,
 ) {
@@ -1968,7 +1943,7 @@ private fun DetailRow(
 }
 
 @Composable
-private fun SummaryChipRow(summary: List<Pair<String, String>>) {
+internal fun SummaryChipRow(summary: List<Pair<String, String>>) {
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(summary) { (label, value) ->
             MetricPill(label = label, value = value)
@@ -1977,7 +1952,7 @@ private fun SummaryChipRow(summary: List<Pair<String, String>>) {
 }
 
 @Composable
-private fun MetricPill(
+internal fun MetricPill(
     label: String,
     value: String,
 ) {
@@ -2020,7 +1995,7 @@ private fun StatusBadge(value: String) {
 }
 
 @Composable
-private fun SectionSurface(content: @Composable () -> Unit) {
+internal fun SectionSurface(content: @Composable () -> Unit) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -2037,7 +2012,7 @@ private fun SectionSurface(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun OptionalRow(
+internal fun OptionalRow(
     label: String,
     value: String?,
 ) {
