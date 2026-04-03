@@ -360,9 +360,9 @@ private fun TrackMapFullScreen(
     BoxWithConstraints(modifier = modifier) {
         val viewportWidth = with(density) { maxWidth.toPx().toDouble() }
         val viewportHeight = with(density) { maxHeight.toPx().toDouble() }
-        val sidePaddingPx = with(density) { 28.dp.toPx().toDouble() }
-        val topPaddingPx = with(density) { 92.dp.toPx().toDouble() }
-        val bottomPaddingPx = with(density) { 128.dp.toPx().toDouble() }
+        val sidePaddingPx = with(density) { 40.dp.toPx().toDouble() }
+        val topPaddingPx = with(density) { 112.dp.toPx().toDouble() }
+        val bottomPaddingPx = with(density) { 152.dp.toPx().toDouble() }
         val autoFitPosition = remember(trackBounds, viewportWidth, viewportHeight) {
             calculateTrackCameraPosition(
                 bounds = trackBounds,
@@ -1293,6 +1293,27 @@ private fun calculateTrackBounds(trackPoints: List<ActivityTrackPointUiModel>): 
     )
 }
 
+private fun inflateTrackBounds(bounds: TrackBounds): TrackBounds {
+    val latitudeSpan = (bounds.maxLatitude - bounds.minLatitude).coerceAtLeast(0.0008)
+    val longitudeSpan = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0008)
+    val latitudePadding = latitudeSpan * 0.18
+    val longitudePadding = longitudeSpan * 0.18
+
+    val minLatitude = (bounds.minLatitude - latitudePadding).coerceIn(-85.05112878, 85.05112878)
+    val maxLatitude = (bounds.maxLatitude + latitudePadding).coerceIn(-85.05112878, 85.05112878)
+    val minLongitude = (bounds.minLongitude - longitudePadding).coerceIn(-180.0, 180.0)
+    val maxLongitude = (bounds.maxLongitude + longitudePadding).coerceIn(-180.0, 180.0)
+
+    return TrackBounds(
+        minLatitude = minLatitude,
+        maxLatitude = maxLatitude,
+        minLongitude = minLongitude,
+        maxLongitude = maxLongitude,
+        centerLatitude = (minLatitude + maxLatitude) / 2.0,
+        centerLongitude = (minLongitude + maxLongitude) / 2.0,
+    )
+}
+
 private fun estimateTrackZoom(
     bounds: TrackBounds,
     viewportWidth: Double,
@@ -1307,7 +1328,7 @@ private fun estimateTrackZoom(
     val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
     val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * 256.0)) / ln(2.0)
     val latitudeZoom = ln(usableHeight / (latitudeFraction * 256.0)) / ln(2.0)
-    return minOf(longitudeZoom, latitudeZoom).coerceIn(8.5, 16.8)
+    return (minOf(longitudeZoom, latitudeZoom) - 0.7).coerceIn(7.2, 15.8)
 }
 
 private fun calculateTrackCameraPosition(
@@ -1318,8 +1339,9 @@ private fun calculateTrackCameraPosition(
     topPaddingPx: Double,
     bottomPaddingPx: Double,
 ): CameraPosition {
+    val fittedBounds = inflateTrackBounds(bounds)
     val zoom = estimateTrackZoom(
-        bounds = bounds,
+        bounds = fittedBounds,
         viewportWidth = viewportWidth,
         viewportHeight = viewportHeight,
         sidePaddingPx = sidePaddingPx,
@@ -1327,14 +1349,14 @@ private fun calculateTrackCameraPosition(
         bottomPaddingPx = bottomPaddingPx,
     )
     val pixelsPerWorld = 256.0 * 2.0.pow(zoom)
-    val mercatorCenter = (mercatorY(bounds.minLatitude) + mercatorY(bounds.maxLatitude)) / 2.0
+    val mercatorCenter = (mercatorY(fittedBounds.minLatitude) + mercatorY(fittedBounds.maxLatitude)) / 2.0
     val verticalOffsetPx = (bottomPaddingPx - topPaddingPx) / 2.0
     val adjustedMercatorCenter = (mercatorCenter + (verticalOffsetPx / pixelsPerWorld))
         .coerceIn(0.0, 1.0)
 
     return CameraPosition(
         target = Position(
-            longitude = bounds.centerLongitude,
+            longitude = fittedBounds.centerLongitude,
             latitude = inverseMercatorY(adjustedMercatorCenter),
         ),
         zoom = zoom,
