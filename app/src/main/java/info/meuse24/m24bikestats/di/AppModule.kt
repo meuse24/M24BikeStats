@@ -4,6 +4,7 @@ import androidx.room.Room
 import info.meuse24.m24bikestats.auth.AuthManager
 import info.meuse24.m24bikestats.auth.LoginRepository
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
+import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
@@ -45,6 +46,7 @@ val appModule = module {
             BoschDatabase::class.java,
             "bosch_cache.db",
         )
+            .addMigrations(*BoschDatabaseMigrations.ALL)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }

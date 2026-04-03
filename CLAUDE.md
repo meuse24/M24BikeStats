@@ -142,6 +142,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Dashboard zeigt Aktivitäten, Bike und Funktionen in einer gemeinsamen Tab-Navigation
 - Aktivitäten werden paginiert über `limit`/`offset` geladen
 - Aktivitätenliste kommt cache-first aus Room und wird danach remote synchronisiert
+- Room nutzt echte Migrationen für die bekannten Cache-Schema-Stände ab Version 2
 - Aktivitätenliste unterstützt Datumsfilter und Sortierung direkt im Dashboard
 - Aktivitätenliste unterstützt zusätzlich freie Textsuche im Dashboard
 - Aktivitätsdetails verwenden jetzt den bestätigten `/details`-Endpunkt
