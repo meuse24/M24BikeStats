@@ -57,7 +57,7 @@ fun MainShell(
     val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
         WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
     )
-    val canOpenDrawer = isCompact && !isDrawerRoute
+    val canOpenDrawer = isCompact && showTopBar
     val canNavigateToOverview = showTopBar && currentRoute.canNavigateToOverview()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -188,6 +188,9 @@ private fun isDrawerDestinationRoute(route: String?): Boolean =
 internal fun String?.canNavigateToOverview(): Boolean = when (this) {
     null,
     MainDestination.HOME.route,
+    DrawerDestination.HELP.route,
+    DrawerDestination.INFO.route,
+    DrawerDestination.API_TEST.route,
     -> false
 
     else -> true

@@ -80,8 +80,8 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
         assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
         assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
-        assertTrue(DrawerDestination.HELP.route.canNavigateToOverview())
-        assertTrue(DrawerDestination.INFO.route.canNavigateToOverview())
-        assertTrue(DrawerDestination.API_TEST.route.canNavigateToOverview())
+        assertFalse(DrawerDestination.HELP.route.canNavigateToOverview())
+        assertFalse(DrawerDestination.INFO.route.canNavigateToOverview())
+        assertFalse(DrawerDestination.API_TEST.route.canNavigateToOverview())
     }
 }
