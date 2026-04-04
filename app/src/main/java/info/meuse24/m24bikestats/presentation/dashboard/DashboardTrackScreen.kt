@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 import kotlin.math.PI
@@ -81,6 +82,10 @@ import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.spatialk.geojson.Position
+
+private val TrackRouteColor = Color(0xFFD32F2F)
+private val TrackStartColor = Color(0xFF2E7D32)
+private val TrackEndColor = Color(0xFF6A1B9A)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -223,13 +228,13 @@ private fun TrackMapFullScreen(
             LineLayer(
                 id = "activity-track",
                 source = trackSource,
-                color = const(MaterialTheme.colorScheme.primary),
+                color = const(TrackRouteColor),
                 width = const(5.dp),
             )
             CircleLayer(
                 id = "activity-track-start",
                 source = startPointSource,
-                color = const(MaterialTheme.colorScheme.secondary),
+                color = const(TrackStartColor),
                 radius = const(7.dp),
                 strokeColor = const(Color.White),
                 strokeWidth = const(2.dp),
@@ -237,7 +242,7 @@ private fun TrackMapFullScreen(
             CircleLayer(
                 id = "activity-track-end",
                 source = endPointSource,
-                color = const(MaterialTheme.colorScheme.tertiary),
+                color = const(TrackEndColor),
                 radius = const(6.dp),
                 strokeColor = const(Color.White),
                 strokeWidth = const(2.dp),
@@ -248,6 +253,12 @@ private fun TrackMapFullScreen(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(16.dp),
+        )
+
+        TrackMapAttribution(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 16.dp, end = 16.dp, bottom = 104.dp),
         )
 
         TrackMapBottomBar(
@@ -327,6 +338,26 @@ private fun TrackMapBottomBar(
                 onClick = onAutoFit,
             )
         }
+    }
+}
+
+@Composable
+private fun TrackMapAttribution(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.88f),
+        tonalElevation = 3.dp,
+        shadowElevation = 3.dp,
+    ) {
+        Text(
+            text = stringResource(R.string.track_map_attribution),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -440,11 +471,11 @@ private fun TrackMarkerLegend(modifier: Modifier = Modifier) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LegendItem(
-                color = MaterialTheme.colorScheme.secondary,
+                color = TrackStartColor,
                 label = stringResource(R.string.track_export_label_start),
             )
             LegendItem(
-                color = MaterialTheme.colorScheme.tertiary,
+                color = TrackEndColor,
                 label = stringResource(R.string.track_export_label_end),
             )
         }
@@ -561,35 +592,42 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
             ) {
-                MaplibreMap(
-                    modifier = Modifier.fillMaxSize(),
-                    baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
-                    cameraState = cameraState,
-                ) {
-                    val trackSource = rememberGeoJsonSource(data = trackSourceData)
-                    val startPointSource = rememberGeoJsonSource(data = startPointData)
-                    val endPointSource = rememberGeoJsonSource(data = endPointData)
-                    LineLayer(
-                        id = "activity-track",
-                        source = trackSource,
-                        color = const(MaterialTheme.colorScheme.primary),
-                        width = const(5.dp),
-                    )
-                    CircleLayer(
-                        id = "activity-track-start",
-                        source = startPointSource,
-                        color = const(MaterialTheme.colorScheme.secondary),
-                        radius = const(7.dp),
-                        strokeColor = const(Color.White),
-                        strokeWidth = const(2.dp),
-                    )
-                    CircleLayer(
-                        id = "activity-track-end",
-                        source = endPointSource,
-                        color = const(MaterialTheme.colorScheme.tertiary),
-                        radius = const(6.dp),
-                        strokeColor = const(Color.White),
-                        strokeWidth = const(2.dp),
+                Box(modifier = Modifier.fillMaxSize()) {
+                    MaplibreMap(
+                        modifier = Modifier.fillMaxSize(),
+                        baseStyle = BaseStyle.Uri("https://tiles.openfreemap.org/styles/liberty"),
+                        cameraState = cameraState,
+                    ) {
+                        val trackSource = rememberGeoJsonSource(data = trackSourceData)
+                        val startPointSource = rememberGeoJsonSource(data = startPointData)
+                        val endPointSource = rememberGeoJsonSource(data = endPointData)
+                        LineLayer(
+                            id = "activity-track",
+                            source = trackSource,
+                            color = const(TrackRouteColor),
+                            width = const(5.dp),
+                        )
+                        CircleLayer(
+                            id = "activity-track-start",
+                            source = startPointSource,
+                            color = const(TrackStartColor),
+                            radius = const(7.dp),
+                            strokeColor = const(Color.White),
+                            strokeWidth = const(2.dp),
+                        )
+                        CircleLayer(
+                            id = "activity-track-end",
+                            source = endPointSource,
+                            color = const(TrackEndColor),
+                            radius = const(6.dp),
+                            strokeColor = const(Color.White),
+                            strokeWidth = const(2.dp),
+                        )
+                    }
+                    TrackMapAttribution(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(12.dp),
                     )
                 }
             }
@@ -609,10 +647,6 @@ private fun TrackMapCard(activity: ActivityDetailUiModel) {
 
 @Composable
 private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
-    val primaryColor = MaterialTheme.colorScheme.primary
-    val secondaryColor = MaterialTheme.colorScheme.secondary
-    val tertiaryColor = MaterialTheme.colorScheme.tertiary
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -647,14 +681,14 @@ private fun TrackCanvasCard(trackPoints: List<ActivityTrackPointUiModel>) {
 
                         drawPath(
                             path = path,
-                            color = primaryColor,
+                            color = TrackRouteColor,
                             style = Stroke(width = 8f, cap = StrokeCap.Round),
                         )
 
                         val startOffset = Offset(projectedPoints.first().x, projectedPoints.first().y)
                         val endOffset = Offset(projectedPoints.last().x, projectedPoints.last().y)
-                        drawCircle(color = secondaryColor, radius = 12f, center = startOffset)
-                        drawCircle(color = tertiaryColor, radius = 12f, center = endOffset)
+                        drawCircle(color = TrackStartColor, radius = 12f, center = startOffset)
+                        drawCircle(color = TrackEndColor, radius = 12f, center = endOffset)
                     }
                 }
             }

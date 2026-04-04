@@ -17,7 +17,8 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
-- MapLibre/OpenFreeMap-Kartenansicht und Profilcharts für Tracks
+- MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
+- Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
 - Release-Build nutzt R8-Minify + Resource-Shrinking
@@ -70,6 +71,8 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Bikes kommen über `/bike-profile/smart-system/v1/bikes` und `/bikes/{bikeId}`.
 - Der separate `/track`-Endpunkt liefert aktuell `404`; Track, GPX und Profile basieren deshalb auf `/details`.
 - Detailpunkte mit `0/0`-Koordinaten oder redundanten aufeinanderfolgenden Duplikaten werden vor Karten-/GPX-Nutzung bereinigt.
+- Die Track-Karte blendet die Attribution kompakt direkt in der Karte ein: `© OSM • OFM • MapLibre`.
+- Start- und Endpunkt sind fest farblich getrennt markiert: Start grün, Ziel lila, Route rot.
 - CSV-Exporte nutzen den persistenten Setup-Wert für das Exportformat.
 - `Automatisch` leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab.
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.

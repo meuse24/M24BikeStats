@@ -405,10 +405,11 @@
     <string name="track_gpx_preview_title">GPX preview</string>
     <string name="track_gpx_preview_subtitle">The export contains the full track as GPX 1.1 with elevation and distance points.</string>
     <string name="track_map_tiles_title">Map tiles</string>
+    <string name="track_map_attribution">© OSM • OFM • MapLibre</string>
     <string name="track_map_fit_label">Fit</string>
     <string name="track_map_fit_value">Auto to track bounds</string>
-    <string name="track_map_start_value">Secondary color</string>
-    <string name="track_map_end_value">Tertiary color</string>
+    <string name="track_map_start_value">Green marker</string>
+    <string name="track_map_end_value">Purple marker</string>
     <string name="track_map_tiles_subtitle">OpenFreeMap tiles with a live rendered Bosch track and separate start/end markers.</string>
     <string name="track_canvas_title">Full track</string>
     <string name="track_not_enough_gps_points">Too few GPS points for a track view</string>
