@@ -76,15 +76,24 @@ internal fun ActivitiesOverview(
     ) {
         item {
             HeroCard(
-                eyebrow = "Tourenübersicht",
-                title = "${uiState.visibleActivityCount} sichtbar • ${uiState.loadedActivityCount} geladen",
-                subtitle = "Die App liest aktuell die bestätigten Summary-Daten aus Bosch Smart System.",
+                eyebrow = stringResource(R.string.activities_hero_eyebrow),
+                title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
+                subtitle = stringResource(R.string.activities_hero_subtitle),
             ) {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item { MetricPill(label = "Sichtbar", value = uiState.visibleActivityCount.toString()) }
-                    item { MetricPill(label = "Geladen", value = uiState.loadedActivityCount.toString()) }
-                    item { MetricPill(label = "Gesamt", value = uiState.activityTotalCount.toString()) }
-                    item { MetricPill(label = "Status", value = if (uiState.isRefreshing) "Aktualisiert..." else "Bereit") }
+                    item { MetricPill(label = stringResource(R.string.activities_metric_visible), value = uiState.visibleActivityCount.toString()) }
+                    item { MetricPill(label = stringResource(R.string.activities_metric_loaded), value = uiState.loadedActivityCount.toString()) }
+                    item { MetricPill(label = stringResource(R.string.activities_metric_total), value = uiState.activityTotalCount.toString()) }
+                    item {
+                        MetricPill(
+                            label = stringResource(R.string.activities_metric_status),
+                            value = if (uiState.isRefreshing) {
+                                stringResource(R.string.activities_status_refreshing)
+                            } else {
+                                stringResource(R.string.activities_status_ready)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -112,12 +121,12 @@ internal fun ActivitiesOverview(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "Keine Aktivitäten für diese Auswahl",
+                            text = stringResource(R.string.activities_empty_title),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
                         Text(
-                            text = "Passe Datumsbereich oder Sortierung an, um andere Touren anzuzeigen.",
+                            text = stringResource(R.string.activities_empty_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -149,7 +158,7 @@ internal fun ActivitiesOverview(
                         onClick = onLoadMore,
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text("Mehr Aktivitäten laden")
+                        Text(stringResource(R.string.activities_load_more))
                     }
                 }
             }
@@ -356,9 +365,20 @@ internal fun BikesOverview(
     ) {
         item {
             HeroCard(
-                eyebrow = "Bike-Profil",
-                title = if (bikes.isEmpty()) "Kein Bike gefunden" else "${bikes.size} Bike${if (bikes.size == 1) "" else "s"} verfügbar",
-                subtitle = if (isRefreshing) "Bike-Daten werden aktualisiert." else "Komponenten-, Assist- und Batterieinformationen aus Bosch Smart System.",
+                eyebrow = stringResource(R.string.bike_list_hero_eyebrow),
+                title = if (bikes.isEmpty()) {
+                    stringResource(R.string.bike_list_empty_title)
+                } else {
+                    stringResource(
+                        if (bikes.size == 1) R.string.bike_list_count_title else R.string.bike_list_count_title_plural,
+                        bikes.size,
+                    )
+                },
+                subtitle = if (isRefreshing) {
+                    stringResource(R.string.bike_list_refreshing_subtitle)
+                } else {
+                    stringResource(R.string.bike_list_default_subtitle)
+                },
             )
         }
 

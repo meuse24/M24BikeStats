@@ -59,6 +59,9 @@ fun MainShell(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val adaptiveInfo = currentWindowAdaptiveInfo()
+    val appName = stringResource(R.string.app_name)
+    val appNamePrefix = appName.substringBefore(' ')
+    val appNameSuffix = appName.removePrefix(appNamePrefix).trimStart()
     val isDrawerRoute = isDrawerDestinationRoute(currentRoute)
     val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
         WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
@@ -103,9 +106,12 @@ fun MainShell(
                                                     fontWeight = FontWeight.Bold,
                                                 ),
                                             ) {
-                                                append("M24")
+                                                append(appNamePrefix)
                                             }
-                                            append(" Bike Stats")
+                                            if (appNameSuffix.isNotBlank()) {
+                                                append(" ")
+                                                append(appNameSuffix)
+                                            }
                                         },
                                     )
                                 } else {

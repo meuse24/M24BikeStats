@@ -17,6 +17,7 @@
     <string name="cd_navigate_overview">Zur Übersicht</string>
     <string name="cd_more_destinations">Weitere Ziele</string>
     <string name="cd_refresh">Aktualisieren</string>
+    <string name="cd_logout">Abmelden</string>
 
     <string name="login_subtitle">Bosch eBike Daten</string>
     <string name="login_loading">Anmeldung läuft…</string>
@@ -34,6 +35,7 @@
     <string name="setup_background_sync_title">Hintergrund-Sync</string>
     <string name="setup_background_sync_subtitle">Lege fest, ob die App täglich einen Smart-System-Abgleich im Hintergrund plant und welche Netzwerkbedingung dafür gelten soll.</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
+    <string name="setup_csv_sample_activity">Morgenrunde</string>
     <string name="csv_export_format_system_default_label">Automatisch</string>
     <string name="csv_export_format_system_default_description">Leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
     <string name="csv_export_format_excel_de_label">Excel/Deutsch</string>

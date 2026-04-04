@@ -41,7 +41,7 @@ fun HelpScreen(modifier: Modifier = Modifier) {
 @Composable
 fun InfoScreen(modifier: Modifier = Modifier) {
     val appInfo = listOf(
-        stringResource(R.string.info_app_label) to "M24 Bike Stats",
+        stringResource(R.string.info_app_label) to stringResource(R.string.app_name),
         stringResource(R.string.info_version_label) to BuildConfig.VERSION_NAME,
         stringResource(R.string.info_build_type_label) to BuildConfig.BUILD_TYPE,
         stringResource(R.string.info_application_id_label) to BuildConfig.APPLICATION_ID,

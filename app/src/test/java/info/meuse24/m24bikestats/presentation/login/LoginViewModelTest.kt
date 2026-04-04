@@ -20,6 +20,7 @@ class LoginViewModelTest {
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(authRepository),
             clearAuthentication = ClearAuthenticationUseCase(authRepository),
+            stringResolver = FakeLoginStringResolver(),
         )
 
         assertTrue(viewModel.status.value is LoginStatus.Authenticated)
@@ -33,6 +34,7 @@ class LoginViewModelTest {
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(authRepository),
             clearAuthentication = ClearAuthenticationUseCase(authRepository),
+            stringResolver = FakeLoginStringResolver(),
         )
 
         viewModel.logoutLocally()
@@ -47,6 +49,7 @@ class LoginViewModelTest {
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(FakeAuthRepository(isAuthenticated = false)),
             clearAuthentication = ClearAuthenticationUseCase(FakeAuthRepository(isAuthenticated = false)),
+            stringResolver = FakeLoginStringResolver(),
         )
 
         viewModel.handleAuthResult(resultCode = Activity.RESULT_CANCELED, data = null)
@@ -90,5 +93,9 @@ class LoginViewModelTest {
             onComplete: () -> Unit,
             onError: (String) -> Unit,
         ) = Unit
+    }
+
+    private class FakeLoginStringResolver : LoginStringResolver {
+        override fun cancelled(): String = "Anmeldung abgebrochen"
     }
 }

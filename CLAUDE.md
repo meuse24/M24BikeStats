@@ -122,6 +122,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - `AppSettingsRepositoryImpl`
 - alle UseCases
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
+- `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
 - `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
 
 ## Hinweise für Änderungen
@@ -137,6 +138,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
 - Keine Android-`Context`-Abhängigkeit direkt ins ViewModel ziehen, wenn ein kleiner Resolver/Provider reicht
 - Bei Lokalisierung nur aktive Nutzertexte anfassen; technische Literale wie MIME-Types, Routen oder JSON-Keys bleiben unberührt
+- Sichtbare Compose-Texte bevorzugt in `strings.xml`; nur Brands, URLs, Versionswerte und andere technische Konstanten inline lassen
 - Testartefakte mit echten Nutzerdaten wie `bosch-api-test-run-all.txt` nicht mitcommitten
 
 ## Testfokus

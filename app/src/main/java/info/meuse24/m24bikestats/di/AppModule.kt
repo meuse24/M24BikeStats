@@ -53,6 +53,8 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardUiModelMapper
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
+import info.meuse24.m24bikestats.presentation.login.AndroidLoginStringResolver
+import info.meuse24.m24bikestats.presentation.login.LoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
@@ -83,6 +85,7 @@ val appModule = module {
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<AuthFlowCoordinator> { get<AuthManager>() }
+    single<LoginStringResolver> { AndroidLoginStringResolver(androidContext()) }
     single { BackgroundSyncScheduler(androidContext()) }
     single { BackgroundSyncSettingsObserver(get(), get()) }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }

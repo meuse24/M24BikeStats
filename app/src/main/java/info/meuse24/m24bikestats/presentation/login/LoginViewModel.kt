@@ -14,6 +14,7 @@ class LoginViewModel(
     private val authFlowCoordinator: AuthFlowCoordinator,
     private val isAuthenticated: IsAuthenticatedUseCase,
     private val clearAuthentication: ClearAuthenticationUseCase,
+    private val stringResolver: LoginStringResolver,
 ) : ViewModel() {
 
     private val _status = MutableStateFlow<LoginStatus>(
@@ -25,7 +26,7 @@ class LoginViewModel(
 
     fun handleAuthResult(resultCode: Int, data: Intent?) {
         if (resultCode != Activity.RESULT_OK || data == null) {
-            _status.value = LoginStatus.Error("Anmeldung abgebrochen")
+            _status.value = LoginStatus.Error(stringResolver.cancelled())
             return
         }
         _status.value = LoginStatus.Loading

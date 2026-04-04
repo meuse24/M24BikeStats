@@ -17,6 +17,7 @@
     <string name="cd_navigate_overview">Back to overview</string>
     <string name="cd_more_destinations">More destinations</string>
     <string name="cd_refresh">Refresh</string>
+    <string name="cd_logout">Logout</string>
 
     <string name="login_subtitle">Bosch eBike data</string>
     <string name="login_loading">Signing in…</string>
@@ -34,6 +35,7 @@
     <string name="setup_background_sync_title">Background sync</string>
     <string name="setup_background_sync_subtitle">Choose whether the app schedules a daily Smart System sync in the background and which network conditions it should require.</string>
     <string name="setup_csv_example">Example: %1$s</string>
+    <string name="setup_csv_sample_activity">Morning ride</string>
     <string name="csv_export_format_system_default_label">Automatic</string>
     <string name="csv_export_format_system_default_description">Uses the device decimal conventions to choose a fitting CSV preset, for example semicolon plus decimal comma on German systems.</string>
     <string name="csv_export_format_excel_de_label">Excel/German</string>

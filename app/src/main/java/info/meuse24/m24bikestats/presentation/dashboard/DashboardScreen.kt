@@ -28,8 +28,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import info.meuse24.m24bikestats.R
 
-private val dashboardTabs = listOf("Aktivitäten", "Bike", "Funktionen")
+private val dashboardTabs = listOf(
+    R.string.nav_activities,
+    R.string.nav_bike,
+    R.string.nav_functions,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,9 +70,9 @@ fun DashboardScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("M24 Bike Stats")
+                        Text(stringResource(R.string.app_name))
                         Text(
-                            text = dashboardTabs[selectedTabIndex],
+                            text = stringResource(dashboardTabs[selectedTabIndex]),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -75,11 +81,11 @@ fun DashboardScreen(
                 actions = {
                     if (selectedTabIndex != 2) {
                         IconButton(onClick = onRefresh) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Aktualisieren")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.cd_refresh))
                         }
                     }
                     IconButton(onClick = onLogout) {
-                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Abmelden")
+                        Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = stringResource(R.string.cd_logout))
                     }
                 },
             )
@@ -96,11 +102,11 @@ fun DashboardScreen(
             } else {
                 Column(modifier = Modifier.fillMaxSize()) {
                     ScrollableTabRow(selectedTabIndex = selectedTabIndex) {
-                        dashboardTabs.forEachIndexed { index, title ->
+                        dashboardTabs.forEachIndexed { index, titleRes ->
                             Tab(
                                 selected = selectedTabIndex == index,
                                 onClick = { selectedTabIndex = index },
-                                text = { Text(title) },
+                                text = { Text(stringResource(titleRes)) },
                             )
                         }
                     }

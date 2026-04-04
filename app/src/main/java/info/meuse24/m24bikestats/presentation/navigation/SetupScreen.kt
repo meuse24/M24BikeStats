@@ -123,7 +123,13 @@ fun SetupScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Text(
-                                text = stringResource(R.string.setup_csv_example, sampleRow(format)),
+                                text = stringResource(
+                                    R.string.setup_csv_example,
+                                    sampleRow(
+                                        format = format,
+                                        sampleTitle = stringResource(R.string.setup_csv_sample_activity),
+                                    ),
+                                ),
                                 style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -273,9 +279,12 @@ fun SetupScreen(
     }
 }
 
-private fun sampleRow(format: CsvExportFormat): String {
+private fun sampleRow(
+    format: CsvExportFormat,
+    sampleTitle: String,
+): String {
     val dialect = format.resolve(Locale.getDefault())
-    return dialect.row(listOf(dialect.formatIsoDate("2026-04-03"), "Morgenrunde", dialect.formatDecimal(12.34, 2)))
+    return dialect.row(listOf(dialect.formatIsoDate("2026-04-03"), sampleTitle, dialect.formatDecimal(12.34, 2)))
 }
 
 private fun CsvExportFormat.labelRes(): Int = when (this) {

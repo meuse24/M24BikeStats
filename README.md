@@ -95,6 +95,14 @@ Ergänzungen:
 - `presentation/dashboard/DashboardTrackScreen.kt`: Track-Vollbild, Karten-/Canvas-Helfer und Exportdialog
 - `presentation/dashboard/DashboardSharedUi.kt`: wiederverwendete Hero-/Metric-/Section-Komponenten
 - `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
+- `presentation/login/LoginStringResolver`: sichtbare Login-Statusmeldungen bleiben ebenfalls resource-basiert und testbar ohne Android-`Context` direkt im ViewModel
+
+## Lokalisierung
+
+- Aktive Nutzertexte liegen in `app/src/main/res/values/strings.xml` und `app/src/main/res/values-de/strings.xml`.
+- Sichtbare Compose-Texte in Navigation, Setup, Dashboard-Listen und Detail-Flows sollen über `stringResource(...)` kommen.
+- ViewModel-seitige Nutzertexte laufen über kleine Resolver wie `DashboardStringResolver` und `LoginStringResolver`.
+- Technische Literale wie MIME-Types, Routen, JSON-Keys oder Dateinamen bleiben bewusst im Code.
 
 Mehr Projektdetails: [CLAUDE.md](CLAUDE.md)
 
