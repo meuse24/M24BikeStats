@@ -10,11 +10,14 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Home-Top-Bar mit App-Branding statt generischem Bereichstitel
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
-- Vollsync vom Home-Screen, der alle Aktivitätsseiten und die Bike-Liste neu in Room einliest
+- mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
+- cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
+- robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
 - MapLibre/OpenFreeMap-Kartenansicht und Profilcharts für Tracks
+- Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
 
 ## Voraussetzungen
@@ -49,6 +52,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Bike`: Bike-Liste und Bike-Details
 - `Funktionen`: CSV-Exporte
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
+- `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
 
 ## Daten und Exporte
@@ -56,11 +60,17 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Aktivitäten werden über `limit`/`offset` paginiert geladen.
 - Aktivitätsdetails kommen über `/activity/smart-system/v1/activities/{activityId}/details`.
 - Bikes kommen über `/bike-profile/smart-system/v1/bikes` und `/bikes/{bikeId}`.
+- Der separate `/track`-Endpunkt liefert aktuell `404`; Track, GPX und Profile basieren deshalb auf `/details`.
+- Detailpunkte mit `0/0`-Koordinaten oder redundanten aufeinanderfolgenden Duplikaten werden vor Karten-/GPX-Nutzung bereinigt.
 - CSV-Exporte nutzen den persistenten Setup-Wert für das Exportformat.
 - `Automatisch` leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab.
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
-- Der Home-Sync lädt die vollständige Aktivitätenliste seitenweise wie der CSV-Export, aber ohne Datei-Erzeugung.
+- Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
+- Der Home-Sync zeigt Fortschritt und kann abgebrochen werden.
+- Der Home-Sync kann datensparsam nur fehlende Aktivitätsdetails laden oder optional veraltete Details mitaktualisieren.
+- Die Home-Übersicht zeigt zusätzlich die Anzahl gecachter Detaildatensätze und GPS-Punkte.
+- Bike-Status nutzt zusätzlich Walk Assist, Einschaltzeit und Assist-Reichweiten aus den Bike-Details.
 
 ## Architektur
 
@@ -90,7 +100,7 @@ Mehr Projektdetails: [CLAUDE.md](CLAUDE.md)
 
 ## Verifizierte Endpunkte
 
-Stand: 2. April 2026, live mit echtem Smart-System-Token getestet.
+Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 
 | Endpoint | Status | Zweck |
 |---|---|---|
@@ -98,7 +108,7 @@ Stand: 2. April 2026, live mit echtem Smart-System-Token getestet.
 | `GET /activity/smart-system/v1/activities/{activityId}/details` | `200` | Aktivitätsdetails |
 | `GET /bike-profile/smart-system/v1/bikes` | `200` | Bike-Liste |
 | `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | `200` | Bike-Detail |
-| `GET /activity/smart-system/v1/activities/{activityId}/track` | `404` | aktuell nicht bestätigt |
+| `GET /activity/smart-system/v1/activities/{activityId}/track` | `404` | aktuell nicht verfügbar, `/details` wird stattdessen genutzt |
 | `GET .../userinfo` | `200` | OIDC Userinfo |
 | `GET .../.well-known/openid-configuration` | `200` | OIDC Discovery |
 
@@ -109,6 +119,7 @@ Stand: 2. April 2026, live mit echtem Smart-System-Token getestet.
 - Repository- und Cache-Tests
 - Room- und Migrations-Tests auf Android
 - GPX-/CSV-Exporttests
+- API-Test-Share- und Detailpunkt-Mapping-Tests
 
 ## Lizenz
 

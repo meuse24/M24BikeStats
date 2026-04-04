@@ -80,10 +80,13 @@ Regeln:
 - OAuth2 Authorization Code + PKCE
 - Token-Speicherung via `EncryptedSharedPreferences`
 - cache-first Aktivitäten-, Detail- und Bike-Flows
-- Vollsync vom Home-Screen für Room gegen Bosch-Cloud
+- mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
 - CSV-Export für Aktivitäten, Details und Tracks
-- CSV-Trennzeichen persistent konfigurierbar
+- CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
+- Exporte sind cache-only und haben Cancel-Aktionen
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
+- Aktivitätsdetailpunkte werden vor Karten-/GPX-Nutzung bereinigt und komprimiert
+- API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
 
 ## Bosch API
@@ -95,7 +98,7 @@ GET /activity/smart-system/v1/activities?limit=20&offset=0
 GET /activity/smart-system/v1/activities/{activityId}/details
 GET /bike-profile/smart-system/v1/bikes
 GET /bike-profile/smart-system/v1/bikes/{bikeId}
-GET /activity/smart-system/v1/activities/{activityId}/track   -> aktuell 404
+GET /activity/smart-system/v1/activities/{activityId}/track   -> aktuell 404, nicht produktiv nutzen
 GET https://p9.authz.bosch.com/.../userinfo
 GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ```
@@ -117,20 +120,25 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
-- Bei Cache-/Sync-Änderungen auf Room-State und Paging-Verhalten achten
+- Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
+- Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
+- Bei Aktivitätsdetails keine rohe Punktliste blind verwenden; Track/Profile laufen über den bereinigten Mapper-Pfad
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
 - Keine Android-`Context`-Abhängigkeit direkt ins ViewModel ziehen, wenn ein kleiner Resolver/Provider reicht
 - Bei Lokalisierung nur aktive Nutzertexte anfassen; technische Literale wie MIME-Types, Routen oder JSON-Keys bleiben unberührt
+- Testartefakte mit echten Nutzerdaten wie `bosch-api-test-run-all.txt` nicht mitcommitten
 
 ## Testfokus
 
 - UseCases mit Fakes
 - Dashboard-ViewModel
+- Dashboard-UI-Mapper
 - Routing/Navigations-Mapping
 - Repository/Cache-Verhalten
 - GPX-/CSV-Exportpfade
+- API-Test-Sharing
 
 ## Offene Baustellen
 
-- Bosch `track`-Endpoint weiter verifizieren
+- alternative Bosch-Endpunkte gezielt nur im API-Test evaluieren
 - Logging für produktive Nutzung schlank halten
