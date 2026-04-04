@@ -89,6 +89,12 @@ class AppNavigationRoutingTest {
     }
 
     @Test
+    fun `debug destinations are excluded from release drawer entries`() {
+        assertTrue(DrawerDestination.availableEntries(includeDebugTools = true).contains(DrawerDestination.API_TEST))
+        assertFalse(DrawerDestination.availableEntries(includeDebugTools = false).contains(DrawerDestination.API_TEST))
+    }
+
+    @Test
     fun `home stays the only primary destination without overview back affordance`() {
         assertFalse(MainDestination.HOME.route.canNavigateToOverview())
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())

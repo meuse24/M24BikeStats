@@ -23,6 +23,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Release-Build nutzt R8-Minify + Resource-Shrinking
 - Android Auto-Backup und Device-Transfer-Backup sind deaktiviert, damit keine sensiblen Bosch-Daten aus App-Speicher oder Tokens unkontrolliert exportiert werden
 - Cleartext-Traffic ist explizit deaktiviert
+- API-Test und sonstige Diagnosepfade bleiben in Debug-Builds sichtbar und werden für Release-Builds aus der Endnutzer-Navigation entfernt
 
 ## Voraussetzungen
 
@@ -60,6 +61,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
+- `API-Test` ist nur in Debug-Builds als Diagnoseziel verfügbar
 
 ## Daten und Exporte
 

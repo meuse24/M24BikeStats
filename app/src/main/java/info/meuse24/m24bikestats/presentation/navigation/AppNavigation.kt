@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import info.meuse24.m24bikestats.BuildConfig
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
@@ -240,17 +241,19 @@ fun AppNavigation() {
                         InfoScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
                     }
 
-                    composable(DrawerDestination.API_TEST.route!!) {
-                        val apiTestViewModel: ApiTestViewModel = koinViewModel()
-                        val apiTestUiState by apiTestViewModel.uiState.collectAsStateWithLifecycle()
-                        ApiTestContent(
-                            uiState = apiTestUiState,
-                            onSelectEndpoint = apiTestViewModel::selectEndpoint,
-                            onFetch = apiTestViewModel::fetch,
-                            onRunAll = apiTestViewModel::runAllEndpoints,
-                            onClear = apiTestViewModel::clear,
-                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
-                        )
+                    if (BuildConfig.DEBUG) {
+                        composable(DrawerDestination.API_TEST.route!!) {
+                            val apiTestViewModel: ApiTestViewModel = koinViewModel()
+                            val apiTestUiState by apiTestViewModel.uiState.collectAsStateWithLifecycle()
+                            ApiTestContent(
+                                uiState = apiTestUiState,
+                                onSelectEndpoint = apiTestViewModel::selectEndpoint,
+                                onFetch = apiTestViewModel::fetch,
+                                onRunAll = apiTestViewModel::runAllEndpoints,
+                                onClear = apiTestViewModel::clear,
+                                modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                            )
+                        }
                     }
 
                     composable(

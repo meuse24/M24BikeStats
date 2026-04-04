@@ -158,7 +158,7 @@ fun MainShell(
                                         expanded = overflowExpanded,
                                         onDismissRequest = { overflowExpanded = false },
                                     ) {
-                                        DrawerDestination.entries.forEach { destination ->
+                                        DrawerDestination.availableEntries().forEach { destination ->
                                             DropdownMenuItem(
                                                 text = { Text(stringResource(destination.labelRes)) },
                                                 onClick = {
@@ -217,7 +217,7 @@ fun MainShell(
 }
 
 private fun isDrawerDestinationRoute(route: String?): Boolean =
-    DrawerDestination.entries.any { destination ->
+    DrawerDestination.availableEntries(includeDebugTools = true).any { destination ->
         destination.route != null &&
             (route == destination.route || route?.startsWith("${destination.route}/") == true)
     }

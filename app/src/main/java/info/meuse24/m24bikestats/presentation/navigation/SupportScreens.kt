@@ -49,6 +49,17 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         stringResource(R.string.info_copyright_label) to stringResource(R.string.info_copyright_value),
         stringResource(R.string.info_repository_label) to "https://github.com/meuse24/M24BikeStats",
     )
+    val privacy = listOf(
+        stringResource(R.string.info_privacy_auth_label) to stringResource(R.string.info_privacy_auth_value),
+        stringResource(R.string.info_privacy_storage_label) to stringResource(R.string.info_privacy_storage_value),
+        stringResource(R.string.info_privacy_backup_label) to stringResource(R.string.info_privacy_backup_value),
+        stringResource(R.string.info_privacy_sync_label) to stringResource(R.string.info_privacy_sync_value),
+    )
+    val legal = listOf(
+        stringResource(R.string.info_legal_status_label) to stringResource(R.string.info_legal_status_value),
+        stringResource(R.string.info_legal_support_label) to stringResource(R.string.info_legal_support_value),
+        stringResource(R.string.info_legal_data_act_label) to stringResource(R.string.info_legal_data_act_value),
+    )
     val libraries = listOf(
         "Kotlin" to "2.2.10 • JetBrains",
         "Android Gradle Plugin" to "9.1.0 • Google Android team",
@@ -78,6 +89,8 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         subtitle = stringResource(R.string.info_subtitle),
         sections = listOf(
             stringResource(R.string.info_section_project) to appInfo,
+            stringResource(R.string.info_section_privacy) to privacy,
+            stringResource(R.string.info_section_legal) to legal,
             stringResource(R.string.info_section_libraries) to libraries,
             stringResource(R.string.info_section_credits) to credits,
         ),

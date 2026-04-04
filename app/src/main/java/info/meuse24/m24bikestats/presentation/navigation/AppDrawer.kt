@@ -39,7 +39,7 @@ fun AppDrawer(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
-            DrawerDestination.entries.forEach { destination ->
+            DrawerDestination.availableEntries().forEach { destination ->
                 NavigationDrawerItem(
                     label = { Text(stringResource(destination.labelRes)) },
                     selected = destination.route != null && currentRoute == destination.route,

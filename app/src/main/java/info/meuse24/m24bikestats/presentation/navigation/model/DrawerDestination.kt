@@ -8,12 +8,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import info.meuse24.m24bikestats.BuildConfig
 import info.meuse24.m24bikestats.R
 
 enum class DrawerDestination(
     val route: String?,
     @param:StringRes val labelRes: Int,
     val icon: ImageVector,
+    val debugOnly: Boolean = false,
 ) {
     SETUP(
         route = "setup",
@@ -34,6 +36,7 @@ enum class DrawerDestination(
         route = "api_test",
         labelRes = R.string.nav_api_test,
         icon = Icons.Default.BugReport,
+        debugOnly = true,
     ),
     LOGOUT(
         route = null,
@@ -44,4 +47,9 @@ enum class DrawerDestination(
 
     val isNavigationDestination: Boolean
         get() = route != null
+
+    companion object {
+        fun availableEntries(includeDebugTools: Boolean = BuildConfig.DEBUG): List<DrawerDestination> =
+            entries.filter { !it.debugOnly || includeDebugTools }
+    }
 }

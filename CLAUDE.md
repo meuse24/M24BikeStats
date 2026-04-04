@@ -97,6 +97,7 @@ Regeln:
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
+- `API_TEST` bleibt ein Debug-/Diagnosewerkzeug und wird in Release-Builds nicht in die Endnutzer-Navigation aufgenommen
 
 ## Bosch API
 
@@ -144,6 +145,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Testartefakte mit echten Nutzerdaten wie `bosch-api-test-run-all.txt` nicht mitcommitten
 - Änderungen an Security-/Release-Flags immer zusätzlich mit `assembleRelease` prüfen, nicht nur mit Debug-Builds
 - `android.disallowKotlinSourceSets=false` aktuell nicht entfernen, solange KSP sonst den Release-Build blockiert
+- Wenn Diagnose- oder Entwicklerziele ergänzt werden, standardmäßig `debugOnly` halten und nicht versehentlich in Release-Navigation exponieren
 
 ## Testfokus
 
