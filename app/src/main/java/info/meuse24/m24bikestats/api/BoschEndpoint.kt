@@ -1,14 +1,12 @@
-package info.meuse24.m24bikestats.support.apitest
+package info.meuse24.m24bikestats.api
 
 /**
  * Bosch eBike Data Act API – Endpunkte für Smart System (BES3 / Flow-App).
  *
  * Base URL: https://api.bosch-ebike.com
- * Quelle: open-ebike/open-ebike-backend (Bruno-Collection)
  *
- * Getestet mit Cannondale Performance Line CX (Smart System):
- *   - smart-system Endpunkte → HTTP 200 ✓
- *   - ebike-system-2 Endpunkte → HTTP 400 (falscher System-Typ, entfernt)
+ * Diese App unterstützt ausschließlich Bosch Smart System.
+ * Bosch eBike System 2 / eBike Connect ist bewusst nicht Teil dieser Liste.
  */
 enum class BoschEndpoint(val label: String, val baseUrl: String, val path: String) {
 
@@ -25,17 +23,12 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
         "/bike-profile/smart-system/v1/bikes"
     ),
 
-    // --- Smart System – weitere Endpunkte (aus Bruno-Collection, noch ungetestet) ---
+    // --- Smart System – weitere bestätigte Detail-Endpunkte ---
 
     SMART_ACTIVITY_DETAIL(
         "Aktivität Detail /details (ID ersetzen)",
         "https://api.bosch-ebike.com",
         "/activity/smart-system/v1/activities/ACTIVITY_ID/details"
-    ),
-    SMART_ACTIVITY_TRACK(
-        "Aktivität GPS-Track (ID ersetzen)",
-        "https://api.bosch-ebike.com",
-        "/activity/smart-system/v1/activities/ACTIVITY_ID/track"
     ),
     SMART_BIKE_DETAIL(
         "Bike Detail (ID ersetzen)",
@@ -49,6 +42,11 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
         "OIDC UserInfo ✓",
         "https://p9.authz.bosch.com",
         "/auth/realms/obc/protocol/openid-connect/userinfo"
+    ),
+    OIDC_CERTS(
+        "OIDC JWKS /certs",
+        "https://p9.authz.bosch.com",
+        "/auth/realms/obc/protocol/openid-connect/certs"
     ),
 
     // --- Diagnose (kein HTTP-Call) ---
@@ -78,6 +76,7 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
             label = label,
             baseUrl = baseUrl,
             path = resolvedPath,
+            debugName = name,
             isLocalOnly = this == TOKEN_INFO,
         )
     }

@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +51,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import info.meuse24.m24bikestats.R
-import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
+import info.meuse24.m24bikestats.api.BoschEndpoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Stateless API-Test-Screen. Kein ViewModel-Zugriff – nur [ApiTestUiState] + Callbacks.
@@ -99,6 +104,9 @@ fun ApiTestContent(
     val readableResult = remember(uiState.selectedEndpoint, uiState.jsonOutput) {
         parseReadableResult(uiState.selectedEndpoint, uiState.jsonOutput)
     }
+    val responseDiagnostics = remember(uiState.selectedEndpoint, uiState.jsonOutput) {
+        buildApiTestResponseDiagnostics(uiState.selectedEndpoint, uiState.jsonOutput)
+    }
 
     Column(
         modifier = modifier
@@ -123,13 +131,46 @@ fun ApiTestContent(
         Spacer(modifier = Modifier.height(12.dp))
 
         val context = LocalContext.current
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        val coroutineScope = rememberCoroutineScope()
+        Row(
+            modifier = Modifier.horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Button(onClick = onFetch, enabled = !uiState.isLoading) {
                 Text(stringResource(R.string.api_test_fetch))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Button(onClick = onRunAll, enabled = !uiState.isLoading) {
                 Text(stringResource(R.string.api_test_run_all))
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        val result = withContext(Dispatchers.IO) {
+                            saveApiTestResultToDownloads(
+                                context = context,
+                                endpoint = uiState.selectedEndpoint,
+                                content = uiState.jsonOutput,
+                            )
+                        }
+                        val message = result.fold(
+                            onSuccess = { fileName ->
+                                context.getString(R.string.api_test_download_saved, fileName)
+                            },
+                            onFailure = { error ->
+                                context.getString(
+                                    R.string.api_test_download_failed,
+                                    error.message ?: error.javaClass.simpleName,
+                                )
+                            }
+                        )
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                enabled = uiState.jsonOutput.isNotEmpty() && !uiState.isLoading,
+            ) {
+                Text(stringResource(R.string.api_test_download))
             }
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
@@ -161,6 +202,16 @@ fun ApiTestContent(
             ReadableResultSection(readableResult)
             Spacer(modifier = Modifier.height(12.dp))
         }
+
+        responseDiagnostics?.unusedFieldLines
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { lines ->
+                SimpleInfoCard(
+                    title = stringResource(R.string.api_test_field_scan_title),
+                    lines = lines,
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
         Text(stringResource(R.string.api_test_raw_data), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))

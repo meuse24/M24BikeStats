@@ -5,7 +5,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 ## Überblick
 
 - OAuth2 + PKCE Login gegen Bosch SingleKey ID
-- adaptives Compose-UI mit `home`, `activities`, `bike` und `functions`
+- adaptives Compose-UI mit `home`, `activities`, `account` und `functions`
 - sekundäre Navigation für `setup`, `hilfe`, `info`, `api-test` und `logout`
 - Home-Top-Bar mit App-Branding statt generischem Bereichstitel
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
@@ -17,9 +17,11 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
+- API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
+- Kontodetails zeigen zusätzlich Bosch-`USERINFO`, OIDC-Discovery und das aktuell passende OIDC-Signaturzertifikat aus der JWKS-Antwort
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
 - Release-Build nutzt R8-Minify + Resource-Shrinking
 - Android Auto-Backup und Device-Transfer-Backup sind deaktiviert, damit keine sensiblen Bosch-Daten aus App-Speicher oder Tokens unkontrolliert exportiert werden
@@ -56,7 +58,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Home`: Übersicht, letzter Cloud-Abgleich, letzte Tour, Bike-Status, letzte Exporte
 - `Home` zeigt in der Shell-Top-Bar den App-Titel `M24 Bike Stats`, wobei `M24` hervorgehoben ist
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
-- `Bike`: Bike-Liste und Bike-Details
+- `Konto`: Bike-Liste plus Konto-/OIDC-Details
 - `Funktionen`: CSV-Exporte
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
@@ -69,6 +71,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Aktivitäten werden über `limit`/`offset` paginiert geladen.
 - Aktivitätsdetails kommen über `/activity/smart-system/v1/activities/{activityId}/details`.
 - Bikes kommen über `/bike-profile/smart-system/v1/bikes` und `/bikes/{bikeId}`.
+- Kontodetails ergänzen diese Bike-Daten um `/userinfo`, `/.well-known/openid-configuration` und `/protocol/openid-connect/certs`.
 - Der separate `/track`-Endpunkt liefert aktuell `404`; Track, GPX und Profile basieren deshalb auf `/details`.
 - Detailpunkte mit `0/0`-Koordinaten oder redundanten aufeinanderfolgenden Duplikaten werden vor Karten-/GPX-Nutzung bereinigt.
 - Die Track-Karte blendet die Attribution kompakt direkt in der Karte ein: `© OSM • OFM • MapLibre`.
@@ -88,16 +91,21 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 
 ```text
 domain/        Interfaces, Modelle, UseCases
+api/           gemeinsame Bosch-Endpoint-/Request-Abstraktionen
 data/          API- und Repository-Implementierungen, Room-Zugriff
-auth/          OAuth2/AppAuth und Token-Verwaltung
+auth/          OAuth2/AppAuth, Token-Verwaltung, OIDC-Helfer
+background/    WorkManager-Scheduling und Settings-Beobachtung
 presentation/  Compose-Screens, Navigation, ViewModels
+shared/        gemeinsam genutzte Formatierungs-/Hilfscodecs
+support/       Diagnose- und API-Test-Helfer
+ui/            Theme und app-weite UI-Grundbausteine
 di/            Koin-Modul
 ```
 
 Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
-- `presentation/dashboard`: Home, Aktivitäten, Bike, Funktionen sowie Detail- und Track-Screens
+- `presentation/dashboard`: Home, Aktivitäten, Konto, Funktionen sowie Detail- und Track-Screens
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
 - `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen
@@ -105,6 +113,10 @@ Ergänzungen:
 - `presentation/dashboard/DashboardSharedUi.kt`: wiederverwendete Hero-/Metric-/Section-Komponenten
 - `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
 - `presentation/login/LoginStringResolver`: sichtbare Login-Statusmeldungen bleiben ebenfalls resource-basiert und testbar ohne Android-`Context` direkt im ViewModel
+- `api/`: neutrale Bosch-Endpoint-, Request- und Fetch-Abstraktionen für produktive Nutzung und Diagnose
+- `auth/AuthFlowCoordinator`: Android-spezifischer Login-/Logout-Intent-Flow außerhalb der Präsentationsschicht
+- `auth/OidcAccountInfo`: produktive OIDC-UserInfo-/Discovery-Logik für Kontodetails
+- `auth/OidcCertificateInfo`: produktive OIDC-JWKS-/Zertifikatslogik für Kontodetails
 
 ## Lokalisierung
 
@@ -134,8 +146,9 @@ Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 | `GET /bike-profile/smart-system/v1/bikes` | `200` | Bike-Liste |
 | `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | `200` | Bike-Detail |
 | `GET /activity/smart-system/v1/activities/{activityId}/track` | `404` | aktuell nicht verfügbar, `/details` wird stattdessen genutzt |
-| `GET .../userinfo` | `200` | OIDC Userinfo |
-| `GET .../.well-known/openid-configuration` | `200` | OIDC Discovery |
+| `GET .../userinfo` | `200` | OIDC Userinfo für den aktuell angemeldeten Bosch-Account |
+| `GET .../.well-known/openid-configuration` | `200` | OIDC Discovery-Metadaten für Kontodetails |
+| `GET .../protocol/openid-connect/certs` | `200` | OIDC JWKS / Signaturzertifikate |
 
 ## Testabdeckung
 

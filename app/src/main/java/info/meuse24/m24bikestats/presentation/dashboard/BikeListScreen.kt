@@ -47,6 +47,7 @@ fun BikeListScreen(
         items(uiState.bikes, key = { it.id }) { bike ->
             BikeOverviewCard(
                 bike = bike,
+                hasOidcCertificateInfo = uiState.hasOidcCertificateInfo,
                 onClick = { onBikeClick(bike.id) },
                 onShareClick = { shareBikeDetail(context, bike) },
             )

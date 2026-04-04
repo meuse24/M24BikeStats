@@ -1,6 +1,12 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
+import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
@@ -11,6 +17,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -22,11 +29,17 @@ class DashboardDetailActionHandler(
     private val getCachedBike: GetCachedSmartSystemBikeUseCase,
     private val refreshActivityDetailUseCase: RefreshSmartSystemActivityDetailUseCase,
     private val refreshBikeDetailUseCase: RefreshSmartSystemBikeDetailUseCase,
+    private val oidcCertificateInfoProvider: OidcCertificateInfoProvider,
+    private val oidcUserInfoProvider: OidcUserInfoProvider,
+    private val oidcDiscoveryInfoProvider: OidcDiscoveryInfoProvider,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
 ) {
     private var activityDetailObservationJob: Job? = null
     private var bikeDetailObservationJob: Job? = null
+    private var currentBikeOidcCertificate: OidcCertificateInfoUiModel? = null
+    private var currentBikeOidcUserInfo: OidcUserInfoUiModel? = null
+    private var currentBikeOidcDiscoveryInfo: OidcDiscoveryInfoUiModel? = null
 
     fun loadBikeDetail(
         scope: CoroutineScope,
@@ -37,11 +50,21 @@ class DashboardDetailActionHandler(
     ) {
         bikeDetailObservationJob?.cancel()
         scope.launch {
+            currentBikeOidcCertificate = null
+            currentBikeOidcUserInfo = null
+            currentBikeOidcDiscoveryInfo = null
             val cachedBike = getCachedBike(bikeId)
             updateState {
                 it.copy(
                     selectedBikeId = bikeId,
-                    selectedBikeDetail = cachedBike?.let(uiModelMapper::toBikeDetailUiModel),
+                    selectedBikeDetail = cachedBike?.let { bike ->
+                        uiModelMapper.toBikeDetailUiModel(
+                            bike = bike,
+                            oidcCertificateInfo = currentBikeOidcCertificate,
+                            oidcUserInfo = currentBikeOidcUserInfo,
+                            oidcDiscoveryInfo = currentBikeOidcDiscoveryInfo,
+                        )
+                    },
                     isBikeDetailLoading = cachedBike == null,
                     isBikeDetailRefreshing = cachedBike != null,
                     error = null,
@@ -53,10 +76,39 @@ class DashboardDetailActionHandler(
                     if (currentState().selectedBikeId != bikeId) return@collectLatest
                     updateState {
                         it.copy(
-                            selectedBikeDetail = bike?.let(uiModelMapper::toBikeDetailUiModel),
+                            selectedBikeDetail = bike?.let { currentBike ->
+                                uiModelMapper.toBikeDetailUiModel(
+                                    bike = currentBike,
+                                    oidcCertificateInfo = currentBikeOidcCertificate,
+                                    oidcUserInfo = currentBikeOidcUserInfo,
+                                    oidcDiscoveryInfo = currentBikeOidcDiscoveryInfo,
+                                )
+                            },
                             isBikeDetailLoading = bike == null && it.isBikeDetailLoading,
                         )
                     }
+                }
+            }
+
+            val certificateDeferred = async { oidcCertificateInfoProvider.loadCurrentCertificate() }
+            val userInfoDeferred = async { oidcUserInfoProvider.loadCurrentUserInfo() }
+            val discoveryDeferred = async { oidcDiscoveryInfoProvider.loadCurrentDiscovery() }
+            currentBikeOidcCertificate = certificateDeferred.await()
+            currentBikeOidcUserInfo = userInfoDeferred.await()
+            currentBikeOidcDiscoveryInfo = discoveryDeferred.await()
+            if (currentState().selectedBikeId == bikeId) {
+                val currentBike = getCachedBike(bikeId) ?: cachedBike
+                updateState {
+                    it.copy(
+                        selectedBikeDetail = currentBike?.let { bike ->
+                            uiModelMapper.toBikeDetailUiModel(
+                                bike = bike,
+                                oidcCertificateInfo = currentBikeOidcCertificate,
+                                oidcUserInfo = currentBikeOidcUserInfo,
+                                oidcDiscoveryInfo = currentBikeOidcDiscoveryInfo,
+                            )
+                        },
+                    )
                 }
             }
 
@@ -65,7 +117,14 @@ class DashboardDetailActionHandler(
                     it.copy(
                         isBikeDetailLoading = false,
                         isBikeDetailRefreshing = false,
-                        selectedBikeDetail = cachedBike?.let(uiModelMapper::toBikeDetailUiModel),
+                        selectedBikeDetail = cachedBike?.let { bike ->
+                            uiModelMapper.toBikeDetailUiModel(
+                                bike = bike,
+                                oidcCertificateInfo = currentBikeOidcCertificate,
+                                oidcUserInfo = currentBikeOidcUserInfo,
+                                oidcDiscoveryInfo = currentBikeOidcDiscoveryInfo,
+                            )
+                        },
                         error = error.message ?: s(R.string.dashboard_error_bike_detail_load),
                     )
                 }

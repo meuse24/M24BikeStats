@@ -127,40 +127,69 @@ Aus einem realen Token dekodiert (Stand: April 2026):
 
 ---
 
-## Bestätigte API-Endpunkte
+## Verifizierte Endpunkte und Resultate
+
+Stand dieser Übersicht:
+
+- Smart-System- und OIDC-Endpunkte gegen echten Account, echte `activityId` und echte `bikeId`
+- Batch-Report `bosch-api-test-run-all (1).txt` vom **4. April 2026**
+- älterer Einzelbefund vom **2. April 2026** bleibt konsistent, wurde aber durch den neueren Batch-Run ergänzt
+
+### Smart System / BES3
 
 **Base URL:** `https://api.bosch-ebike.com`
 
-### Smart System / BES3 (Flow-App, Bikes ab ~2022)
+| Endpunkt | Status | Aktuelle App-Nutzung | Zweck | Zusammenfassung des Resultats |
+|---|---|---|---|---|
+| `GET /activity/smart-system/v1/activities?limit=20&offset=0` | HTTP 200 | Ja | Liste der Aktivitäten eines Riders mit Paging | Liefert `pagination`, `activitySummaries` sowie `links.self`, `links.next`, `links.first`, `links.last`; zentrale Quelle für Dashboard, History und Cloud-Sync |
+| `GET /activity/smart-system/v1/activities/{activityId}/details` | HTTP 200 | Ja | Detaillierte Punktserie einer Aktivität | Liefert `activityDetails` mit Distanz, Höhe, Geschwindigkeit, Kadenz, Rider-Power und Koordinaten; praktisch der wichtigste Aktivitäts-Endpunkt, weil Track und Metriken gemeinsam kommen |
+| `GET /activity/smart-system/v1/activities/{activityId}/track` | HTTP 404 | Nein | Vermuteter reiner GPS-Track-Endpunkt | Für den getesteten Smart-System-Account nicht vorhanden; `/details` deckt den fachlichen Bedarf bereits weitgehend ab |
+| `GET /bike-profile/smart-system/v1/bikes` | HTTP 200 | Ja | Liste der Bikes des Accounts | Liefert Bike-Objekte mit Drive Unit, Batteries, Head Unit, Active Assist Modes und Basis-Metadaten; zentrale Quelle für Bike-Liste und initiale Synchronisation |
+| `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | HTTP 200 | Ja | Detaildaten zu einem konkreten Bike | Liefert die produktiv nutzbaren Zusatzinfos wie Walk-Assist, Einschaltzeit, Reichweiten pro Modus, Batterie-Lebensdaten und Gerätekomponenten |
+| `GET /activity/smart-system/v1/activities/{activityId}/statistics` | HTTP 404 | Nein | Vermutete aggregierte Aktivitätsstatistik | Im getesteten Account nicht vorhanden; die Kennzahlen aus `activitySummaries` und `activityDetails` bleiben damit die belastbare Datenquelle |
+| `GET /activity/smart-system/v1/activities/{activityId}/power-share` | HTTP 404 | Nein | Vermutete Aufteilung von Fahrer- und Motorleistung | Nicht vorhanden; es gibt im aktuellen Vertrag keinen separat erreichbaren Power-Share-Endpunkt |
+| `GET /activity/smart-system/v1/activities/{activityId}/riding-mode-usage` | HTTP 404 | Nein | Vermutete Verteilung der Unterstützungsmodi pro Aktivität | Nicht vorhanden; falls Bosch diese Daten intern hat, sind sie über diesen Pfad für den getesteten Account nicht exposed |
+| `GET /activity/smart-system/v1/activities/{activityId}/braking-statistics` | HTTP 404 | Nein | Vermutete Bremsstatistik einer Aktivität | Nicht vorhanden; kein nutzbarer Endpunkt für Bremsereignisse oder Bremsintensität gefunden |
+| `GET /activity/smart-system/v1/statistics/annual` | HTTP 404 | Nein | Vermutete Jahresstatistik über alle Aktivitäten | Nicht vorhanden; aggregierte Jahresansichten müssen daher aus Rohdaten in der App selbst berechnet werden |
+| `GET /bike-profile/smart-system/v1/bikes/{bikeId}/model` | HTTP 404 | Nein | Vermuteter Modell-/Produktstammdaten-Endpunkt | Nicht vorhanden; Modellinformationen müssen aktuell aus dem Bike-Detail und den Komponentennamen abgeleitet werden |
 
-```
-GET /activity/smart-system/v1/activities?limit=20&offset=0   → HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}/details → HTTP 200
-GET /bike-profile/smart-system/v1/bikes                       → HTTP 200
-GET /bike-profile/smart-system/v1/bikes/{bikeId}             → HTTP 200
-GET /activity/smart-system/v1/activities/{activityId}/track  → HTTP 404
-```
+### Paging über Activity-Links
 
-Die vier `200`-Antworten sind mit echtem Token und echten IDs am **2. April 2026** live verifiziert.
+Die Aktivitätenliste liefert einen stabil wirkenden Paging-Vertrag:
 
-Zusätzlicher Befund aus `bosch-api-test-run-all.txt` vom **4. April 2026**:
+- `links.self`
+- `links.first`
+- `links.next`
+- `links.prev`
+- `links.last`
 
-- Die Aktivitätenliste liefert neben `pagination` auch `links.self`, `links.next`, `links.first`, `links.last`
-- `/activities/{activityId}/details` ist der funktional wichtigste Aktivitäts-Endpunkt, da er Track, Höhe und punktbezogene Metriken gemeinsam liefert
-- `/activities/{activityId}/track` liefert für den getesteten Smart-System-Account weiterhin `404`
-- Die Detaildaten enthalten teils `latitude=0.0` und `longitude=0.0` sowie aufeinanderfolgende Duplikate derselben Koordinate
-- Die App sollte diese Detailpunkte daher vor Karten-, GPX- und Profilnutzung bereinigen
+Im Batch-Run wurden mehrere dieser verlinkten URLs direkt nachgeladen. Die aufgelösten Requests wie `offset=20`, `offset=40`, `offset=420` und `offset=440` lieferten jeweils `HTTP 200`. Daraus ergibt sich:
 
-### OIDC (bestätigt funktionierend)
+- Paging über `limit` und `offset` ist funktional verifiziert
+- die serverseitig gelieferten Link-URLs sind konsistent und nutzbar
+- `next` und `prev` funktionieren auch für tiefe Seiten im Verlauf
+- `last` funktioniert und zeigt das historische Ende der Aktivitätenliste
 
-```
-GET https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/userinfo
-→ HTTP 200, liefert u. a. sub, email, preferred_username
+Für die App ist das relevant, weil damit sowohl klassisches Paging per Parametern als auch ein späterer Wechsel auf servergelieferte Links möglich ist.
 
-GET https://p9.authz.bosch.com/auth/realms/obc/.well-known/openid-configuration
-→ HTTP 200, liefert authorization_endpoint, token_endpoint, userinfo_endpoint, jwks_uri,
-  revocation_endpoint, introspection_endpoint, end_session_endpoint
-```
+### OIDC und Auth-Infrastruktur
+
+**Base URL:** `https://p9.authz.bosch.com`
+
+| Endpunkt | Status | Aktuelle App-Nutzung | Zweck | Zusammenfassung des Resultats |
+|---|---|---|---|---|
+| `GET /auth/realms/obc/protocol/openid-connect/userinfo` | HTTP 200 | Ja | Standard-OIDC-UserInfo für den eingeloggten Nutzer | Liefert u. a. `sub`, `email_verified`, `preferred_username`, `email`; wird jetzt in der Kontoansicht zusätzlich zu den Bike-Daten angezeigt |
+| `GET /auth/realms/obc/protocol/openid-connect/certs` | HTTP 200 | Ja | JWKS-Endpoint für die Signaturschlüssel des OIDC-Providers | Liefert `keys[]` mit `kid`, `kty`, `alg`, `use`, `x5c`, Thumbprints; für Token-Validierung und Zertifikatsanzeige gut nutzbar |
+| `GET /auth/realms/obc/.well-known/openid-configuration` | HTTP 200 | Ja | Discovery-Dokument des OIDC-Providers | Liefert die komplette OIDC-Metadatenbasis wie `authorization_endpoint`, `token_endpoint`, `userinfo_endpoint`, `jwks_uri`, `revocation_endpoint`, `introspection_endpoint`, `end_session_endpoint`; wird jetzt in der Kontoansicht transparent mit angezeigt |
+| `TOKEN_INFO` lokal dekodiert | lokal, kein HTTP-Call | Ja, aber nur Diagnose | Diagnoseansicht für JWT-Header und JWT-Payload | Dekodiert das aktuelle Access Token lokal und zeigt u. a. `iss`, `aud`, `scope`, `bosch-id`, `ebike-rider-id`, `preferred_username`; hilfreich zur Analyse von Claims und Schlüssel-IDs |
+
+### Fachliche Schlussfolgerungen aus dem aktuellen Stand
+
+- Der belastbare Smart-System-Vertrag besteht derzeit aus Aktivitätenliste, Aktivitätsdetails, Bikeliste und Bike-Detail
+- `/activities/{activityId}/details` ist funktional wertvoller als `/track`, weil dort bereits Trackpunkte und Metrikwerte gemeinsam vorliegen
+- Die `404`-Antworten auf `statistics`, `power-share`, `riding-mode-usage`, `braking-statistics`, `statistics/annual` und `bike model` sprechen dafür, dass diese Pfade entweder intern, veraltet oder für den getesteten Account nicht freigeschaltet sind
+- Aggregationen wie Jahresstatistik, Modusnutzung oder Bremsauswertung müssen aktuell aus den bestätigten Rohdaten in der App selbst berechnet werden
+- Die Detaildaten enthalten real teils `latitude=0.0` und `longitude=0.0` sowie aufeinanderfolgende Duplikate derselben Koordinate; vor Karten-, Profil- oder GPX-Nutzung ist daher eine Bereinigung sinnvoll
 
 ### Verifizierte Antwortstrukturen
 

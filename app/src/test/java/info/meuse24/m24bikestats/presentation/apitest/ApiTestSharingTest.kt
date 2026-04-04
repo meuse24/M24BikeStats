@@ -1,6 +1,6 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
-import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
+import info.meuse24.m24bikestats.api.BoschEndpoint
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

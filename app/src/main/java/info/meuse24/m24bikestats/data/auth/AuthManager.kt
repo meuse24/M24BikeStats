@@ -5,8 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
-import info.meuse24.m24bikestats.presentation.login.AuthFlowCoordinator
 import net.openid.appauth.AuthorizationRequest
 import net.openid.appauth.AuthorizationResponse
 import net.openid.appauth.AuthorizationService

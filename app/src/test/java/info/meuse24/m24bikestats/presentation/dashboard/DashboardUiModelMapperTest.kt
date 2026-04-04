@@ -1,5 +1,8 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
@@ -62,6 +65,62 @@ class DashboardUiModelMapperTest {
         assertEquals(2, assistSection.rows.size)
         assertEquals("A100M00040", assistSection.rows[0].first)
         assertEquals("A100M00030", assistSection.rows[1].first)
+    }
+
+    @Test
+    fun `bike detail adds smart system support and oidc certificate section when available`() {
+        val uiModel = mapper.toBikeDetailUiModel(
+            bike = bike(),
+            oidcCertificateInfo = OidcCertificateInfoUiModel(
+                tokenKeyId = "token-kid",
+                keyId = "active-kid",
+                matchesCurrentToken = true,
+                keyType = "RSA",
+                algorithm = "RS256",
+                usage = "sig",
+                subject = "CN=Bosch",
+                issuer = "CN=Bosch Issuer",
+                validFrom = "01.04.2026 10:00",
+                validUntil = "01.04.2027 10:00",
+                sha1Thumbprint = "sha1",
+                sha256Thumbprint = "sha256",
+                certificateChainEntries = 2,
+            ),
+        )
+
+        assertEquals(2, uiModel.sections.first().rows.size)
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "active-kid" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "CN=Bosch" } })
+    }
+
+    @Test
+    fun `bike detail adds oidc userinfo and discovery sections when available`() {
+        val uiModel = mapper.toBikeDetailUiModel(
+            bike = bike(),
+            oidcUserInfo = OidcUserInfoUiModel(
+                email = "rider@example.com",
+                username = "rider",
+                subject = "user-subject",
+            ),
+            oidcDiscoveryInfo = OidcDiscoveryInfoUiModel(
+                issuer = "https://issuer.example.com",
+                authorizationEndpoint = "https://issuer.example.com/auth",
+                tokenEndpoint = "https://issuer.example.com/token",
+                userInfoEndpoint = "https://issuer.example.com/userinfo",
+                jwksUri = "https://issuer.example.com/jwks",
+                revocationEndpoint = "https://issuer.example.com/revoke",
+                introspectionEndpoint = "https://issuer.example.com/introspect",
+                endSessionEndpoint = "https://issuer.example.com/logout",
+                supportedGrantTypes = listOf("authorization_code", "refresh_token"),
+            ),
+        )
+
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "rider@example.com" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "rider" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "https://issuer.example.com/token" } })
+        assertTrue(uiModel.sections.any { section ->
+            section.rows.any { (_, value) -> value == "authorization_code, refresh_token" }
+        })
     }
 
     private fun activity() = BoschActivity(

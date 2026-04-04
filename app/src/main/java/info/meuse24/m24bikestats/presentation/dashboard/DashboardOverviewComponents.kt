@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Close
@@ -354,6 +353,7 @@ private fun CompactFilterDropdown(
 internal fun BikesOverview(
     bikes: List<BikeCardUiModel>,
     isRefreshing: Boolean,
+    hasOidcCertificateInfo: Boolean = false,
     onBikeClick: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -385,6 +385,7 @@ internal fun BikesOverview(
         items(bikes, key = { it.id }) { bike ->
             BikeOverviewCard(
                 bike = bike,
+                hasOidcCertificateInfo = hasOidcCertificateInfo,
                 onClick = { onBikeClick(bike.id) },
                 onShareClick = { shareBikeDetail(context, bike) },
             )
@@ -582,9 +583,19 @@ private fun String.withLineBreakBeforeMax(): String =
 @Composable
 internal fun BikeOverviewCard(
     bike: BikeCardUiModel,
+    hasOidcCertificateInfo: Boolean,
     onClick: () -> Unit,
     onShareClick: () -> Unit,
 ) {
+    val metricSummary = buildList {
+        bike.odometerLabel?.let { add(stringResource(R.string.dashboard_card_odometer) to it) }
+        bike.assistSpeedLabel?.let { add(stringResource(R.string.dashboard_card_assist) to it) }
+        bike.walkAssistLabel?.let { add(stringResource(R.string.dashboard_card_walk_assist) to it) }
+        bike.powerOnSummary?.let { add(stringResource(R.string.dashboard_card_usage) to it) }
+        bike.batterySummary?.let { add(stringResource(R.string.dashboard_battery_fallback_title) to it) }
+        bike.assistModesSummary?.let { add(stringResource(R.string.dashboard_card_assist_ranges) to it) }
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -595,135 +606,113 @@ internal fun BikeOverviewCard(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = bike.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                bike.subtitle?.let {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
                     Text(
-                        text = it,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = bike.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    bike.subtitle?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                if (hasOidcCertificateInfo) {
+                    StatusBadge(stringResource(R.string.dashboard_bike_certificate_badge))
+                }
+            }
+
+            if (metricSummary.isNotEmpty()) {
+                BikeMetricGrid(summary = metricSummary)
+            }
+
+            if (hasOidcCertificateInfo) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
+                ) {
+                    Text(
+                        text = stringResource(R.string.dashboard_bike_certificate_hint),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 }
             }
-            SummaryChipRow(
-                summary = buildList {
-                    bike.odometerLabel?.let { add(stringResource(R.string.dashboard_card_odometer) to it) }
-                    bike.assistSpeedLabel?.let { add(stringResource(R.string.dashboard_card_assist) to it) }
-                    bike.walkAssistLabel?.let { add(stringResource(R.string.dashboard_card_walk_assist) to it) }
-                },
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                itemContent = { label, value ->
-                    CompactMetricPill(label = label, value = value)
-                },
-            )
-            bike.batterySummary?.let { batterySummary ->
-                BikeInfoSurface(
-                    label = stringResource(R.string.dashboard_battery_fallback_title),
-                    value = batterySummary,
-                )
-            }
-            bike.powerOnSummary?.let { powerOnSummary ->
-                BikeInfoSurface(
-                    label = stringResource(R.string.dashboard_card_usage),
-                    value = powerOnSummary,
-                )
-            }
-            bike.assistModesSummary?.let { assistModesSummary ->
-                BikeInfoSurface(
-                    label = stringResource(R.string.dashboard_card_assist_ranges),
-                    value = assistModesSummary,
-                )
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
             ) {
-                BikeCardActionButton(
-                    label = stringResource(R.string.dashboard_bike_share_button),
-                    icon = Icons.Default.Share,
-                    onClick = onShareClick,
+                Row(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
-                BikeCardActionButton(
-                    label = stringResource(R.string.dashboard_bike_detail_button),
-                    icon = Icons.AutoMirrored.Filled.ExitToApp,
-                    onClick = onClick,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    ActivityCardActionButton(
+                        label = stringResource(R.string.dashboard_bike_share_button),
+                        icon = Icons.Default.Share,
+                        onClick = onShareClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    ActivityCardActionButton(
+                        label = stringResource(R.string.dashboard_bike_detail_button),
+                        icon = Icons.AutoMirrored.Filled.ArrowForward,
+                        onClick = onClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun BikeCardActionButton(
-    label: String,
-    icon: ImageVector,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        shape = RoundedCornerShape(14.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        Text(
-            text = label,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
-
-@Composable
-private fun BikeInfoSurface(
-    label: String,
-    value: String,
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium,
-            )
+private fun BikeMetricGrid(summary: List<Pair<String, String>>) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        summary.chunked(2).forEach { rowItems ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                rowItems.forEach { (label, value) ->
+                    ActivityMetricTile(
+                        label = label,
+                        value = value,
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    )
+                }
+                if (rowItems.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }

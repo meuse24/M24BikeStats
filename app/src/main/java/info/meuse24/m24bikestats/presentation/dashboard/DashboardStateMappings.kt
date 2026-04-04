@@ -62,6 +62,7 @@ fun DashboardUiState.toBikeListUiState(): BikeListUiState =
     BikeListUiState(
         bikes = bikes,
         isRefreshing = isRefreshing,
+        hasOidcCertificateInfo = hasOidcCertificateInfo,
     )
 
 fun DashboardUiState.toActivityDetailScreenUiState(): ActivityDetailScreenUiState =

@@ -2,7 +2,7 @@ package info.meuse24.m24bikestats.data.remote
 
 import android.util.Base64
 import info.meuse24.m24bikestats.shared.TokenInfoFormat
-import info.meuse24.m24bikestats.support.apitest.BoschRequest
+import info.meuse24.m24bikestats.api.BoschRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient

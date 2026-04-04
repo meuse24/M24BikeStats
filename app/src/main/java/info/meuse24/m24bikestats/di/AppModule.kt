@@ -1,6 +1,13 @@
 package info.meuse24.m24bikestats.di
 
 import androidx.room.Room
+import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
+import info.meuse24.m24bikestats.auth.LiveOidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.LiveOidcCertificateInfoProvider
+import info.meuse24.m24bikestats.auth.LiveOidcUserInfoProvider
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
+import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
 import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
 import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
 import info.meuse24.m24bikestats.data.auth.AuthManager
@@ -52,11 +59,10 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardUiModelMapper
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.AndroidLoginStringResolver
-import info.meuse24.m24bikestats.presentation.login.AuthFlowCoordinator
 import info.meuse24.m24bikestats.presentation.login.LoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
-import info.meuse24.m24bikestats.support.apitest.BoschRepository
-import info.meuse24.m24bikestats.support.apitest.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.api.BoschRepository
+import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -93,6 +99,9 @@ val appModule = module {
     single { BackgroundSyncSettingsObserver(get(), get()) }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
     single { DashboardUiModelMapper(get()) }
+    single<OidcCertificateInfoProvider> { LiveOidcCertificateInfoProvider(get(), get()) }
+    single<OidcUserInfoProvider> { LiveOidcUserInfoProvider(get()) }
+    single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get()) }
 
     // --- Domain ---
     factory { IsAuthenticatedUseCase(get()) }
@@ -124,9 +133,9 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get(), get()) }
 
     // --- Presentation ---
-    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { DashboardOperationsHandler(get(), get(), get(), get()) }
-    factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)
     viewModelOf(::ApiTestViewModel)
     viewModelOf(::DashboardViewModel)

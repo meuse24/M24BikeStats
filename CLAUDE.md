@@ -18,13 +18,13 @@ Single-Module Android-App mit Jetpack Compose, Room, Koin und AppAuth.
 ./gradlew test
 ./gradlew lint
 ./gradlew build
+./gradlew assembleRelease
 ```
 
 Optional:
 
 ```bash
 ./gradlew assembleDebug
-./gradlew assembleRelease
 ./gradlew connectedAndroidTest
 ```
 
@@ -36,6 +36,12 @@ domain/
   repository/  Interfaces
   usecase/     fachliche Anwendungsfälle
 
+api/
+  BoschEndpoint
+  BoschRequest
+  BoschRepository
+  FetchBoschDataUseCase
+
 data/
   remote/      Bosch API Zugriff
   local/       Room, Mapper, Cache-State
@@ -43,14 +49,24 @@ data/
 
 auth/
   AuthManager
-  LoginRepository
+  AuthFlowCoordinator
   OAuthConfig
+  OidcAccountInfo
+  OidcCertificateInfo
+
+background/
+  BackgroundSyncScheduler
+  BackgroundSyncSettingsObserver
 
 presentation/
   login/
   apitest/
   dashboard/
   navigation/
+
+shared/
+  TokenInfoFormat
+  weitere app-weite Hilfsfunktionen
 
 di/
   AppModule
@@ -61,6 +77,7 @@ Regeln:
 - `domain` bleibt Android-frei
 - `data` hängt nur an `domain`
 - `presentation` hängt an `domain` und `auth`
+- `auth` kapselt Android-/AppAuth-spezifische Login- und OIDC-Helfer
 - ViewModels exponieren `StateFlow`
 - Screens sind stateless und bekommen `UiState` plus Callbacks
 - Dashboard-UI ist nach Verantwortungen getrennt:
@@ -74,7 +91,7 @@ Regeln:
 
 - Root-Level: `login` und `main`
 - Authentifizierter Bereich läuft in `MainShell`
-- Primärnavigation: `home`, `activities`, `bike_list`, `functions`
+- Primärnavigation: `home`, `activities`, `bike_list` als Konto-Ansicht und `functions`
 - Sekundärnavigation: `setup`, `help`, `info`, `api_test`, `logout`
 - Compact: `ModalNavigationDrawer`
 - größere Breiten: Overflow-Menü in der `TopAppBar`
@@ -94,6 +111,8 @@ Regeln:
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
 - Aktivitätsdetailpunkte werden vor Karten-/GPX-Nutzung bereinigt und komprimiert
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
+- API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
+- Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
@@ -111,17 +130,21 @@ GET /bike-profile/smart-system/v1/bikes/{bikeId}
 GET /activity/smart-system/v1/activities/{activityId}/track   -> aktuell 404, nicht produktiv nutzen
 GET https://p9.authz.bosch.com/.../userinfo
 GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
+GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 ```
 
 ## Dependency Injection
 
 `AppModule` bindet unter anderem:
 
-- `AuthManager` als `AuthRepository` und `LoginRepository`
+- `AuthManager` als `AuthRepository` und `AuthFlowCoordinator`
 - `BackgroundSyncScheduler` und `BackgroundSyncSettingsObserver`
 - `BoschApiClient` als `BoschApiDataSource`
 - `BoschRepositoryImpl`
 - `BoschSmartSystemRepositoryImpl`
+- `LiveOidcUserInfoProvider`
+- `LiveOidcDiscoveryInfoProvider`
+- `LiveOidcCertificateInfoProvider`
 - `AppSettingsRepositoryImpl`
 - alle UseCases
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
@@ -132,6 +155,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
+- Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden

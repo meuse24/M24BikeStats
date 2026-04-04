@@ -1,6 +1,9 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
@@ -165,7 +168,7 @@ class DashboardUiModelMapper(
         bike.run {
             val driveUnit = driveUnit
             val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
-            val detailUiModel = toBikeDetailUiModel(this)
+            val detailUiModel = toBikeDetailUiModel(this, oidcCertificateInfo = null)
             BikeCardUiModel(
                 id = id,
                 title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
@@ -190,7 +193,12 @@ class DashboardUiModelMapper(
             )
         }
 
-    fun toBikeDetailUiModel(bike: BoschBike): BikeDetailUiModel =
+    fun toBikeDetailUiModel(
+        bike: BoschBike,
+        oidcCertificateInfo: OidcCertificateInfoUiModel? = null,
+        oidcUserInfo: OidcUserInfoUiModel? = null,
+        oidcDiscoveryInfo: OidcDiscoveryInfoUiModel? = null,
+    ): BikeDetailUiModel =
         bike.run {
             val driveUnit = driveUnit
             val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
@@ -198,65 +206,135 @@ class DashboardUiModelMapper(
                 title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
                 subtitle = headUnit?.productName,
                 sections = buildList {
-                add(
-                    DetailSectionUiModel(
-                        title = s(R.string.dashboard_section_overview),
-                        rows = buildList {
-                            add(s(R.string.dashboard_label_bike_id) to id)
-                            createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
-                            language?.let { add(s(R.string.dashboard_label_language) to it) }
-                            driveUnit?.odometerMeters?.div(1000.0)?.let {
-                                add(s(R.string.dashboard_label_odometer) to String.format(Locale.US, "%.1f km", it))
-                            }
-                            driveUnit?.maximumAssistanceSpeedKmh?.let { add(s(R.string.dashboard_label_max_assist) to it.toSpeedText()) }
-                            driveUnit?.rearWheelCircumferenceMillimeters?.let {
-                                add(s(R.string.dashboard_label_wheel_circumference) to s(R.string.dashboard_wheel_circumference_value, it.toWholeNumber()))
-                            }
-                        },
-                    )
-                )
-                driveUnit?.let { driveUnit ->
                     add(
                         DetailSectionUiModel(
-                            title = s(R.string.dashboard_section_drive_unit),
+                            title = s(R.string.dashboard_section_system_support),
                             rows = buildList {
-                                driveUnit.productName?.let { add(s(R.string.dashboard_label_product) to it) }
-                                driveUnit.partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
-                                driveUnit.serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
-                                driveUnit.walkAssistEnabled?.let {
-                                    add(s(R.string.dashboard_label_walk_assist) to if (it) s(R.string.dashboard_walk_assist_active) else s(R.string.dashboard_walk_assist_inactive))
-                                }
-                                driveUnit.walkAssistMaximumSpeedKmh?.let { add(s(R.string.dashboard_label_walk_assist_max) to it.toSpeedText()) }
-                                driveUnit.totalPowerOnHours?.let { add(s(R.string.dashboard_label_total_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
-                                driveUnit.supportPowerOnHours?.let { add(s(R.string.dashboard_label_support_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
+                                add(s(R.string.dashboard_label_supported_platform) to s(R.string.dashboard_value_supported_platform))
+                                add(s(R.string.dashboard_label_unsupported_platform) to s(R.string.dashboard_value_unsupported_platform))
                             },
-                        )
+                        ),
                     )
-                }
-                if (displayAssistModes.isNotEmpty()) {
                     add(
                         DetailSectionUiModel(
-                            title = s(R.string.dashboard_section_assist_modes),
-                            rows = displayAssistModes.map { mode ->
-                                mode.name to (mode.reachableRangeKm?.let { s(R.string.dashboard_assist_range_value, it.toWholeNumber()) }
-                                    ?: s(R.string.dashboard_assist_mode_no_range))
+                            title = s(R.string.dashboard_section_overview),
+                            rows = buildList {
+                                add(s(R.string.dashboard_label_bike_id) to id)
+                                createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
+                                language?.let { add(s(R.string.dashboard_label_language) to it) }
+                                driveUnit?.odometerMeters?.div(1000.0)?.let {
+                                    add(s(R.string.dashboard_label_odometer) to String.format(Locale.US, "%.1f km", it))
+                                }
+                                driveUnit?.maximumAssistanceSpeedKmh?.let { add(s(R.string.dashboard_label_max_assist) to it.toSpeedText()) }
+                                driveUnit?.rearWheelCircumferenceMillimeters?.let {
+                                    add(s(R.string.dashboard_label_wheel_circumference) to s(R.string.dashboard_wheel_circumference_value, it.toWholeNumber()))
+                                }
                             },
-                        )
+                        ),
                     )
-                }
-                if (batteries.isNotEmpty()) {
+                    oidcUserInfo?.let { userInfo ->
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_oidc_userinfo),
+                                rows = buildList {
+                                    userInfo.email?.let { add(s(R.string.dashboard_label_oidc_user_email) to it) }
+                                    userInfo.username?.let { add(s(R.string.dashboard_label_oidc_user_username) to it) }
+                                    userInfo.subject?.let { add(s(R.string.dashboard_label_oidc_user_subject) to it) }
+                                },
+                            ),
+                        )
+                    }
+                    oidcDiscoveryInfo?.let { discoveryInfo ->
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_oidc_discovery),
+                                rows = buildList {
+                                    discoveryInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_discovery_issuer) to it) }
+                                    discoveryInfo.authorizationEndpoint?.let { add(s(R.string.dashboard_label_oidc_authorization_endpoint) to it) }
+                                    discoveryInfo.tokenEndpoint?.let { add(s(R.string.dashboard_label_oidc_token_endpoint) to it) }
+                                    discoveryInfo.userInfoEndpoint?.let { add(s(R.string.dashboard_label_oidc_userinfo_endpoint) to it) }
+                                    discoveryInfo.jwksUri?.let { add(s(R.string.dashboard_label_oidc_jwks_uri) to it) }
+                                    discoveryInfo.revocationEndpoint?.let { add(s(R.string.dashboard_label_oidc_revocation_endpoint) to it) }
+                                    discoveryInfo.introspectionEndpoint?.let { add(s(R.string.dashboard_label_oidc_introspection_endpoint) to it) }
+                                    discoveryInfo.endSessionEndpoint?.let { add(s(R.string.dashboard_label_oidc_end_session_endpoint) to it) }
+                                    discoveryInfo.supportedGrantTypes
+                                        .takeIf { it.isNotEmpty() }
+                                        ?.let { add(s(R.string.dashboard_label_oidc_supported_grants) to it.joinToString()) }
+                                },
+                            ),
+                        )
+                    }
+                    oidcCertificateInfo?.let { certificateInfo ->
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_oidc_certificate),
+                                rows = buildList {
+                                    certificateInfo.tokenKeyId?.let { add(s(R.string.dashboard_label_token_key_id) to it) }
+                                    add(s(R.string.dashboard_label_oidc_key_id) to certificateInfo.keyId)
+                                    add(
+                                        s(R.string.dashboard_label_oidc_key_match) to
+                                            if (certificateInfo.matchesCurrentToken) {
+                                                s(R.string.dashboard_value_yes)
+                                            } else {
+                                                s(R.string.dashboard_value_no)
+                                            },
+                                    )
+                                    certificateInfo.keyType?.let { add(s(R.string.dashboard_label_oidc_key_type) to it) }
+                                    certificateInfo.algorithm?.let { add(s(R.string.dashboard_label_oidc_algorithm) to it) }
+                                    certificateInfo.usage?.let { add(s(R.string.dashboard_label_oidc_usage) to it) }
+                                    certificateInfo.subject?.let { add(s(R.string.dashboard_label_oidc_subject) to it) }
+                                    certificateInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_issuer) to it) }
+                                    certificateInfo.validFrom?.let { add(s(R.string.dashboard_label_oidc_valid_from) to it) }
+                                    certificateInfo.validUntil?.let { add(s(R.string.dashboard_label_oidc_valid_until) to it) }
+                                    certificateInfo.sha1Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha1) to it) }
+                                    certificateInfo.sha256Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha256) to it) }
+                                    add(s(R.string.dashboard_label_oidc_chain_entries) to certificateInfo.certificateChainEntries.toString())
+                                },
+                            ),
+                        )
+                    }
+                    driveUnit?.let { driveUnit ->
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_drive_unit),
+                                rows = buildList {
+                                    driveUnit.productName?.let { add(s(R.string.dashboard_label_product) to it) }
+                                    driveUnit.partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
+                                    driveUnit.serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
+                                    driveUnit.walkAssistEnabled?.let {
+                                        add(s(R.string.dashboard_label_walk_assist) to if (it) s(R.string.dashboard_walk_assist_active) else s(R.string.dashboard_walk_assist_inactive))
+                                    }
+                                    driveUnit.walkAssistMaximumSpeedKmh?.let { add(s(R.string.dashboard_label_walk_assist_max) to it.toSpeedText()) }
+                                    driveUnit.totalPowerOnHours?.let { add(s(R.string.dashboard_label_total_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
+                                    driveUnit.supportPowerOnHours?.let { add(s(R.string.dashboard_label_support_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
+                                },
+                            ),
+                        )
+                    }
+                    if (displayAssistModes.isNotEmpty()) {
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_assist_modes),
+                                rows = displayAssistModes.map { mode ->
+                                    mode.name to (mode.reachableRangeKm?.let { s(R.string.dashboard_assist_range_value, it.toWholeNumber()) }
+                                        ?: s(R.string.dashboard_assist_mode_no_range))
+                                },
+                            ),
+                        )
+                    }
+                    if (batteries.isNotEmpty()) {
                     add(
                         DetailSectionUiModel(
                             title = s(R.string.dashboard_section_batteries),
                             rows = batteries.flatMapIndexed { index, battery ->
                                 battery.toRows(prefix = s(R.string.dashboard_battery_prefix, index + 1))
                             },
-                        )
+                        ),
                     )
-                }
-                remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
-                headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
-            },
+                    }
+                    remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
+                    headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
+                }.filter { it.rows.isNotEmpty() },
             )
         }
 

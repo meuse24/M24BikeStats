@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.presentation.login
+package info.meuse24.m24bikestats.auth
 
 import android.content.Intent
 

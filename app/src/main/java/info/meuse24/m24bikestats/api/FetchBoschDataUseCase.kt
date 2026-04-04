@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.support.apitest
+package info.meuse24.m24bikestats.api
 
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.usecase.withValidAccessToken

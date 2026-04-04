@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
@@ -32,6 +33,7 @@ class DashboardFeedHandler(
     private val updateCloudSyncDetailModeUseCase: UpdateCloudSyncDetailModeUseCase,
     private val updateBackgroundSyncModeUseCase: UpdateBackgroundSyncModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
+    private val oidcCertificateInfoProvider: OidcCertificateInfoProvider,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
 ) {
@@ -106,6 +108,15 @@ class DashboardFeedHandler(
                         backgroundSyncMode = settings.backgroundSyncMode,
                     )
                 }
+            }
+        }
+
+        scope.launch {
+            val hasOidcCertificateInfo = oidcCertificateInfoProvider.loadCurrentCertificate() != null
+            updateState { current ->
+                current.copy(
+                    hasOidcCertificateInfo = hasOidcCertificateInfo,
+                )
             }
         }
     }

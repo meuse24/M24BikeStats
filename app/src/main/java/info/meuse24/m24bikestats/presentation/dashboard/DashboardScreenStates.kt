@@ -33,6 +33,7 @@ data class DashboardUiState(
     val allActivities: List<ActivityCardUiModel> = emptyList(),
     val activities: List<ActivityCardUiModel> = emptyList(),
     val bikes: List<BikeCardUiModel> = emptyList(),
+    val hasOidcCertificateInfo: Boolean = false,
     val pendingActivitiesCsvExport: ActivitiesCsvExportUiModel? = null,
     val pendingActivityDetailsCsvExport: ActivityDetailsCsvExportUiModel? = null,
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel? = null,
@@ -110,6 +111,7 @@ data class FunctionsUiState(
 data class BikeListUiState(
     val bikes: List<BikeCardUiModel>,
     val isRefreshing: Boolean,
+    val hasOidcCertificateInfo: Boolean,
 )
 
 data class ActivityDetailScreenUiState(

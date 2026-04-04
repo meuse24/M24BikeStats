@@ -1,6 +1,6 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
-import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
+import info.meuse24.m24bikestats.api.BoschEndpoint
 import info.meuse24.m24bikestats.shared.TokenInfoFormat
 import org.json.JSONArray
 import org.json.JSONObject
@@ -222,7 +222,10 @@ private fun parseBikeItem(root: JSONObject): BikeItem {
 
 internal fun extractJsonBody(response: String?): String? {
     if (response.isNullOrBlank()) return null
-    return response.substringAfter("\n\n", missingDelimiterValue = response)
+    val objectIndex = response.indexOf('{').takeIf { it >= 0 }
+    val arrayIndex = response.indexOf('[').takeIf { it >= 0 }
+    val startIndex = listOfNotNull(objectIndex, arrayIndex).minOrNull() ?: return null
+    return response.substring(startIndex)
         .trim()
         .takeIf { it.startsWith("{") || it.startsWith("[") }
 }

@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.BuildConfig
-import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
-import info.meuse24.m24bikestats.support.apitest.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.api.BoschEndpoint
+import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -47,39 +47,50 @@ class ApiTestViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, jsonOutput = "") }
 
-            val reportBuilder = StringBuilder(
-                buildString {
-                    appendLine("=== Bosch Endpoint Batch Test ===")
-                    appendLine("Endpoints: ${BoschEndpoint.entries.size}")
-                    appendLine()
-                }
-            )
-
             val activitiesResponse = fetchBoschData(BoschEndpoint.SMART_ACTIVITIES)
             val bikesResponse = fetchBoschData(BoschEndpoint.SMART_BIKES)
             val activityId = extractFirstActivityId(activitiesResponse.getOrNull())
             val bikeId = extractFirstBikeId(bikesResponse.getOrNull())
+            val requests = buildRunAllRequests(
+                activityId = activityId,
+                bikeId = bikeId,
+                activitiesResponse = activitiesResponse.getOrNull(),
+            ).toMutableList()
+            val seenUrls = requests.map { it.url }.toMutableSet()
+            val seededResults = mapOf(
+                BoschEndpoint.SMART_ACTIVITIES.name to activitiesResponse,
+                BoschEndpoint.SMART_BIKES.name to bikesResponse,
+            )
+
+            val reportBuilder = StringBuilder(
+                buildString {
+                    appendLine("=== Bosch Endpoint Batch Test ===")
+                    appendLine("Initial endpoints: ${requests.size}")
+                    appendLine()
+                }
+            )
 
             reportBuilder.appendLine("Resolved IDs:")
             reportBuilder.appendLine("activityId: ${activityId ?: "n/a"}")
             reportBuilder.appendLine("bikeId: ${bikeId ?: "n/a"}")
             reportBuilder.appendLine()
 
-            BoschEndpoint.entries.forEach { endpoint ->
-                val request = endpoint.toRequest(activityId = activityId, bikeId = bikeId)
-                debugLog("START ${endpoint.name} -> ${request.url}")
+            var index = 0
+            while (index < requests.size) {
+                val request = requests[index++]
+                debugLog("START ${request.debugName} -> ${request.url}")
 
-                val result = fetchBoschData(request)
+                val result = seededResults[request.debugName] ?: fetchBoschData(request)
                 val body = result.getOrElse { error -> "Fehler: ${error.message}" }
 
-                reportBuilder.appendLine("=== ${endpoint.label} (${endpoint.name}) ===")
+                reportBuilder.appendLine("=== ${request.label} (${request.debugName}) ===")
                 reportBuilder.appendLine("URL: ${request.url}")
                 reportBuilder.appendLine(body)
                 reportBuilder.appendLine()
 
                 debugLog(
                     buildString {
-                        appendLine("RESULT ${endpoint.name}")
+                        appendLine("RESULT ${request.debugName}")
                         appendLine("URL: ${request.url}")
                         appendLine(body)
                     }
@@ -88,8 +99,16 @@ class ApiTestViewModel(
                 _uiState.update {
                     it.copy(jsonOutput = reportBuilder.toString())
                 }
+
+                if (request.url.contains("/activity/smart-system/v1/activities?")) {
+                    buildAdditionalActivityRequests(result.getOrNull())
+                        .filter { seenUrls.add(it.url) }
+                        .forEach(requests::add)
+                }
             }
 
+            reportBuilder.appendLine("Executed endpoints: $index")
+            reportBuilder.appendLine()
             debugLog("BATCH_TEST_COMPLETED")
             _uiState.update {
                 it.copy(

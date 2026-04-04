@@ -1,5 +1,9 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
+import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
@@ -347,6 +351,9 @@ class DashboardViewModelTest {
                 updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
                 updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
+                oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
+                    override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
+                },
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
             ),
@@ -364,6 +371,15 @@ class DashboardViewModelTest {
                 getCachedBike = GetCachedSmartSystemBikeUseCase(repository),
                 refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, repository, authRepository),
                 refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, repository, authRepository),
+                oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
+                    override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
+                },
+                oidcUserInfoProvider = object : OidcUserInfoProvider {
+                    override suspend fun loadCurrentUserInfo() = null
+                },
+                oidcDiscoveryInfoProvider = object : OidcDiscoveryInfoProvider {
+                    override suspend fun loadCurrentDiscovery() = null
+                },
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
             ),

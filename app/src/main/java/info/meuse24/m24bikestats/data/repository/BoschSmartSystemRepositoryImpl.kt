@@ -10,8 +10,8 @@ import info.meuse24.m24bikestats.data.local.model.CachedBike
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschJsonBodyExtractor
 import info.meuse24.m24bikestats.data.remote.BoschSmartSystemParser
-import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
-import info.meuse24.m24bikestats.support.apitest.BoschRequest
+import info.meuse24.m24bikestats.api.BoschEndpoint
+import info.meuse24.m24bikestats.api.BoschRequest
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
