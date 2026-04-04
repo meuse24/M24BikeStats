@@ -10,14 +10,15 @@ import info.meuse24.m24bikestats.data.local.model.CachedBike
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschJsonBodyExtractor
 import info.meuse24.m24bikestats.data.remote.BoschSmartSystemParser
+import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
+import info.meuse24.m24bikestats.support.apitest.BoschRequest
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
-import info.meuse24.m24bikestats.domain.model.BoschRequest
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
-import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -30,7 +31,7 @@ class BoschSmartSystemRepositoryImpl(
     private val parser: BoschSmartSystemParser = BoschSmartSystemParser(),
     private val jsonBodyExtractor: BoschJsonBodyExtractor = BoschJsonBodyExtractor(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
-) : BoschSmartSystemRepository {
+) : BoschSmartSystemRepository, BoschSmartSystemCacheStatusRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
         activityDao.observeAll().map { activities -> activities.map { it.toDomain() } }
@@ -65,30 +66,35 @@ class BoschSmartSystemRepositoryImpl(
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
         activityDetailDao.getByActivityId(activityId)?.toDomain()
 
-    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
-        activityDetailDao.getAllMetadata().map { detail ->
-            ActivityDetailCacheMetadata(
-                activityId = detail.activityId,
-                pointCount = detail.pointCount,
-                gpsPointCount = detail.gpsPointCount,
-                updatedAtEpochMillis = detail.updatedAtEpochMillis,
-            )
-        }
-
     override suspend fun getCachedBike(bikeId: String): BoschBike? =
         bikeDao.getById(bikeId)?.toDomain()
 
-    override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean =
+    override suspend fun hasFreshActivities(maxAgeMillis: Long): Boolean =
         isFresh(activityDao.getCacheUpdatedAtEpochMillis(), maxAgeMillis)
 
-    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean =
+    override suspend fun hasFreshActivityDetail(activityId: String, maxAgeMillis: Long): Boolean =
         isFresh(activityDetailDao.getUpdatedAtEpochMillis(activityId), maxAgeMillis)
 
-    override suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean =
+    override suspend fun hasFreshBikes(maxAgeMillis: Long): Boolean =
         isFresh(bikeDao.getCacheUpdatedAtEpochMillis(), maxAgeMillis)
 
-    override suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean =
+    override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean =
         isFresh(bikeDao.getUpdatedAtEpochMillis(bikeId), maxAgeMillis)
+
+    override suspend fun getActivityIdsNeedingDetailSync(
+        detailMode: CloudSyncDetailMode,
+        staleThresholdEpochMillis: Long,
+    ): List<String> {
+        val metadataById = activityDetailDao.getAllMetadata().associateBy { it.activityId }
+        return activityDao.getAll().map { it.id }.filter { activityId ->
+            val metadata = metadataById[activityId]
+            when (detailMode) {
+                CloudSyncDetailMode.MISSING_ONLY -> metadata == null
+                CloudSyncDetailMode.MISSING_OR_STALE ->
+                    metadata == null || metadata.updatedAtEpochMillis < staleThresholdEpochMillis
+            }
+        }
+    }
 
     override suspend fun getActivities(
         accessToken: String,

@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.domain.model
+package info.meuse24.m24bikestats.support.apitest
 
 data class BoschRequest(
     val label: String,

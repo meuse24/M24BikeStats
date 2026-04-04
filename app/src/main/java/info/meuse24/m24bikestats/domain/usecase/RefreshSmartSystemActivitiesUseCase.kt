@@ -2,10 +2,12 @@ package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 
 class RefreshSmartSystemActivitiesUseCase(
     private val repository: BoschSmartSystemRepository,
+    private val cacheStatusRepository: BoschSmartSystemCacheStatusRepository,
     private val authRepository: AuthRepository,
     private val cacheTtlMillis: Long = DEFAULT_CACHE_TTL_MS,
 ) {
@@ -14,7 +16,7 @@ class RefreshSmartSystemActivitiesUseCase(
         offset: Int,
         force: Boolean = false,
     ): Result<BoschActivityPage?> {
-        if (offset == 0 && !force && repository.isActivitiesCacheFresh(cacheTtlMillis)) {
+        if (offset == 0 && !force && cacheStatusRepository.hasFreshActivities(cacheTtlMillis)) {
             return Result.success(null)
         }
 

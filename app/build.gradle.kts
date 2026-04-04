@@ -1,7 +1,27 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+}
+
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+if (keystorePropertiesFile.exists()) {
+    keystorePropertiesFile.inputStream().use(keystoreProperties::load)
+}
+
+fun resolveSigningFile(configuredPath: String?): File? {
+    if (configuredPath.isNullOrBlank()) return null
+
+    val moduleRelative = project.file(configuredPath)
+    if (moduleRelative.exists()) return moduleRelative
+
+    val rootRelative = rootProject.file(configuredPath)
+    if (rootRelative.exists()) return rootRelative
+
+    return moduleRelative
 }
 
 ksp {
@@ -13,6 +33,18 @@ android {
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            val configuredStoreFile = resolveSigningFile(keystoreProperties.getProperty("storeFile"))
+            if (configuredStoreFile != null) {
+                storeFile = configuredStoreFile
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
         }
     }
 
@@ -29,6 +61,9 @@ android {
 
     buildTypes {
         release {
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

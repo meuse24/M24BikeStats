@@ -1,6 +1,4 @@
-package info.meuse24.m24bikestats.domain.repository
-
-import info.meuse24.m24bikestats.domain.model.BoschRequest
+package info.meuse24.m24bikestats.support.apitest
 
 interface BoschRepository {
     suspend fun fetch(request: BoschRequest, accessToken: String): Result<String>

@@ -1,7 +1,6 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
 import info.meuse24.m24bikestats.domain.model.BoschActivity
-import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
@@ -11,6 +10,7 @@ import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
@@ -342,8 +342,8 @@ class DashboardViewModelTest {
                 observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
                 getCachedActivityTotalCount = GetCachedSmartSystemActivityTotalCountUseCase(repository),
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
-                refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
-                refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
+                refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, repository, authRepository),
+                refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, repository, authRepository),
                 updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
                 updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
@@ -353,7 +353,7 @@ class DashboardViewModelTest {
             operationsHandler = DashboardOperationsHandler(
                 exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
                 exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
-                syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, authRepository),
+                syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
                 stringResolver = TestStringResolver(),
             ),
             detailActionHandler = DashboardDetailActionHandler(
@@ -362,8 +362,8 @@ class DashboardViewModelTest {
                 getCachedActivity = GetCachedSmartSystemActivityUseCase(repository),
                 getCachedActivityDetail = GetCachedSmartSystemActivityDetailUseCase(repository),
                 getCachedBike = GetCachedSmartSystemBikeUseCase(repository),
-                refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, authRepository),
-                refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, authRepository),
+                refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, repository, authRepository),
+                refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, repository, authRepository),
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),
             ),
@@ -409,7 +409,9 @@ private class TestStringResolver : DashboardStringResolver {
         }
 }
 
-private class DashboardFakeRepository : BoschSmartSystemRepository {
+private class DashboardFakeRepository :
+    BoschSmartSystemRepository,
+    BoschSmartSystemCacheStatusRepository {
     private val activitiesFlow = MutableStateFlow<List<BoschActivity>>(emptyList())
     private val bikesFlow = MutableStateFlow<List<BoschBike>>(emptyList())
     private val activityDetails = mutableMapOf<String, MutableStateFlow<BoschActivityDetail?>>()
@@ -447,26 +449,24 @@ private class DashboardFakeRepository : BoschSmartSystemRepository {
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? =
         activityDetails[activityId]?.value
 
-    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
-        activityDetails.mapNotNull { (activityId, flow) ->
-            flow.value?.let { detail ->
-                ActivityDetailCacheMetadata(
-                    activityId = activityId,
-                    pointCount = detail.points.size,
-                    gpsPointCount = detail.points.count { point -> point.latitude != null && point.longitude != null },
-                    updatedAtEpochMillis = Long.MAX_VALUE,
-                )
-            }
-        }
-
     override suspend fun getCachedBike(bikeId: String): BoschBike? =
         bikeDetails[bikeId]?.value ?: bikesFlow.value.firstOrNull { it.id == bikeId }
 
-    override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean = true
-    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean =
+    override suspend fun hasFreshActivities(maxAgeMillis: Long): Boolean = true
+    override suspend fun hasFreshActivityDetail(activityId: String, maxAgeMillis: Long): Boolean =
         activityDetails[activityId]?.value != null
-    override suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean = true
-    override suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean = true
+    override suspend fun hasFreshBikes(maxAgeMillis: Long): Boolean = true
+    override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = true
+    override suspend fun getActivityIdsNeedingDetailSync(
+        detailMode: CloudSyncDetailMode,
+        staleThresholdEpochMillis: Long,
+    ): List<String> = activitiesFlow.value.map { it.id }.filter { activityId ->
+        val hasDetail = activityDetails[activityId]?.value != null
+        when (detailMode) {
+            CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
+            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail
+        }
+    }
 
     override suspend fun getActivities(accessToken: String, limit: Int, offset: Int): Result<BoschActivityPage> =
         Result.success(

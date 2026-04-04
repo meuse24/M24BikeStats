@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import android.net.Uri
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -13,7 +14,7 @@ class TrackSharingAndroidTest {
     @Test
     fun createTrackCsvUri_writesCsvFile() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-        val uri = createTrackCsvUri(context, testActivityDetail(), info.meuse24.m24bikestats.domain.model.CsvSeparator.COMMA)
+        val uri = createTrackCsvUri(context, testActivityDetail(), CsvExportFormat.STANDARD_INTERNATIONAL)
 
         val content = readText(context, uri)
 
@@ -39,6 +40,21 @@ class TrackSharingAndroidTest {
         id = "a1",
         title = "Morgenrunde",
         subtitle = null,
+        overview = ActivityCardUiModel(
+            id = "a1",
+            title = "Morgenrunde",
+            startedAt = "2026-04-03T10:00:00Z",
+            startedAtEpochMillis = 1_743_678_000_000,
+            distanceMeters = 12_300,
+            durationSeconds = 1800,
+            dateLabel = "03.04.2026 10:00",
+            distanceLabel = "12.3 km",
+            durationLabel = "30 min",
+            speedLabel = "24.5 km/h",
+            powerLabel = null,
+            elevationLabel = null,
+            caloriesLabel = null,
+        ),
         summary = listOf("Distanz" to "12.3 km"),
         sections = emptyList(),
         trackPoints = listOf(

@@ -5,12 +5,14 @@ import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncProgress
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncSummary
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
 class SyncSmartSystemCloudUseCase(
     private val repository: BoschSmartSystemRepository,
+    private val cacheStatusRepository: BoschSmartSystemCacheStatusRepository,
     private val authRepository: AuthRepository,
     private val activityDetailCacheTtlMillis: Long = DEFAULT_ACTIVITY_DETAIL_CACHE_TTL_MS,
     private val nowMillis: () -> Long = System::currentTimeMillis,
@@ -41,7 +43,7 @@ class SyncSmartSystemCloudUseCase(
             .map { it.id }
             .toMutableSet()
         var offset = 0
-        var totalActivityCount = repository.getCachedActivityTotalCount() ?: knownActivityIds.size
+        var totalActivityCount = cacheStatusRepository.getCachedActivityTotalCount() ?: knownActivityIds.size
 
         do {
             coroutineContext.ensureActive()
@@ -67,18 +69,10 @@ class SyncSmartSystemCloudUseCase(
             offset = page.offset + page.items.size
         } while (offset < totalActivityCount && knownActivityIds.size < totalActivityCount)
 
-        val cachedActivities = repository.getCachedActivities()
-        val detailMetadataById = repository.getCachedActivityDetailMetadata()
-            .associateBy { it.activityId }
-        val now = nowMillis()
-        val detailCandidates = cachedActivities.filter { activity ->
-            val metadata = detailMetadataById[activity.id]
-            when (detailMode) {
-                CloudSyncDetailMode.MISSING_ONLY -> metadata == null
-                CloudSyncDetailMode.MISSING_OR_STALE -> metadata == null ||
-                    now - metadata.updatedAtEpochMillis > activityDetailCacheTtlMillis
-            }
-        }
+        val detailCandidates = cacheStatusRepository.getActivityIdsNeedingDetailSync(
+            detailMode = detailMode,
+            staleThresholdEpochMillis = nowMillis() - activityDetailCacheTtlMillis,
+        )
 
         if (detailCandidates.isNotEmpty()) {
             onProgress(
@@ -90,9 +84,9 @@ class SyncSmartSystemCloudUseCase(
             )
         }
 
-        detailCandidates.forEachIndexed { index, activity ->
+        detailCandidates.forEachIndexed { index, activityId ->
             coroutineContext.ensureActive()
-            repository.getActivityDetail(token, activity.id)
+            repository.getActivityDetail(token, activityId)
                 .getOrElse { return@withValidAccessToken Result.failure(it) }
             onProgress(
                 SmartSystemCloudSyncProgress(

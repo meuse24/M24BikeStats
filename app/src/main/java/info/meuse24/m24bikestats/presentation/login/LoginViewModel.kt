@@ -3,7 +3,6 @@ package info.meuse24.m24bikestats.presentation.login
 import android.app.Activity
 import android.content.Intent
 import androidx.lifecycle.ViewModel
-import info.meuse24.m24bikestats.data.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import kotlinx.coroutines.flow.MutableStateFlow

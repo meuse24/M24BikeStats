@@ -49,7 +49,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import info.meuse24.m24bikestats.R
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
+import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
 
 /**
  * Stateless API-Test-Screen. Kein ViewModel-Zugriff – nur [ApiTestUiState] + Callbacks.

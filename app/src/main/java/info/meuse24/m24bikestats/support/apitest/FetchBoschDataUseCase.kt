@@ -1,9 +1,7 @@
-package info.meuse24.m24bikestats.domain.usecase
+package info.meuse24.m24bikestats.support.apitest
 
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
-import info.meuse24.m24bikestats.domain.model.BoschRequest
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
-import info.meuse24.m24bikestats.domain.repository.BoschRepository
+import info.meuse24.m24bikestats.domain.usecase.withValidAccessToken
 
 class FetchBoschDataUseCase(
     private val boschRepository: BoschRepository,

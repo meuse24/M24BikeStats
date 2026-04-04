@@ -1,4 +1,4 @@
-package info.meuse24.m24bikestats.domain.model
+package info.meuse24.m24bikestats.support.apitest
 
 /**
  * Bosch eBike Data Act API – Endpunkte für Smart System (BES3 / Flow-App).

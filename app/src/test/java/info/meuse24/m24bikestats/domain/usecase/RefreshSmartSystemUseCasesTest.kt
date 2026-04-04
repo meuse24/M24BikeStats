@@ -24,6 +24,7 @@ class RefreshSmartSystemUseCasesTest {
         }
         val useCase = RefreshSmartSystemActivitiesUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
             cacheTtlMillis = 123L,
         )
@@ -44,6 +45,7 @@ class RefreshSmartSystemUseCasesTest {
         }
         val useCase = RefreshSmartSystemActivitiesUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
         )
 
@@ -60,6 +62,7 @@ class RefreshSmartSystemUseCasesTest {
         }
         val useCase = RefreshSmartSystemActivityDetailUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
             cacheTtlMillis = 456L,
         )
@@ -90,6 +93,7 @@ class RefreshSmartSystemUseCasesTest {
         }
         val useCase = RefreshSmartSystemBikesUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
         )
 
@@ -116,6 +120,7 @@ class RefreshSmartSystemUseCasesTest {
         }
         val useCase = RefreshSmartSystemBikeDetailUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
         )
 
@@ -130,6 +135,7 @@ class RefreshSmartSystemUseCasesTest {
         val repository = FakeBoschSmartSystemRepository()
         val useCase = RefreshSmartSystemBikesUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(Result.failure(IllegalStateException("auth failed"))),
         )
 
@@ -378,6 +384,7 @@ class RefreshSmartSystemUseCasesTest {
         val progressEvents = mutableListOf<Triple<SmartSystemCloudSyncPhase, Int, Int>>()
         val useCase = SyncSmartSystemCloudUseCase(
             repository = repository,
+            cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
         )
 

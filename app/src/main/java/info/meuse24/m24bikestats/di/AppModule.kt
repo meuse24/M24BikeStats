@@ -4,7 +4,6 @@ import androidx.room.Room
 import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
 import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
 import info.meuse24.m24bikestats.data.auth.AuthManager
-import info.meuse24.m24bikestats.data.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
@@ -16,9 +15,8 @@ import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
-import info.meuse24.m24bikestats.domain.repository.BoschRepository
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
-import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
@@ -54,8 +52,11 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardUiModelMapper
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.AndroidLoginStringResolver
+import info.meuse24.m24bikestats.presentation.login.AuthFlowCoordinator
 import info.meuse24.m24bikestats.presentation.login.LoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
+import info.meuse24.m24bikestats.support.apitest.BoschRepository
+import info.meuse24.m24bikestats.support.apitest.FetchBoschDataUseCase
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -81,7 +82,9 @@ val appModule = module {
     single { get<BoschDatabase>().activityDetailDao() }
     single { get<BoschDatabase>().bikeDao() }
     single<BoschRepository> { BoschRepositoryImpl(get()) }
-    single<BoschSmartSystemRepository> { BoschSmartSystemRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single { BoschSmartSystemRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single<BoschSmartSystemRepository> { get<BoschSmartSystemRepositoryImpl>() }
+    single<BoschSmartSystemCacheStatusRepository> { get<BoschSmartSystemRepositoryImpl>() }
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<AuthFlowCoordinator> { get<AuthManager>() }
@@ -114,11 +117,11 @@ val appModule = module {
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
-    factory { RefreshSmartSystemActivitiesUseCase(get(), get()) }
-    factory { RefreshSmartSystemActivityDetailUseCase(get(), get()) }
-    factory { RefreshSmartSystemBikesUseCase(get(), get()) }
-    factory { RefreshSmartSystemBikeDetailUseCase(get(), get()) }
-    factory { SyncSmartSystemCloudUseCase(get(), get()) }
+    factory { RefreshSmartSystemActivitiesUseCase(get(), get(), get()) }
+    factory { RefreshSmartSystemActivityDetailUseCase(get(), get(), get()) }
+    factory { RefreshSmartSystemBikesUseCase(get(), get(), get()) }
+    factory { RefreshSmartSystemBikeDetailUseCase(get(), get(), get()) }
+    factory { SyncSmartSystemCloudUseCase(get(), get(), get()) }
 
     // --- Presentation ---
     factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }

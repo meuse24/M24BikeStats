@@ -5,10 +5,3 @@ data class ActivityDetailCacheOverview(
     val detailPointCount: Int,
     val gpsPointCount: Int,
 )
-
-data class ActivityDetailCacheMetadata(
-    val activityId: String,
-    val pointCount: Int,
-    val gpsPointCount: Int,
-    val updatedAtEpochMillis: Long,
-)

@@ -1,12 +1,13 @@
 package info.meuse24.m24bikestats.domain.usecase
 
-import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -21,7 +22,9 @@ internal class FakeAuthRepository(
     override fun clearTokens() = Unit
 }
 
-internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository {
+internal open class FakeBoschSmartSystemRepository :
+    BoschSmartSystemRepository,
+    BoschSmartSystemCacheStatusRepository {
     var activitiesFresh = false
     var activityDetailFresh = false
     var bikesFresh = false
@@ -61,20 +64,21 @@ internal open class FakeBoschSmartSystemRepository : BoschSmartSystemRepository 
     override suspend fun getCachedActivityTotalCount(): Int? = cachedActivityTotalCount
     override suspend fun getCachedActivity(activityId: String): BoschActivity? = cachedActivities.firstOrNull { it.id == activityId }
     override suspend fun getCachedActivityDetail(activityId: String): BoschActivityDetail? = cachedActivityDetails[activityId]
-    override suspend fun getCachedActivityDetailMetadata(): List<ActivityDetailCacheMetadata> =
-        cachedActivityDetails.map { (activityId, detail) ->
-            ActivityDetailCacheMetadata(
-                activityId = activityId,
-                pointCount = detail.points.size,
-                gpsPointCount = detail.points.count { point -> point.latitude != null && point.longitude != null },
-                updatedAtEpochMillis = if (activityDetailFresh) Long.MAX_VALUE else 0L,
-            )
-        }
     override suspend fun getCachedBike(bikeId: String): BoschBike? = null
-    override suspend fun isActivitiesCacheFresh(maxAgeMillis: Long): Boolean = activitiesFresh
-    override suspend fun isActivityDetailCacheFresh(activityId: String, maxAgeMillis: Long): Boolean = activityDetailFresh
-    override suspend fun isBikesCacheFresh(maxAgeMillis: Long): Boolean = bikesFresh
-    override suspend fun isBikeDetailCacheFresh(bikeId: String, maxAgeMillis: Long): Boolean = bikeDetailFresh
+    override suspend fun hasFreshActivities(maxAgeMillis: Long): Boolean = activitiesFresh
+    override suspend fun hasFreshActivityDetail(activityId: String, maxAgeMillis: Long): Boolean = activityDetailFresh
+    override suspend fun hasFreshBikes(maxAgeMillis: Long): Boolean = bikesFresh
+    override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = bikeDetailFresh
+    override suspend fun getActivityIdsNeedingDetailSync(
+        detailMode: CloudSyncDetailMode,
+        staleThresholdEpochMillis: Long,
+    ): List<String> = cachedActivities.map { it.id }.filter { activityId ->
+        val hasDetail = cachedActivityDetails.containsKey(activityId)
+        when (detailMode) {
+            CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
+            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail || !activityDetailFresh
+        }
+    }
 
     override suspend fun getActivities(accessToken: String, limit: Int, offset: Int): Result<BoschActivityPage> {
         getActivitiesCalls += limit to offset

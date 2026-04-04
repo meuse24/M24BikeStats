@@ -4,8 +4,8 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.BuildConfig
-import info.meuse24.m24bikestats.domain.model.BoschEndpoint
-import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.support.apitest.BoschEndpoint
+import info.meuse24.m24bikestats.support.apitest.FetchBoschDataUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
