@@ -1502,6 +1502,7 @@ internal fun BikeOverviewCard(
                 summary = buildList {
                     bike.odometerLabel?.let { add(stringResource(R.string.dashboard_card_odometer) to it) }
                     bike.assistSpeedLabel?.let { add(stringResource(R.string.dashboard_card_assist) to it) }
+                    bike.walkAssistLabel?.let { add(stringResource(R.string.dashboard_card_walk_assist) to it) }
                 },
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 itemContent = { label, value ->
@@ -1509,30 +1510,22 @@ internal fun BikeOverviewCard(
                 },
             )
             bike.batterySummary?.let { batterySummary ->
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 1.dp,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.dashboard_battery_fallback_title),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = batterySummary,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    }
-                }
+                BikeInfoSurface(
+                    label = stringResource(R.string.dashboard_battery_fallback_title),
+                    value = batterySummary,
+                )
+            }
+            bike.powerOnSummary?.let { powerOnSummary ->
+                BikeInfoSurface(
+                    label = stringResource(R.string.dashboard_card_usage),
+                    value = powerOnSummary,
+                )
+            }
+            bike.assistModesSummary?.let { assistModesSummary ->
+                BikeInfoSurface(
+                    label = stringResource(R.string.dashboard_card_assist_ranges),
+                    value = assistModesSummary,
+                )
             }
             Button(
                 onClick = onClick,
@@ -1550,6 +1543,35 @@ internal fun BikeOverviewCard(
                     fontWeight = FontWeight.Medium,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun BikeInfoSurface(
+    label: String,
+    value: String,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+            )
         }
     }
 }

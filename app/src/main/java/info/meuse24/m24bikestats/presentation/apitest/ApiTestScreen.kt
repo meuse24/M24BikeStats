@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
+import android.content.Intent
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import android.content.Intent
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.Clear
@@ -134,11 +134,11 @@ fun ApiTestContent(
             Spacer(modifier = Modifier.width(8.dp))
             IconButton(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_SUBJECT, uiState.selectedEndpoint.label)
-                        putExtra(Intent.EXTRA_TEXT, uiState.jsonOutput)
-                    }
+                    val intent = createApiTestShareIntent(
+                        context = context,
+                        endpoint = uiState.selectedEndpoint,
+                        content = uiState.jsonOutput,
+                    )
                     context.startActivity(Intent.createChooser(intent, context.getString(R.string.api_test_share_json)))
                 },
                 enabled = uiState.jsonOutput.isNotEmpty(),

@@ -9,10 +9,12 @@ import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
+import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.math.abs
 
 class DashboardUiModelMapper(
     private val stringResolver: DashboardStringResolver,
@@ -49,39 +51,20 @@ class DashboardUiModelMapper(
         activity: BoschActivity,
         detail: BoschActivityDetail,
     ): ActivityDetailUiModel {
-        val geoPoints = detail.points.filter { it.hasCoordinates() }
-        val speedPoints = detail.points.mapNotNull { it.speedKmh?.takeIf { speed -> speed > 0.0 } }
-        val cadencePoints = detail.points.mapNotNull { it.cadenceRpm?.takeIf { cadence -> cadence > 0.0 } }
-        val riderPowerPoints = detail.points.mapNotNull { it.riderPowerWatts?.takeIf { power -> power > 0.0 } }
-        val altitudePoints = detail.points.mapNotNull { it.altitudeMeters?.takeIf { altitude -> altitude > 0.0 } }
-        val lastDistanceMeters = detail.points.lastOrNull { it.distanceMeters != null }?.distanceMeters
-        val startCoordinate = geoPoints.firstOrNull()
-        val endCoordinate = geoPoints.lastOrNull()
-        val trackPoints = geoPoints.mapNotNull { point ->
-            val latitude = point.latitude ?: return@mapNotNull null
-            val longitude = point.longitude ?: return@mapNotNull null
-            ActivityTrackPointUiModel(
-                latitude = latitude,
-                longitude = longitude,
-                altitudeMeters = point.altitudeMeters,
-                distanceMeters = point.distanceMeters,
-            )
-        }
-        val profilePoints = detail.points.mapNotNull { point ->
-            val distanceMeters = point.distanceMeters ?: return@mapNotNull null
-            ActivityProfilePointUiModel(
-                distanceMeters = distanceMeters,
-                altitudeMeters = point.altitudeMeters?.takeIf { it >= 0.0 && !it.isNaN() },
-                speedKmh = point.speedKmh?.takeIf { it >= 0.0 && !it.isNaN() },
-                cadenceRpm = point.cadenceRpm?.takeIf { it >= 0.0 && !it.isNaN() },
-                riderPowerWatts = point.riderPowerWatts?.takeIf { it >= 0.0 && !it.isNaN() },
-            )
-        }
+        val trackPoints = detail.points.toTrackPoints()
+        val profilePoints = detail.points.toProfilePoints()
+        val speedPoints = profilePoints.mapNotNull { it.speedKmh?.takeIf { speed -> speed > 0.0 } }
+        val cadencePoints = profilePoints.mapNotNull { it.cadenceRpm?.takeIf { cadence -> cadence > 0.0 } }
+        val riderPowerPoints = profilePoints.mapNotNull { it.riderPowerWatts?.takeIf { power -> power > 0.0 } }
+        val altitudePoints = profilePoints.mapNotNull { it.altitudeMeters?.takeIf { altitude -> altitude > 0.0 } }
+        val lastDistanceMeters = profilePoints.lastOrNull()?.distanceMeters
+        val startCoordinate = trackPoints.firstOrNull()
+        val endCoordinate = trackPoints.lastOrNull()
 
         return ActivityDetailUiModel(
             id = activity.id,
             title = activity.title,
-            subtitle = s(R.string.dashboard_detail_subtitle, detail.points.size, geoPoints.size),
+            subtitle = s(R.string.dashboard_detail_subtitle, detail.points.size, trackPoints.size),
             overview = toActivityCardUiModel(activity),
             summary = buildList {
                 add(s(R.string.dashboard_label_start) to activity.startTime.toReadableDateTime())
@@ -156,12 +139,12 @@ class DashboardUiModelMapper(
                         title = s(R.string.dashboard_section_track_gps),
                         rows = buildList {
                             add(s(R.string.dashboard_label_detail_points) to detail.points.size.toString())
-                            add(s(R.string.dashboard_label_gps_points) to geoPoints.size.toString())
+                            add(s(R.string.dashboard_label_gps_points) to trackPoints.size.toString())
                             startCoordinate?.let {
-                                add(s(R.string.dashboard_label_start_coordinate) to "${it.latitude!!.toCoordinateText()}, ${it.longitude!!.toCoordinateText()}")
+                                add(s(R.string.dashboard_label_start_coordinate) to "${it.latitude.toCoordinateText()}, ${it.longitude.toCoordinateText()}")
                             }
                             endCoordinate?.let {
-                                add(s(R.string.dashboard_label_end_coordinate) to "${it.latitude!!.toCoordinateText()}, ${it.longitude!!.toCoordinateText()}")
+                                add(s(R.string.dashboard_label_end_coordinate) to "${it.latitude.toCoordinateText()}, ${it.longitude.toCoordinateText()}")
                             }
                         },
                         actions = buildList {
@@ -179,46 +162,58 @@ class DashboardUiModelMapper(
     }
 
     fun toBikeCardUiModel(bike: BoschBike): BikeCardUiModel =
-        BikeCardUiModel(
-            id = bike.id,
-            title = bike.driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
-            subtitle = bike.headUnit?.productName,
-            odometerLabel = bike.driveUnit?.odometerMeters?.div(1000.0)?.let { String.format(Locale.US, "%.1f km", it) },
-            assistSpeedLabel = bike.driveUnit?.maximumAssistanceSpeedKmh?.toSpeedText(),
-            batterySummary = bike.batteries.firstOrNull()?.let { battery ->
-                battery.totalChargeCycles?.let {
-                    s(
-                        R.string.dashboard_battery_cycles,
-                        battery.productName ?: s(R.string.dashboard_battery_fallback_title),
-                        String.format(Locale.US, "%.1f", it),
-                    )
-                } ?: (battery.productName ?: s(R.string.dashboard_battery_fallback_title))
-            },
-        )
+        bike.run {
+            val driveUnit = driveUnit
+            val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
+            BikeCardUiModel(
+                id = id,
+                title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
+                subtitle = headUnit?.productName,
+                odometerLabel = driveUnit?.odometerMeters?.div(1000.0)?.let { String.format(Locale.US, "%.1f km", it) },
+                assistSpeedLabel = driveUnit?.maximumAssistanceSpeedKmh?.toSpeedText(),
+                walkAssistLabel = driveUnit?.walkAssistEnabled?.let {
+                    if (it) s(R.string.dashboard_walk_assist_active) else s(R.string.dashboard_walk_assist_inactive)
+                },
+                powerOnSummary = driveUnit?.toPowerOnSummary(),
+                assistModesSummary = displayAssistModes.toAssistModeRangeSummary(),
+                batterySummary = batteries.firstOrNull()?.let { battery ->
+                    battery.totalChargeCycles?.let {
+                        s(
+                            R.string.dashboard_battery_cycles,
+                            battery.productName ?: s(R.string.dashboard_battery_fallback_title),
+                            String.format(Locale.US, "%.1f", it),
+                        )
+                    } ?: (battery.productName ?: s(R.string.dashboard_battery_fallback_title))
+                },
+            )
+        }
 
     fun toBikeDetailUiModel(bike: BoschBike): BikeDetailUiModel =
-        BikeDetailUiModel(
-            title = bike.driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
-            subtitle = bike.headUnit?.productName,
-            sections = buildList {
+        bike.run {
+            val driveUnit = driveUnit
+            val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
+            BikeDetailUiModel(
+                title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
+                subtitle = headUnit?.productName,
+                sections = buildList {
                 add(
                     DetailSectionUiModel(
                         title = s(R.string.dashboard_section_overview),
                         rows = buildList {
-                            add(s(R.string.dashboard_label_bike_id) to bike.id)
-                            bike.createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
-                            bike.language?.let { add(s(R.string.dashboard_label_language) to it) }
-                            bike.driveUnit?.odometerMeters?.div(1000.0)?.let {
+                            add(s(R.string.dashboard_label_bike_id) to id)
+                            createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
+                            language?.let { add(s(R.string.dashboard_label_language) to it) }
+                            driveUnit?.odometerMeters?.div(1000.0)?.let {
                                 add(s(R.string.dashboard_label_odometer) to String.format(Locale.US, "%.1f km", it))
                             }
-                            bike.driveUnit?.maximumAssistanceSpeedKmh?.let { add(s(R.string.dashboard_label_max_assist) to it.toSpeedText()) }
-                            bike.driveUnit?.rearWheelCircumferenceMillimeters?.let {
+                            driveUnit?.maximumAssistanceSpeedKmh?.let { add(s(R.string.dashboard_label_max_assist) to it.toSpeedText()) }
+                            driveUnit?.rearWheelCircumferenceMillimeters?.let {
                                 add(s(R.string.dashboard_label_wheel_circumference) to s(R.string.dashboard_wheel_circumference_value, it.toWholeNumber()))
                             }
                         },
                     )
                 )
-                bike.driveUnit?.let { driveUnit ->
+                driveUnit?.let { driveUnit ->
                     add(
                         DetailSectionUiModel(
                             title = s(R.string.dashboard_section_drive_unit),
@@ -232,27 +227,36 @@ class DashboardUiModelMapper(
                                 driveUnit.walkAssistMaximumSpeedKmh?.let { add(s(R.string.dashboard_label_walk_assist_max) to it.toSpeedText()) }
                                 driveUnit.totalPowerOnHours?.let { add(s(R.string.dashboard_label_total_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
                                 driveUnit.supportPowerOnHours?.let { add(s(R.string.dashboard_label_support_power_on_hours) to s(R.string.dashboard_hours_value, it)) }
-                                if (driveUnit.activeAssistModes.isNotEmpty()) {
-                                    add(s(R.string.dashboard_label_assist_modes) to driveUnit.activeAssistModes.toAssistModeSummary())
-                                }
                             },
                         )
                     )
                 }
-                if (bike.batteries.isNotEmpty()) {
+                if (displayAssistModes.isNotEmpty()) {
+                    add(
+                        DetailSectionUiModel(
+                            title = s(R.string.dashboard_section_assist_modes),
+                            rows = displayAssistModes.map { mode ->
+                                mode.name to (mode.reachableRangeKm?.let { s(R.string.dashboard_assist_range_value, it.toWholeNumber()) }
+                                    ?: s(R.string.dashboard_assist_mode_no_range))
+                            },
+                        )
+                    )
+                }
+                if (batteries.isNotEmpty()) {
                     add(
                         DetailSectionUiModel(
                             title = s(R.string.dashboard_section_batteries),
-                            rows = bike.batteries.flatMapIndexed { index, battery ->
+                            rows = batteries.flatMapIndexed { index, battery ->
                                 battery.toRows(prefix = s(R.string.dashboard_battery_prefix, index + 1))
                             },
                         )
                     )
                 }
-                bike.remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
-                bike.headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
+                remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
+                headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
             },
-        )
+            )
+        }
 
     private fun BoschBattery.toRows(prefix: String): List<Pair<String, String>> = buildList {
         productName?.let { add(s(R.string.dashboard_battery_prefix_product, prefix) to it) }
@@ -270,10 +274,94 @@ class DashboardUiModelMapper(
         serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
     }
 
-    private fun List<BoschAssistMode>.toAssistModeSummary(): String =
-        joinToString(" | ") { mode ->
-            mode.reachableRangeKm?.let { s(R.string.dashboard_assist_mode_range, mode.name, it.toWholeNumber()) } ?: mode.name
+    private fun List<BoschAssistMode>.toDisplayAssistModes(): List<BoschAssistMode> =
+        filterNot { mode ->
+            mode.name == "0" && ((mode.reachableRangeKm ?: 0.0) <= 0.0)
+        }.filter { mode ->
+            mode.name.isNotBlank() || ((mode.reachableRangeKm ?: 0.0) > 0.0)
+        }.sortedByDescending { it.reachableRangeKm ?: Double.NEGATIVE_INFINITY }
+
+    private fun List<BoschAssistMode>.toAssistModeRangeSummary(): String? =
+        mapNotNull { mode ->
+            mode.reachableRangeKm
+                ?.takeIf { it > 0.0 }
+                ?.let { s(R.string.dashboard_assist_range_value, it.toWholeNumber()) }
+        }.takeIf { it.isNotEmpty() }
+            ?.joinToString(" | ")
+
+    private fun BoschDriveUnit.toPowerOnSummary(): String? = when {
+        totalPowerOnHours != null && supportPowerOnHours != null ->
+            s(R.string.dashboard_power_on_summary_both, totalPowerOnHours, supportPowerOnHours)
+        supportPowerOnHours != null ->
+            s(R.string.dashboard_power_on_summary_support_only, supportPowerOnHours)
+        totalPowerOnHours != null ->
+            s(R.string.dashboard_power_on_summary_total_only, totalPowerOnHours)
+        else -> null
+    }
+
+    private fun List<BoschActivityDetailPoint>.toTrackPoints(): List<ActivityTrackPointUiModel> {
+        val compressed = mutableListOf<ActivityTrackPointUiModel>()
+        forEach { point ->
+            val latitude = point.latitude?.takeIf { !it.isNaN() } ?: return@forEach
+            val longitude = point.longitude?.takeIf { !it.isNaN() } ?: return@forEach
+            if (latitude == 0.0 && longitude == 0.0) return@forEach
+
+            val candidate = ActivityTrackPointUiModel(
+                latitude = latitude,
+                longitude = longitude,
+                altitudeMeters = point.altitudeMeters?.takeIf { !it.isNaN() },
+                distanceMeters = point.distanceMeters?.takeIf { !it.isNaN() && it >= 0.0 },
+            )
+            val previous = compressed.lastOrNull()
+            if (previous != null && previous.hasSameCoordinates(candidate)) {
+                compressed[compressed.lastIndex] = previous.mergeWith(candidate)
+            } else {
+                compressed += candidate
+            }
         }
+        return compressed
+    }
+
+    private fun List<BoschActivityDetailPoint>.toProfilePoints(): List<ActivityProfilePointUiModel> {
+        val compressed = mutableListOf<ActivityProfilePointUiModel>()
+        forEach { point ->
+            val distanceMeters = point.distanceMeters?.takeIf { !it.isNaN() && it >= 0.0 } ?: return@forEach
+            val candidate = ActivityProfilePointUiModel(
+                distanceMeters = distanceMeters,
+                altitudeMeters = point.altitudeMeters?.takeIf { it >= 0.0 && !it.isNaN() },
+                speedKmh = point.speedKmh?.takeIf { it >= 0.0 && !it.isNaN() },
+                cadenceRpm = point.cadenceRpm?.takeIf { it >= 0.0 && !it.isNaN() },
+                riderPowerWatts = point.riderPowerWatts?.takeIf { it >= 0.0 && !it.isNaN() },
+            )
+            val previous = compressed.lastOrNull()
+            if (previous != null && abs(previous.distanceMeters - candidate.distanceMeters) < DISTANCE_EPSILON_METERS) {
+                compressed[compressed.lastIndex] = previous.mergeWith(candidate)
+            } else {
+                compressed += candidate
+            }
+        }
+        return compressed
+    }
+
+    private fun ActivityTrackPointUiModel.hasSameCoordinates(other: ActivityTrackPointUiModel): Boolean =
+        abs(latitude - other.latitude) < COORDINATE_EPSILON && abs(longitude - other.longitude) < COORDINATE_EPSILON
+
+    private fun ActivityTrackPointUiModel.mergeWith(other: ActivityTrackPointUiModel): ActivityTrackPointUiModel =
+        ActivityTrackPointUiModel(
+            latitude = other.latitude,
+            longitude = other.longitude,
+            altitudeMeters = other.altitudeMeters ?: altitudeMeters,
+            distanceMeters = other.distanceMeters ?: distanceMeters,
+        )
+
+    private fun ActivityProfilePointUiModel.mergeWith(other: ActivityProfilePointUiModel): ActivityProfilePointUiModel =
+        ActivityProfilePointUiModel(
+            distanceMeters = other.distanceMeters,
+            altitudeMeters = other.altitudeMeters ?: altitudeMeters,
+            speedKmh = other.speedKmh ?: speedKmh,
+            cadenceRpm = other.cadenceRpm ?: cadenceRpm,
+            riderPowerWatts = other.riderPowerWatts ?: riderPowerWatts,
+        )
 
     private fun String.toReadableDateTime(): String =
         runCatching {
@@ -309,17 +397,13 @@ class DashboardUiModelMapper(
     private fun Double.toCoordinateText(): String =
         String.format(Locale.US, "%.5f", this)
 
-    private fun BoschActivityDetailPoint.hasCoordinates(): Boolean {
-        val latitude = latitude ?: return false
-        val longitude = longitude ?: return false
-        return latitude != 0.0 || longitude != 0.0
-    }
-
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)
 
     private companion object {
         private val DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+        private const val COORDINATE_EPSILON = 0.000001
+        private const val DISTANCE_EPSILON_METERS = 0.001
     }
 }

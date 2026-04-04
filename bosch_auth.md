@@ -143,6 +143,14 @@ GET /activity/smart-system/v1/activities/{activityId}/track  → HTTP 404
 
 Die vier `200`-Antworten sind mit echtem Token und echten IDs am **2. April 2026** live verifiziert.
 
+Zusätzlicher Befund aus `bosch-api-test-run-all.txt` vom **4. April 2026**:
+
+- Die Aktivitätenliste liefert neben `pagination` auch `links.self`, `links.next`, `links.first`, `links.last`
+- `/activities/{activityId}/details` ist der funktional wichtigste Aktivitäts-Endpunkt, da er Track, Höhe und punktbezogene Metriken gemeinsam liefert
+- `/activities/{activityId}/track` liefert für den getesteten Smart-System-Account weiterhin `404`
+- Die Detaildaten enthalten teils `latitude=0.0` und `longitude=0.0` sowie aufeinanderfolgende Duplikate derselben Koordinate
+- Die App sollte diese Detailpunkte daher vor Karten-, GPX- und Profilnutzung bereinigen
+
 ### OIDC (bestätigt funktionierend)
 
 ```
@@ -189,6 +197,7 @@ GET https://p9.authz.bosch.com/auth/realms/obc/.well-known/openid-configuration
 Pagination ist funktional relevant:
 - `total` beschreibt die Gesamtzahl der Aktivitäten
 - `offset` und `limit` steuern weitere Seiten
+- `links.next` und `links.last` sind zusätzlich vorhanden und können künftig als robusterer Paging-Vertrag genutzt werden
 - Die App nutzt diese Parameter jetzt im Dashboard für `Mehr Aktivitäten laden`
 
 `GET /activity/smart-system/v1/activities/{activityId}/details`
@@ -213,6 +222,7 @@ Diese Detailpunkte sind funktional relevant:
 - `distance` beschreibt die kumulierte Distanz entlang der Aktivität
 - `latitude` und `longitude` liefern die Trackpunkte
 - `altitude`, `speed`, `cadence` und `riderPower` liefern punktbezogene Metrikdaten
+- `0.0/0.0`-Koordinaten und redundante Wiederholungen derselben Koordinate kommen real vor und sollten gefiltert bzw. komprimiert werden
 - Die App nutzt diese Daten jetzt für die Aktivitätsdetailseite, eine MapLibre/OpenFreeMap-Kartenansicht mit Auto-Fit, Linienprofile und einen GPX-Exportdialog mit Vorschau
 
 `GET /bike-profile/smart-system/v1/bikes/{bikeId}`
@@ -267,6 +277,21 @@ Diese Detailpunkte sind funktional relevant:
   }
 }
 ```
+
+Diese Bike-Detaildaten sind zusätzlich produktiv nutzbar:
+
+- `walkAssistConfiguration.isEnabled`
+- `walkAssistConfiguration.maximumSpeed`
+- `powerOnTime.total`
+- `powerOnTime.withMotorSupport`
+- `activeAssistModes[].reachableRange`
+- `rearWheelCircumferenceUser`
+
+Für die UI besonders wertvoll sind:
+
+- Walk-Assist-Status
+- Einschaltzeit gesamt / mit Motorunterstützung
+- Assist-Reichweiten pro Modus
 
 ---
 

@@ -246,6 +246,8 @@ fun HomeScreen(
                                 items = buildList {
                                     bike.odometerLabel?.let { add(stringResource(R.string.home_odometer) to it) }
                                     bike.assistSpeedLabel?.let { add(stringResource(R.string.home_assist_limit) to it) }
+                                    bike.walkAssistLabel?.let { add(stringResource(R.string.home_walk_assist) to it) }
+                                    bike.powerOnSummary?.let { add(stringResource(R.string.home_usage) to it) }
                                     bike.batterySummary?.let { add(stringResource(R.string.home_battery) to it) }
                                 },
                             )

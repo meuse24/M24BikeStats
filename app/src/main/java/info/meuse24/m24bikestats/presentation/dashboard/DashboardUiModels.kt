@@ -36,6 +36,9 @@ data class BikeCardUiModel(
     val subtitle: String?,
     val odometerLabel: String?,
     val assistSpeedLabel: String?,
+    val walkAssistLabel: String?,
+    val powerOnSummary: String?,
+    val assistModesSummary: String?,
     val batterySummary: String?,
 )
 

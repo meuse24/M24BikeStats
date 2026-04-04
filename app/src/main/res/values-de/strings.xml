@@ -103,6 +103,8 @@
     <string name="home_head_unit">Head Unit</string>
     <string name="home_odometer">Kilometerstand</string>
     <string name="home_assist_limit">Assist-Limit</string>
+    <string name="home_walk_assist">Walk Assist</string>
+    <string name="home_usage">Nutzung</string>
     <string name="home_battery">Batterie</string>
     <string name="home_no_bike_data">Noch keine Bike-Daten im Cache.</string>
     <string name="home_recent_exports">Letzte Exporte</string>
@@ -333,6 +335,12 @@
     <string name="dashboard_label_support_power_on_hours">Mit Motorunterstützung</string>
     <string name="dashboard_hours_value">%1$s h</string>
     <string name="dashboard_label_assist_modes">Assist Modes</string>
+    <string name="dashboard_section_assist_modes">Assist Modes &amp; Reichweite</string>
+    <string name="dashboard_power_on_summary_both">%1$s h gesamt • %2$s h mit Motor</string>
+    <string name="dashboard_power_on_summary_support_only">%1$s h mit Motor</string>
+    <string name="dashboard_power_on_summary_total_only">%1$s h gesamt</string>
+    <string name="dashboard_assist_range_value">%1$s km</string>
+    <string name="dashboard_assist_mode_no_range">Verfügbar</string>
     <string name="dashboard_section_batteries">Batterien</string>
     <string name="dashboard_battery_prefix">Batterie %1$d</string>
     <string name="dashboard_section_remote">Remote</string>
@@ -353,6 +361,9 @@
     <string name="dashboard_card_power">Leistung</string>
     <string name="dashboard_card_odometer">Kilometer</string>
     <string name="dashboard_card_assist">Assist</string>
+    <string name="dashboard_card_walk_assist">Walk</string>
+    <string name="dashboard_card_usage">Nutzung</string>
+    <string name="dashboard_card_assist_ranges">Reichweiten</string>
     <string name="dashboard_activity_detail_button">Details</string>
     <string name="dashboard_activity_map_button">Karte</string>
     <string name="dashboard_activity_share_button">Teilen</string>
