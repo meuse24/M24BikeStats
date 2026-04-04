@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.data.local.preferences
 import android.content.Context
 import android.content.SharedPreferences
 import info.meuse24.m24bikestats.domain.model.AppSettings
+import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.CsvSeparator
@@ -40,6 +41,13 @@ class AppSettingsRepositoryImpl(
         settingsState.value = settingsState.value.copy(cloudSyncDetailMode = mode)
     }
 
+    override suspend fun updateBackgroundSyncMode(mode: BackgroundSyncMode) {
+        preferences.edit()
+            .putString(KEY_BACKGROUND_SYNC_MODE, mode.name)
+            .apply()
+        settingsState.value = settingsState.value.copy(backgroundSyncMode = mode)
+    }
+
     private fun readSettings(): AppSettings {
         val storedFormat = CsvExportFormat.fromStoredValue(
             preferences.getString(KEY_CSV_EXPORT_FORMAT, null),
@@ -50,9 +58,13 @@ class AppSettingsRepositoryImpl(
         val storedCloudSyncDetailMode = CloudSyncDetailMode.fromStoredValue(
             preferences.getString(KEY_CLOUD_SYNC_DETAIL_MODE, null),
         )
+        val storedBackgroundSyncMode = BackgroundSyncMode.fromStoredValue(
+            preferences.getString(KEY_BACKGROUND_SYNC_MODE, null),
+        )
         return AppSettings(
             csvExportFormat = storedFormat ?: legacySeparator?.toLegacyExportFormat() ?: CsvExportFormat.SYSTEM_DEFAULT,
             cloudSyncDetailMode = storedCloudSyncDetailMode ?: CloudSyncDetailMode.MISSING_ONLY,
+            backgroundSyncMode = storedBackgroundSyncMode ?: BackgroundSyncMode.DISABLED,
         )
     }
 
@@ -61,5 +73,6 @@ class AppSettingsRepositoryImpl(
         private const val KEY_CSV_EXPORT_FORMAT = "csv_export_format"
         private const val KEY_CSV_SEPARATOR = "csv_separator"
         private const val KEY_CLOUD_SYNC_DETAIL_MODE = "cloud_sync_detail_mode"
+        private const val KEY_BACKGROUND_SYNC_MODE = "background_sync_mode"
     }
 }

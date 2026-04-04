@@ -31,6 +31,8 @@
     <string name="setup_csv_subtitle">Lege fest, ob CSV-Exporte automatisch aus den Gerätekonventionen abgeleitet werden oder einem festen Export-Preset folgen.</string>
     <string name="setup_sync_title">Cloud-Sync Details</string>
     <string name="setup_sync_subtitle">Lege fest, ob der Cloud-Sync nur fehlende Aktivitätsdetails lädt oder zusätzlich veraltete Cache-Daten aktualisiert.</string>
+    <string name="setup_background_sync_title">Hintergrund-Sync</string>
+    <string name="setup_background_sync_subtitle">Lege fest, ob die App täglich einen Smart-System-Abgleich im Hintergrund plant und welche Netzwerkbedingung dafür gelten soll.</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
     <string name="csv_export_format_system_default_label">Automatisch</string>
     <string name="csv_export_format_system_default_description">Leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab, zum Beispiel Semikolon plus Dezimalkomma auf deutschen Systemen.</string>
@@ -42,6 +44,12 @@
     <string name="cloud_sync_detail_mode_missing_only_description">Lädt Aktivitätsdetails nur, wenn sie noch gar nicht im Cache liegen. Minimaler Datenverbrauch.</string>
     <string name="cloud_sync_detail_mode_missing_or_stale_label">Fehlende + veraltete</string>
     <string name="cloud_sync_detail_mode_missing_or_stale_description">Lädt fehlende Details und aktualisiert zusätzlich Cache-Einträge, sobald sie veraltet sind.</string>
+    <string name="background_sync_mode_disabled_label">Deaktiviert</string>
+    <string name="background_sync_mode_disabled_description">Es wird kein periodischer Hintergrund-Sync geplant.</string>
+    <string name="background_sync_mode_daily_unmetered_label">Täglich per WLAN</string>
+    <string name="background_sync_mode_daily_unmetered_description">Plant ungefähr alle 24 Stunden einen Hintergrund-Sync und verlangt ein unlimitiertes Netzwerk.</string>
+    <string name="background_sync_mode_daily_connected_label">Täglich in jedem Netz</string>
+    <string name="background_sync_mode_daily_connected_description">Plant ungefähr alle 24 Stunden einen Hintergrund-Sync in jedem verbundenen Netzwerk.</string>
 
     <string name="help_title">Hilfe</string>
     <string name="help_subtitle">Kurzübersicht zu Navigation, Datenfluss und Diagnose.</string>

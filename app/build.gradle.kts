@@ -66,6 +66,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.window)
+    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.startup.runtime)

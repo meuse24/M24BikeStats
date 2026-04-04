@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheMetadata
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
+import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
@@ -30,6 +31,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -250,6 +252,22 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `background sync mode changes propagate into ui state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository()
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateBackgroundSyncMode(BackgroundSyncMode.DAILY_UNMETERED)
+        advanceUntilIdle()
+
+        assertEquals(BackgroundSyncMode.DAILY_UNMETERED, viewModel.uiState.value.backgroundSyncMode)
+    }
+
+    @Test
     fun `can load more activities when cached total exceeds first loaded page`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -327,6 +345,7 @@ class DashboardViewModelTest {
                 refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, authRepository),
                 refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, authRepository),
                 updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
+                updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
                 stringResolver = TestStringResolver(),

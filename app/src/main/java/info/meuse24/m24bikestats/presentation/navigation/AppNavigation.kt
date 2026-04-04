@@ -228,8 +228,10 @@ fun AppNavigation() {
                         SetupScreen(
                             csvExportFormat = dashboardUiState.csvExportFormat,
                             cloudSyncDetailMode = dashboardUiState.cloudSyncDetailMode,
+                            backgroundSyncMode = dashboardUiState.backgroundSyncMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
                             onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
+                            onBackgroundSyncModeSelected = dashboardViewModel::updateBackgroundSyncMode,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }

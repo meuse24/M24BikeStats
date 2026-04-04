@@ -13,6 +13,7 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUse
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -29,6 +30,7 @@ class DashboardFeedHandler(
     private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
     private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
     private val updateCloudSyncDetailModeUseCase: UpdateCloudSyncDetailModeUseCase,
+    private val updateBackgroundSyncModeUseCase: UpdateBackgroundSyncModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
@@ -101,6 +103,7 @@ class DashboardFeedHandler(
                     current.copy(
                         csvExportFormat = settings.csvExportFormat,
                         cloudSyncDetailMode = settings.cloudSyncDetailMode,
+                        backgroundSyncMode = settings.backgroundSyncMode,
                     )
                 }
             }
@@ -286,6 +289,17 @@ class DashboardFeedHandler(
         if (currentState().cloudSyncDetailMode == mode) return
         scope.launch {
             updateCloudSyncDetailModeUseCase(mode)
+        }
+    }
+
+    fun updateBackgroundSyncMode(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        mode: info.meuse24.m24bikestats.domain.model.BackgroundSyncMode,
+    ) {
+        if (currentState().backgroundSyncMode == mode) return
+        scope.launch {
+            updateBackgroundSyncModeUseCase(mode)
         }
     }
 

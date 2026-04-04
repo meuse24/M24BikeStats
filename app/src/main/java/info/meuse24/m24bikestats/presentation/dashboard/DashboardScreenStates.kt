@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
+import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 
 data class DashboardUiState(
     val isInitialLoading: Boolean = false,
@@ -47,6 +48,7 @@ data class DashboardUiState(
     val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
+    val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val error: String? = null,
 )
 

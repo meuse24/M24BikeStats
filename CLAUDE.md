@@ -87,6 +87,7 @@ Regeln:
 - Token-Speicherung via `EncryptedSharedPreferences`
 - cache-first Aktivitäten-, Detail- und Bike-Flows
 - mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
+- optionaler täglicher Hintergrund-Sync über WorkManager mit einstellbarer Netzbedingung
 - CSV-Export für Aktivitäten, Details und Tracks
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
 - Exporte sind cache-only und haben Cancel-Aktionen
@@ -114,6 +115,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 `AppModule` bindet unter anderem:
 
 - `AuthManager` als `AuthRepository` und `LoginRepository`
+- `BackgroundSyncScheduler` und `BackgroundSyncSettingsObserver`
 - `BoschApiClient` als `BoschApiDataSource`
 - `BoschRepositoryImpl`
 - `BoschSmartSystemRepositoryImpl`
@@ -129,6 +131,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
+- Änderungen an `AppSettings` immer gegen drei Pfade prüfen: Setup-UI, Hintergrund-Scheduler und Dashboard-State
+- Periodischen Hintergrund-Sync nur über `BackgroundSyncScheduler` ändern; keine parallelen WorkManager-Namen oder konkurrierenden Schedules einführen
 - Bei Aktivitätsdetails keine rohe Punktliste blind verwenden; Track/Profile laufen über den bereinigten Mapper-Pfad
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
 - Keine Android-`Context`-Abhängigkeit direkt ins ViewModel ziehen, wenn ein kleiner Resolver/Provider reicht

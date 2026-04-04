@@ -11,6 +11,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
 - mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
+- optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
@@ -53,6 +54,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Funktionen`: CSV-Exporte
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
+- `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
 
 ## Daten und Exporte
@@ -66,6 +68,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Automatisch` leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab.
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
+- Der optionale Hintergrund-Sync plant genau einen eindeutigen periodischen WorkManager-Job und übernimmt dabei den im Setup gewählten Detail-Sync-Modus.
 - Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
 - Der Home-Sync zeigt Fortschritt und kann abgebrochen werden.
 - Der Home-Sync kann datensparsam nur fehlende Aktivitätsdetails laden oder optional veraltete Details mitaktualisieren.

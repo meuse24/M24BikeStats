@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.AppSettings
+import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
@@ -11,11 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
 class FakeAppSettingsRepository(
     initialFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     initialCloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
+    initialBackgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
 ) : AppSettingsRepository {
     private val settingsState = MutableStateFlow(
         AppSettings(
             csvExportFormat = initialFormat,
             cloudSyncDetailMode = initialCloudSyncDetailMode,
+            backgroundSyncMode = initialBackgroundSyncMode,
         )
     )
 
@@ -29,5 +32,9 @@ class FakeAppSettingsRepository(
 
     override suspend fun updateCloudSyncDetailMode(mode: CloudSyncDetailMode) {
         settingsState.value = settingsState.value.copy(cloudSyncDetailMode = mode)
+    }
+
+    override suspend fun updateBackgroundSyncMode(mode: BackgroundSyncMode) {
+        settingsState.value = settingsState.value.copy(backgroundSyncMode = mode)
     }
 }

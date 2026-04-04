@@ -11,6 +11,7 @@ import java.util.Locale
 data class AppSettings(
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
+    val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
 )
 
 enum class CsvSeparator(
@@ -59,6 +60,18 @@ enum class CloudSyncDetailMode {
 
     companion object {
         fun fromStoredValue(value: String?): CloudSyncDetailMode? =
+            entries.firstOrNull { mode -> mode.name == value }
+    }
+}
+
+enum class BackgroundSyncMode {
+    DISABLED,
+    DAILY_UNMETERED,
+    DAILY_CONNECTED,
+    ;
+
+    companion object {
+        fun fromStoredValue(value: String?): BackgroundSyncMode? =
             entries.firstOrNull { mode -> mode.name == value }
     }
 }

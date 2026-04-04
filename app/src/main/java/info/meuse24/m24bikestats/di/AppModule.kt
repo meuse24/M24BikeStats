@@ -1,6 +1,8 @@
 package info.meuse24.m24bikestats.di
 
 import androidx.room.Room
+import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
+import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
 import info.meuse24.m24bikestats.data.auth.AuthManager
 import info.meuse24.m24bikestats.data.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
@@ -40,6 +42,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetail
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
@@ -80,6 +83,8 @@ val appModule = module {
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<AuthFlowCoordinator> { get<AuthManager>() }
+    single { BackgroundSyncScheduler(androidContext()) }
+    single { BackgroundSyncSettingsObserver(get(), get()) }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
     single { DashboardUiModelMapper(get()) }
 
@@ -98,6 +103,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { ObserveAppSettingsUseCase(get()) }
+    factory { UpdateBackgroundSyncModeUseCase(get()) }
     factory { UpdateCloudSyncDetailModeUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
@@ -112,7 +118,7 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get()) }
 
     // --- Presentation ---
-    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     factory { DashboardOperationsHandler(get(), get(), get(), get()) }
     factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModelOf(::LoginViewModel)
