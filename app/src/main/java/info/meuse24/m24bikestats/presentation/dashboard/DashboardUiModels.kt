@@ -40,6 +40,7 @@ data class BikeCardUiModel(
     val powerOnSummary: String?,
     val assistModesSummary: String?,
     val batterySummary: String?,
+    val shareText: String,
 )
 
 data class BikeDetailUiModel(

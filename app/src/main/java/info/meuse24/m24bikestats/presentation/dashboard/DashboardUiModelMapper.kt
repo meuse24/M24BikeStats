@@ -165,6 +165,7 @@ class DashboardUiModelMapper(
         bike.run {
             val driveUnit = driveUnit
             val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
+            val detailUiModel = toBikeDetailUiModel(this)
             BikeCardUiModel(
                 id = id,
                 title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
@@ -185,6 +186,7 @@ class DashboardUiModelMapper(
                         )
                     } ?: (battery.productName ?: s(R.string.dashboard_battery_fallback_title))
                 },
+                shareText = detailUiModel.toShareText(),
             )
         }
 
@@ -273,6 +275,21 @@ class DashboardUiModelMapper(
         partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
         serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
     }
+
+    private fun BikeDetailUiModel.toShareText(): String =
+        buildString {
+            appendLine(title)
+            subtitle?.takeIf { it.isNotBlank() }?.let { appendLine(it) }
+
+            sections.forEach { section ->
+                if (section.rows.isEmpty()) return@forEach
+                appendLine()
+                appendLine(section.title)
+                section.rows.forEach { (label, value) ->
+                    appendLine("$label: $value")
+                }
+            }
+        }.trim()
 
     private fun List<BoschAssistMode>.toDisplayAssistModes(): List<BoschAssistMode> =
         filterNot { mode ->

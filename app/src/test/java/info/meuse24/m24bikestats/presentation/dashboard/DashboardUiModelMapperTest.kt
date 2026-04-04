@@ -46,6 +46,9 @@ class DashboardUiModelMapperTest {
         assertTrue(uiModel.assistModesSummary!!.contains("97"))
         assertTrue(uiModel.assistModesSummary!!.contains("59"))
         assertFalse(uiModel.assistModesSummary!!.contains("0 km"))
+        assertTrue(uiModel.shareText.contains("Drive Unit Performance Line CX"))
+        assertTrue(uiModel.shareText.contains("PowerTube 750"))
+        assertTrue(uiModel.shareText.contains("A100M00040"))
     }
 
     @Test

@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
@@ -17,6 +18,8 @@ fun BikeListScreen(
     onBikeClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -45,6 +48,7 @@ fun BikeListScreen(
             BikeOverviewCard(
                 bike = bike,
                 onClick = { onBikeClick(bike.id) },
+                onShareClick = { shareBikeDetail(context, bike) },
             )
         }
     }

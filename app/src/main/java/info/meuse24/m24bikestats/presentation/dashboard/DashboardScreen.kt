@@ -526,6 +526,24 @@ private fun shareActivityDetail(
     )
 }
 
+internal fun shareBikeDetail(
+    context: Context,
+    bike: BikeCardUiModel,
+) {
+    val shareIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, bike.title)
+        putExtra(Intent.EXTRA_TEXT, bike.shareText)
+    }
+
+    context.startActivity(
+        Intent.createChooser(
+            shareIntent,
+            context.getString(R.string.dashboard_bike_share_chooser),
+        )
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackScreen(
@@ -1182,6 +1200,8 @@ internal fun BikesOverview(
     isRefreshing: Boolean,
     onBikeClick: (String) -> Unit,
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -1199,6 +1219,7 @@ internal fun BikesOverview(
             BikeOverviewCard(
                 bike = bike,
                 onClick = { onBikeClick(bike.id) },
+                onShareClick = { shareBikeDetail(context, bike) },
             )
         }
     }
@@ -1465,6 +1486,7 @@ private fun String.withLineBreakBeforeMax(): String =
 internal fun BikeOverviewCard(
     bike: BikeCardUiModel,
     onClick: () -> Unit,
+    onShareClick: () -> Unit,
 ) {
     Card(
         modifier = Modifier
@@ -1527,23 +1549,58 @@ internal fun BikeOverviewCard(
                     value = assistModesSummary,
                 )
             }
-            Button(
-                onClick = onClick,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                    contentDescription = null,
+                BikeCardActionButton(
+                    label = stringResource(R.string.dashboard_bike_share_button),
+                    icon = Icons.Default.Share,
+                    onClick = onShareClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                 )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = stringResource(R.string.dashboard_bike_detail_button),
-                    fontWeight = FontWeight.Medium,
+                BikeCardActionButton(
+                    label = stringResource(R.string.dashboard_bike_detail_button),
+                    icon = Icons.AutoMirrored.Filled.ExitToApp,
+                    onClick = onClick,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight(),
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun BikeCardActionButton(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(14.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = label,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 

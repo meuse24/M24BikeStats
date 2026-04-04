@@ -369,7 +369,9 @@
     <string name="dashboard_activity_share_button">Share</string>
     <string name="dashboard_activity_share_chooser">Share activity</string>
     <string name="dashboard_bike_summary_title">Bike summary</string>
-    <string name="dashboard_bike_detail_button">View bike details</string>
+    <string name="dashboard_bike_share_button">Share</string>
+    <string name="dashboard_bike_share_chooser">Share bike details</string>
+    <string name="dashboard_bike_detail_button">Details</string>
     <string name="dashboard_bike_detail_hint">Opens the detail screen with component, battery and head unit information.</string>
     <string name="track_tab_map">Map</string>
     <string name="track_tab_profiles">Profiles</string>
