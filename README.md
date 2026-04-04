@@ -20,6 +20,9 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - MapLibre/OpenFreeMap-Kartenansicht und Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
+- Release-Build nutzt R8-Minify + Resource-Shrinking
+- Android Auto-Backup und Device-Transfer-Backup sind deaktiviert, damit keine sensiblen Bosch-Daten aus App-Speicher oder Tokens unkontrolliert exportiert werden
+- Cleartext-Traffic ist explizit deaktiviert
 
 ## Voraussetzungen
 
@@ -43,6 +46,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 ./gradlew test
 ./gradlew lint
 ./gradlew build
+./gradlew assembleRelease
 ```
 
 ## Navigation

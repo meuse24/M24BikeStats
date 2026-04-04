@@ -95,6 +95,8 @@ Regeln:
 - Aktivitätsdetailpunkte werden vor Karten-/GPX-Nutzung bereinigt und komprimiert
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
+- Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
+- Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
 
 ## Bosch API
 
@@ -140,6 +142,8 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 - Bei Lokalisierung nur aktive Nutzertexte anfassen; technische Literale wie MIME-Types, Routen oder JSON-Keys bleiben unberührt
 - Sichtbare Compose-Texte bevorzugt in `strings.xml`; nur Brands, URLs, Versionswerte und andere technische Konstanten inline lassen
 - Testartefakte mit echten Nutzerdaten wie `bosch-api-test-run-all.txt` nicht mitcommitten
+- Änderungen an Security-/Release-Flags immer zusätzlich mit `assembleRelease` prüfen, nicht nur mit Debug-Builds
+- `android.disallowKotlinSourceSets=false` aktuell nicht entfernen, solange KSP sonst den Release-Build blockiert
 
 ## Testfokus
 
