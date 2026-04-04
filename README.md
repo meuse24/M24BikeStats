@@ -86,6 +86,11 @@ Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
 - `presentation/dashboard`: Home, Aktivitäten, Bike, Funktionen sowie Detail- und Track-Screens
+- `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
+- `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
+- `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen
+- `presentation/dashboard/DashboardTrackScreen.kt`: Track-Vollbild, Karten-/Canvas-Helfer und Exportdialog
+- `presentation/dashboard/DashboardSharedUi.kt`: wiederverwendete Hero-/Metric-/Section-Komponenten
 - `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
 
 Mehr Projektdetails: [CLAUDE.md](CLAUDE.md)

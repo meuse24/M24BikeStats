@@ -63,6 +63,12 @@ Regeln:
 - `presentation` hängt an `domain` und `auth`
 - ViewModels exponieren `StateFlow`
 - Screens sind stateless und bekommen `UiState` plus Callbacks
+- Dashboard-UI ist nach Verantwortungen getrennt:
+  - `DashboardScreen.kt` = Shell
+  - `DashboardOverviewComponents.kt` = Listen/Karten/Filter
+  - `DashboardDetailScreens.kt` = Activity-/Bike-Details
+  - `DashboardTrackScreen.kt` = Track-Vollbild + Export
+  - `DashboardSharedUi.kt` = gemeinsame Compose-Bausteine
 
 ## Navigation
 
@@ -119,6 +125,7 @@ GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
 ## Hinweise für Änderungen
 
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
+- Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
