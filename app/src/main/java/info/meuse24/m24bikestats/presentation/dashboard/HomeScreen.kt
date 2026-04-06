@@ -278,8 +278,12 @@ fun HomeScreen(
                             stringResource(R.string.home_export_details_csv) to (
                                 uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none)
                             ),
+                            stringResource(R.string.home_export_pdf) to (
+                                uiState.lastPdfExport?.fileName ?: stringResource(R.string.home_export_none)
+                            ),
                             stringResource(R.string.home_export_last_time) to (
-                                uiState.lastActivityDetailsCsvExport?.exportedAtLabel
+                                uiState.lastPdfExport?.exportedAtLabel
+                                    ?: uiState.lastActivityDetailsCsvExport?.exportedAtLabel
                                     ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
                                     ?: stringResource(R.string.home_export_none)
                             ),

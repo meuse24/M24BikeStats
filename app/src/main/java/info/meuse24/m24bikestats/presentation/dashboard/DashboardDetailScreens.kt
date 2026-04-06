@@ -296,6 +296,9 @@ private fun DetailSectionCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
+            section.indicator?.let { indicator ->
+                SectionIndicator(indicator = indicator)
+            }
             section.rows.chunked(2).forEach { rowItems ->
                 Row(
                     modifier = Modifier
@@ -357,6 +360,57 @@ private fun DetailSectionCard(
                 Toast.makeText(context, context.getString(R.string.track_gpx_copied), Toast.LENGTH_SHORT).show()
             },
         )
+    }
+}
+
+@Composable
+private fun SectionIndicator(
+    indicator: DetailSectionIndicatorUiModel,
+) {
+    val progressColor = when (indicator.tone) {
+        DetailSectionIndicatorTone.POSITIVE -> MaterialTheme.colorScheme.primary
+        DetailSectionIndicatorTone.INFORMATIVE -> MaterialTheme.colorScheme.tertiary
+        DetailSectionIndicatorTone.WARNING -> MaterialTheme.colorScheme.secondary
+        DetailSectionIndicatorTone.DANGER -> MaterialTheme.colorScheme.error
+    }
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = indicator.label,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = indicator.value,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            LinearProgressIndicator(
+                progress = { indicator.progress.coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth(),
+                color = progressColor,
+                trackColor = progressColor.copy(alpha = 0.18f),
+            )
+            indicator.supportingText?.let { supportingText ->
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
     }
 }
 

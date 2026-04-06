@@ -91,6 +91,10 @@ class PdfReportGeneratorAndroidTest {
                 PdfReportPeriod(label = "Mar 26", tourCount = 4, distanceKm = 144.0, durationHours = 6.1),
                 PdfReportPeriod(label = "Apr 26", tourCount = 3, distanceKm = 114.8, durationHours = 5.2),
             ),
+            yearlyPeriods = listOf(
+                PdfReportPeriod(label = "2025", tourCount = 8, distanceKm = 312.0, durationHours = 14.2),
+                PdfReportPeriod(label = "2026", tourCount = 4, distanceKm = 120.8, durationHours = 4.8),
+            ),
             highlights = PdfReportHighlights(
                 longestTourKm = 62.4,
                 maxSpeedKmh = 48.3,

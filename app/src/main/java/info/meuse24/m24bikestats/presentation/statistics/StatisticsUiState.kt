@@ -42,6 +42,7 @@ data class PeriodStats(
 enum class StatisticsGrouping {
     WEEK,
     MONTH,
+    YEAR,
 }
 
 internal val PeriodStats.durationHours: Double

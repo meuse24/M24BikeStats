@@ -46,6 +46,7 @@ class DashboardUiModelMapperTest {
 
         assertTrue(uiModel.walkAssistLabel!!.startsWith("res-"))
         assertTrue(uiModel.powerOnSummary!!.contains("867"))
+        assertTrue(uiModel.batterySummary!!.contains("82"))
         assertTrue(uiModel.assistModesSummary!!.contains("97"))
         assertTrue(uiModel.assistModesSummary!!.contains("59"))
         assertFalse(uiModel.assistModesSummary!!.contains("0 km"))
@@ -65,6 +66,22 @@ class DashboardUiModelMapperTest {
         assertEquals(2, assistSection.rows.size)
         assertEquals("A100M00040", assistSection.rows[0].first)
         assertEquals("A100M00030", assistSection.rows[1].first)
+    }
+
+    @Test
+    fun `bike detail creates battery card with health indicator`() {
+        val uiModel = mapper.toBikeDetailUiModel(bike())
+
+        val batterySection = uiModel.sections.first { section ->
+            section.rows.any { (_, value) -> value.contains("82 %") }
+        }
+
+        assertTrue(batterySection.title.startsWith("res-"))
+        assertTrue(batterySection.title.endsWith(":1"))
+        assertEquals(0.82f, batterySection.indicator!!.progress, 0.001f)
+        assertTrue(batterySection.indicator!!.supportingText!!.contains("•"))
+        assertTrue(batterySection.rows.any { (_, value) -> value.contains("PowerTube 750") })
+        assertTrue(batterySection.rows.any { (_, value) -> value.contains("83.8") })
     }
 
     @Test

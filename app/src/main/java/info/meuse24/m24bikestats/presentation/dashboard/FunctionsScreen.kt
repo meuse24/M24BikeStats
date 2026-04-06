@@ -72,19 +72,6 @@ fun FunctionsScreen(
         onActivityDetailsCsvExportHandled()
     }
 
-    LaunchedEffect(uiState.pendingPdfExport) {
-        val export = uiState.pendingPdfExport ?: return@LaunchedEffect
-        val pdfUri = createPdfReportUri(context, export)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/pdf"
-            putExtra(Intent.EXTRA_STREAM, pdfUri)
-            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.functions_share_chooser_pdf)))
-        onPdfExportHandled()
-    }
-
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),

@@ -40,6 +40,7 @@ data class PdfReportActivitySummary(
 
 data class PdfReportStatistics(
     val monthlyPeriods: List<PdfReportPeriod>,
+    val yearlyPeriods: List<PdfReportPeriod>,
     val highlights: PdfReportHighlights,
     val dayOfWeekDistribution: Map<DayOfWeek, Int>,
     val weeklyFrequencyHistogram: Map<Int, Int>,

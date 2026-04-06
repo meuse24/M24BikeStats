@@ -36,25 +36,52 @@ fun createTrackCsvUri(
 )
 
 fun buildTrackGpx(activity: ActivityDetailUiModel): String {
-    val timestamp = DateTimeFormatter.ISO_INSTANT.format(Instant.now().atOffset(ZoneOffset.UTC))
+    val startInstant = activity.overview.startedAtEpochMillis?.let { Instant.ofEpochMilli(it) } ?: Instant.now()
+    val totalDistance = activity.trackPoints.lastOrNull()?.distanceMeters ?: 1.0
+    val totalDuration = activity.overview.durationSeconds.toDouble().takeIf { it > 0 } ?: 1.0
+
     val points = activity.trackPoints.joinToString("\n") { point ->
+        val distance = point.distanceMeters ?: 0.0
+        val timeOffsetSeconds = (distance / totalDistance) * totalDuration
+        val pointInstant = startInstant.plusSeconds(timeOffsetSeconds.toLong())
+        val pointTimestamp = DateTimeFormatter.ISO_INSTANT.format(pointInstant.atOffset(ZoneOffset.UTC))
+
+        val profilePoint = point.distanceMeters?.let { d ->
+            activity.profilePoints.minByOrNull { kotlin.math.abs(it.distanceMeters - d) }
+        }
+
         buildString {
             append("""      <trkpt lat="${point.latitude}" lon="${point.longitude}">""")
             point.altitudeMeters?.let { append("\n        <ele>$it</ele>") }
-            point.distanceMeters?.let { append("\n        <extensions><distance>$it</distance></extensions>") }
+            append("\n        <time>$pointTimestamp</time>")
+
+            val hasExtensions = profilePoint?.riderPowerWatts != null || profilePoint?.cadenceRpm != null
+            if (hasExtensions) {
+                append("\n        <extensions>")
+                append("\n          <gpxtpx:TrackPointExtension>")
+                profilePoint?.cadenceRpm?.let { append("\n            <gpxtpx:cad>${it.toInt()}</gpxtpx:cad>") }
+                profilePoint?.riderPowerWatts?.let { append("\n            <gpxtpx:power>${it.toInt()}</gpxtpx:power>") }
+                append("\n          </gpxtpx:TrackPointExtension>")
+                append("\n        </extensions>")
+            }
             append("\n      </trkpt>")
         }
     }
 
     return """
         |<?xml version="1.0" encoding="UTF-8"?>
-        |<gpx version="1.1" creator="M24BikeStats" xmlns="http://www.topografix.com/GPX/1/1">
+        |<gpx version="1.1" creator="M24BikeStats" 
+        |  xmlns="http://www.topografix.com/GPX/1/1"
+        |  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        |  xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+        |  xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd http://www.garmin.com/xmlschemas/TrackPointExtension/v2 http://www.garmin.com/xmlschemas/TrackPointExtensionv2.xsd">
         |  <metadata>
         |    <name>${escapeXml(activity.title)}</name>
-        |    <time>$timestamp</time>
+        |    <time>${DateTimeFormatter.ISO_INSTANT.format(startInstant.atOffset(ZoneOffset.UTC))}</time>
         |  </metadata>
         |  <trk>
         |    <name>${escapeXml(activity.title)}</name>
+        |    <type>Cycling</type>
         |    <trkseg>
         |$points
         |    </trkseg>

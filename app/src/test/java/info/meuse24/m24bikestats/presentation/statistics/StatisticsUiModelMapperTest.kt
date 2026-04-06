@@ -154,6 +154,42 @@ class StatisticsUiModelMapperTest {
     }
 
     @Test
+    fun `groups activities by year and sums metrics`() {
+        val result = mapper.mapPeriods(
+            activities = listOf(
+                activity("2024-06-01T08:00:00Z", distanceMeters = 20000, durationSeconds = 3600),
+                activity("2024-11-15T09:00:00Z", distanceMeters = 15000, durationSeconds = 2700),
+                activity("2025-03-10T09:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+            ),
+            grouping = StatisticsGrouping.YEAR,
+        )
+
+        assertEquals(2, result.size)
+        assertEquals("2024", result[0].label)
+        assertEquals(2, result[0].tourCount)
+        assertEquals(35.0, result[0].distanceKm, 0.0)
+        assertEquals(105, result[0].durationMinutes)
+        assertEquals("2025", result[1].label)
+        assertEquals(1, result[1].tourCount)
+        assertEquals(10.0, result[1].distanceKm, 0.0)
+    }
+
+    @Test
+    fun `year grouping date range label covers full year`() {
+        val result = mapper.mapPeriods(
+            activities = listOf(
+                activity("2025-07-20T08:00:00Z", distanceMeters = 12000, durationSeconds = 2000),
+            ),
+            grouping = StatisticsGrouping.YEAR,
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("2025", result[0].label)
+        // Vienna UTC+2 in summer: 2025-07-20T08:00Z = 2025-07-20T10:00 local -> same year
+        assertEquals(1, result[0].tourCount)
+    }
+
+    @Test
     fun `map highlights returns null average travel speed when duration is zero`() {
         val highlights = mapper.mapHighlights(
             listOf(

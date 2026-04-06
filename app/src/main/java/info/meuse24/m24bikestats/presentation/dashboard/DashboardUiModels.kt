@@ -51,8 +51,24 @@ data class BikeDetailUiModel(
 data class DetailSectionUiModel(
     val title: String,
     val rows: List<Pair<String, String>>,
+    val indicator: DetailSectionIndicatorUiModel? = null,
     val actions: List<DetailSectionActionUiModel> = emptyList(),
 )
+
+data class DetailSectionIndicatorUiModel(
+    val label: String,
+    val value: String,
+    val progress: Float,
+    val tone: DetailSectionIndicatorTone,
+    val supportingText: String? = null,
+)
+
+enum class DetailSectionIndicatorTone {
+    POSITIVE,
+    INFORMATIVE,
+    WARNING,
+    DANGER,
+}
 
 data class DetailSectionActionUiModel(
     val label: String,

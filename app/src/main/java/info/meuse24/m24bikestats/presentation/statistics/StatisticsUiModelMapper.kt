@@ -135,11 +135,13 @@ class StatisticsUiModelMapper(
         }
 
         StatisticsGrouping.MONTH -> withDayOfMonth(1)
+        StatisticsGrouping.YEAR -> withDayOfYear(1)
     }
 
     private fun LocalDate.toPeriodEnd(grouping: StatisticsGrouping): LocalDate = when (grouping) {
         StatisticsGrouping.WEEK -> plusDays(6)
         StatisticsGrouping.MONTH -> with(TemporalAdjusters.lastDayOfMonth())
+        StatisticsGrouping.YEAR -> with(TemporalAdjusters.lastDayOfYear())
     }
 
     private fun LocalDate.toPeriodLabel(
@@ -157,6 +159,7 @@ class StatisticsUiModelMapper(
         }
 
         StatisticsGrouping.MONTH -> format(DateTimeFormatter.ofPattern("LLL yy", locale))
+        StatisticsGrouping.YEAR -> format(DateTimeFormatter.ofPattern("yyyy"))
     }
 
     private fun LocalDate.toPeriodRangeLabel(

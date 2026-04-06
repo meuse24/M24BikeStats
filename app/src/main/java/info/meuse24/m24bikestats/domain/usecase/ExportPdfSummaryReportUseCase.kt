@@ -68,6 +68,7 @@ class ExportPdfSummaryReportUseCase(
         zoneId: ZoneId,
     ): PdfReportStatistics {
         val monthlyPeriods = buildMonthlyPeriods(locale, zoneId)
+        val yearlyPeriods = buildYearlyPeriods(zoneId)
         val dayOfWeekDistribution = mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
             .groupingBy { it }
             .eachCount()
@@ -86,6 +87,7 @@ class ExportPdfSummaryReportUseCase(
 
         return PdfReportStatistics(
             monthlyPeriods = monthlyPeriods,
+            yearlyPeriods = yearlyPeriods,
             highlights = PdfReportHighlights(
                 longestTourKm = maxOfOrNull { it.distanceMeters }?.div(1000.0) ?: 0.0,
                 maxSpeedKmh = mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull(),
@@ -122,6 +124,32 @@ class ExportPdfSummaryReportUseCase(
             .map { bucket ->
                 PdfReportPeriod(
                     label = bucket.periodStart.format(DateTimeFormatter.ofPattern("LLL yy", locale)),
+                    tourCount = bucket.tourCount,
+                    distanceKm = bucket.distanceMeters / 1000.0,
+                    durationHours = bucket.durationSeconds / 3600.0,
+                )
+            }
+    }
+
+    private fun List<BoschActivity>.buildYearlyPeriods(
+        zoneId: ZoneId,
+    ): List<PdfReportPeriod> {
+        val buckets = linkedMapOf<Int, MutablePdfReportPeriod>()
+
+        forEach { activity ->
+            val localDate = activity.startTime.toLocalDate(zoneId) ?: return@forEach
+            val yearStart = localDate.withDayOfYear(1)
+            val bucket = buckets.getOrPut(yearStart.year) { MutablePdfReportPeriod(periodStart = yearStart) }
+            bucket.tourCount += 1
+            bucket.distanceMeters += activity.distanceMeters
+            bucket.durationSeconds += activity.durationWithoutStopsSeconds
+        }
+
+        return buckets.entries
+            .sortedBy { it.key }
+            .map { (_, bucket) ->
+                PdfReportPeriod(
+                    label = bucket.periodStart.year.toString(),
                     tourCount = bucket.tourCount,
                     distanceKm = bucket.distanceMeters / 1000.0,
                     durationHours = bucket.durationSeconds / 3600.0,

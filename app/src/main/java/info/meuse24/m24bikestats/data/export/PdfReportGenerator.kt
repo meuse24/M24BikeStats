@@ -5,10 +5,14 @@ import android.graphics.pdf.PdfDocument
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
+import info.meuse24.m24bikestats.domain.model.BoschBatteryCycleRisk
+import info.meuse24.m24bikestats.domain.model.BoschBatteryHealthBand
+import info.meuse24.m24bikestats.domain.model.BoschBatteryStressLevel
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import info.meuse24.m24bikestats.domain.model.PdfReportData
+import info.meuse24.m24bikestats.domain.model.estimateHealth
 import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
 import java.io.File
 import java.time.DayOfWeek
@@ -65,15 +69,7 @@ class PdfReportGenerator(
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_email), reportData.userInfo?.email.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_username), reportData.userInfo?.username.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_subject), reportData.userInfo?.subject.orDash())
-        builder.space(8f)
-        builder.drawSectionHeader(s(R.string.pdf_label_oauth_endpoints))
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_discovery_issuer), reportData.discoveryInfo?.issuer.orDash())
-        builder.drawLabelValueRow(
-            s(R.string.dashboard_label_oidc_authorization_endpoint),
-            reportData.discoveryInfo?.authorizationEndpoint.orDash(),
-        )
-        builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_token_endpoint), reportData.discoveryInfo?.tokenEndpoint.orDash())
-        builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_userinfo_endpoint), reportData.discoveryInfo?.userInfoEndpoint.orDash())
 
         builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_bikes))
@@ -135,6 +131,18 @@ class PdfReportGenerator(
             columns = 2,
         )
 
+        if (reportData.statistics.yearlyPeriods.isNotEmpty()) {
+            builder.startPage()
+            builder.drawSectionHeader(s(R.string.pdf_section_statistics_yearly))
+            builder.drawBarLineChart(
+                periods = reportData.statistics.yearlyPeriods,
+                avgDistanceKm = reportData.activitySummary.avgDistanceKm,
+                avgDurationHours = reportData.activitySummary.avgDurationHours,
+                distanceLegend = s(R.string.statistics_legend_distance),
+                durationLegend = s(R.string.statistics_legend_duration),
+            )
+        }
+
         builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_rhythm))
         builder.drawHorizontalBarChart(
@@ -175,7 +183,7 @@ class PdfReportGenerator(
     ) {
         builder.drawBodyText(bike.driveUnit?.productName ?: "${s(R.string.dashboard_bike_summary_title)} ${bike.id}")
         drawDriveUnit(builder, bike.driveUnit, locale)
-        drawBatteries(builder, bike.batteries, locale)
+        drawBatteries(builder, bike.batteries, bike.driveUnit, locale)
         drawComponent(builder, s(R.string.dashboard_section_remote), bike.remoteControl)
         drawComponent(builder, s(R.string.dashboard_section_head_unit), bike.headUnit)
     }
@@ -213,6 +221,7 @@ class PdfReportGenerator(
     private fun drawBatteries(
         builder: PdfPageBuilder,
         batteries: List<BoschBattery>,
+        driveUnit: BoschDriveUnit?,
         locale: Locale,
     ) {
         builder.drawSectionHeader(s(R.string.dashboard_section_batteries))
@@ -221,22 +230,44 @@ class PdfReportGenerator(
             return
         }
         batteries.forEachIndexed { index, battery ->
-            builder.drawBodyText(s(R.string.dashboard_battery_prefix, arrayOf(index + 1)))
+            if (index > 0) builder.space(6f)
+            builder.drawBodyText(
+                battery.productName?.takeIf { it.isNotBlank() }
+                    ?: s(R.string.dashboard_battery_prefix, arrayOf(index + 1)),
+            )
+            val health = battery.estimateHealth(driveUnit)
+            if (health.healthPercent != null) {
+                builder.drawMetricTiles(
+                    items = listOf(
+                        s(R.string.dashboard_label_battery_health) to "${health.healthPercent} %",
+                        s(R.string.dashboard_label_battery_cycle_risk) to health.cycleRisk.toLabel(),
+                        s(R.string.dashboard_label_battery_nominal_capacity) to health.nominalCapacityWh?.let { "$it Wh" }.orDash(),
+                        s(R.string.dashboard_label_battery_stress) to health.deliveredWhPerSupportHour?.let {
+                            s(R.string.dashboard_battery_stress_value, arrayOf(it.toWholeNumber(locale), health.stressLevel.toLabel()))
+                        }.orDash(),
+                    ),
+                    columns = 2,
+                )
+                builder.drawProgressBar(
+                    label = "${s(R.string.dashboard_label_battery_health)} ${health.healthPercent} % • ${health.healthBand.toLabel()}",
+                    ratio = health.healthPercent / 100.0,
+                )
+            }
             builder.drawLabelValueRow(s(R.string.dashboard_label_product), battery.productName.orDash())
             builder.drawLabelValueRow(
-                s(R.string.dashboard_battery_prefix_total_cycles, arrayOf(index + 1)),
-                battery.totalChargeCycles?.toInt()?.toString().orDash(),
+                s(R.string.dashboard_label_total_charge_cycles),
+                battery.totalChargeCycles?.let { String.format(locale, "%.1f", it) }.orDash(),
             )
             builder.drawLabelValueRow(
-                s(R.string.dashboard_battery_prefix_on_bike_cycles, arrayOf(index + 1)),
-                battery.onBikeChargeCycles?.toInt()?.toString().orDash(),
+                s(R.string.dashboard_label_on_bike_cycles),
+                battery.onBikeChargeCycles?.let { String.format(locale, "%.1f", it) }.orDash(),
             )
             builder.drawLabelValueRow(
-                s(R.string.dashboard_battery_prefix_off_bike_cycles, arrayOf(index + 1)),
-                battery.offBikeChargeCycles?.toInt()?.toString().orDash(),
+                s(R.string.dashboard_label_off_bike_cycles),
+                battery.offBikeChargeCycles?.let { String.format(locale, "%.1f", it) }.orDash(),
             )
             builder.drawLabelValueRow(
-                s(R.string.dashboard_battery_prefix_energy, arrayOf(index + 1)),
+                s(R.string.dashboard_label_delivered_energy),
                 battery.deliveredWhOverLifetime?.let { "$it Wh" }.orDash(),
             )
         }
@@ -318,6 +349,32 @@ class PdfReportGenerator(
 
     private fun formatCalories(calories: Double, locale: Locale): String =
         String.format(locale, "%,.0f kcal", calories)
+
+    private fun Double.toWholeNumber(locale: Locale): String =
+        String.format(locale, "%.0f", this)
+
+    private fun BoschBatteryHealthBand?.toLabel(): String = when (this) {
+        BoschBatteryHealthBand.OPTIMAL -> s(R.string.dashboard_battery_health_optimal)
+        BoschBatteryHealthBand.GOOD -> s(R.string.dashboard_battery_health_good)
+        BoschBatteryHealthBand.AGED -> s(R.string.dashboard_battery_health_aged)
+        BoschBatteryHealthBand.WORN -> s(R.string.dashboard_battery_health_worn)
+        BoschBatteryHealthBand.CRITICAL -> s(R.string.dashboard_battery_health_critical)
+        null -> s(R.string.pdf_value_not_available)
+    }
+
+    private fun BoschBatteryCycleRisk?.toLabel(): String = when (this) {
+        BoschBatteryCycleRisk.LOW -> s(R.string.dashboard_battery_cycle_risk_low)
+        BoschBatteryCycleRisk.MEDIUM -> s(R.string.dashboard_battery_cycle_risk_medium)
+        BoschBatteryCycleRisk.ELEVATED -> s(R.string.dashboard_battery_cycle_risk_elevated)
+        null -> s(R.string.pdf_value_not_available)
+    }
+
+    private fun BoschBatteryStressLevel?.toLabel(): String = when (this) {
+        BoschBatteryStressLevel.GENTLE -> s(R.string.dashboard_battery_stress_gentle)
+        BoschBatteryStressLevel.NORMAL -> s(R.string.dashboard_battery_stress_normal)
+        BoschBatteryStressLevel.INTENSIVE -> s(R.string.dashboard_battery_stress_intensive)
+        null -> s(R.string.pdf_value_not_available)
+    }
 
     private fun String?.orDash(): String = this?.takeIf { it.isNotBlank() } ?: s(R.string.pdf_value_not_available)
 

@@ -22,6 +22,7 @@ fun DashboardUiState.toHomeUiState(): HomeUiState =
         lastCloudSyncSummary = lastCloudSyncSummary,
         lastActivitiesCsvExport = lastActivitiesCsvExport,
         lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
+        lastPdfExport = lastPdfExport,
     )
 
 fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =

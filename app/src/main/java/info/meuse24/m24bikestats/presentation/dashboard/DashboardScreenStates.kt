@@ -77,6 +77,7 @@ data class HomeUiState(
     val lastCloudSyncSummary: CloudSyncSummaryUiModel?,
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
+    val lastPdfExport: PdfExportSummaryUiModel?,
 )
 
 data class ActivitiesUiState(

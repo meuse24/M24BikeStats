@@ -38,13 +38,17 @@ class TrackSharingTest {
     }
 
     @Test
-    fun `buildTrackGpx contains track points`() {
+    fun `buildTrackGpx contains track points with time power and cadence`() {
         val activity = testActivityDetail()
 
         val gpx = buildTrackGpx(activity)
 
-        assertTrue(gpx.contains("<trkpt lat=\"47.1\" lon=\"9.1\">"))
-        assertTrue(gpx.contains("<ele>500.0</ele>"))
+        assertTrue("GPX should contain correct trkpt, but was:\n$gpx", gpx.contains("<trkpt lat=\"47.1\" lon=\"9.1\">"))
+        assertTrue("GPX should contain elevation, but was:\n$gpx", gpx.contains("<ele>500.0</ele>"))
+        assertTrue("GPX should contain time, but was:\n$gpx", gpx.contains("<time>2026-04-04T12:30:00Z</time>"))
+        assertTrue("GPX should contain power, but was:\n$gpx", gpx.contains("<gpxtpx:power>210</gpxtpx:power>"))
+        assertTrue("GPX should contain cadence, but was:\n$gpx", gpx.contains("<gpxtpx:cad>81</gpxtpx:cad>"))
+        assertTrue("GPX should contain type, but was:\n$gpx", gpx.contains("<type>Cycling</type>"))
     }
 
     private fun testActivityDetail() = ActivityDetailUiModel(
@@ -55,7 +59,7 @@ class TrackSharingTest {
             id = "a1",
             title = "Morgenrunde",
             startedAt = "2026-04-04 10:00",
-            startedAtEpochMillis = null,
+            startedAtEpochMillis = 1775304000000L, // 2026-04-04 12:00:00 UTC
             distanceMeters = 12300,
             durationSeconds = 1800,
             dateLabel = "04.04.2026 10:00",

@@ -10,9 +10,14 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
+import info.meuse24.m24bikestats.domain.model.BoschBatteryCycleRisk
+import info.meuse24.m24bikestats.domain.model.BoschBatteryHealth
+import info.meuse24.m24bikestats.domain.model.BoschBatteryHealthBand
+import info.meuse24.m24bikestats.domain.model.BoschBatteryStressLevel
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
+import info.meuse24.m24bikestats.domain.model.estimateHealth
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -180,15 +185,7 @@ class DashboardUiModelMapper(
                 },
                 powerOnSummary = driveUnit?.toPowerOnSummary(),
                 assistModesSummary = displayAssistModes.toAssistModeRangeSummary(),
-                batterySummary = batteries.firstOrNull()?.let { battery ->
-                    battery.totalChargeCycles?.let {
-                        s(
-                            R.string.dashboard_battery_cycles,
-                            battery.productName ?: s(R.string.dashboard_battery_fallback_title),
-                            String.format(Locale.US, "%.1f", it),
-                        )
-                    } ?: (battery.productName ?: s(R.string.dashboard_battery_fallback_title))
-                },
+                batterySummary = batteries.firstOrNull()?.toBikeCardSummary(driveUnit),
                 shareText = detailUiModel.toShareText(),
             )
         }
@@ -323,14 +320,14 @@ class DashboardUiModelMapper(
                         )
                     }
                     if (batteries.isNotEmpty()) {
-                    add(
-                        DetailSectionUiModel(
-                            title = s(R.string.dashboard_section_batteries),
-                            rows = batteries.flatMapIndexed { index, battery ->
-                                battery.toRows(prefix = s(R.string.dashboard_battery_prefix, index + 1))
+                        addAll(
+                            batteries.mapIndexed { index, battery ->
+                                battery.toDetailSection(
+                                    title = s(R.string.dashboard_battery_prefix, index + 1),
+                                    driveUnit = driveUnit,
+                                )
                             },
-                        ),
-                    )
+                        )
                     }
                     remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
                     headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
@@ -338,14 +335,96 @@ class DashboardUiModelMapper(
             )
         }
 
-    private fun BoschBattery.toRows(prefix: String): List<Pair<String, String>> = buildList {
-        productName?.let { add(s(R.string.dashboard_battery_prefix_product, prefix) to it) }
-        partNumber?.let { add(s(R.string.dashboard_battery_prefix_part_number, prefix) to it) }
-        serialNumber?.let { add(s(R.string.dashboard_battery_prefix_serial_number, prefix) to it) }
-        deliveredWhOverLifetime?.let { add(s(R.string.dashboard_battery_prefix_energy, prefix) to s(R.string.dashboard_wh_value, it)) }
-        totalChargeCycles?.let { add(s(R.string.dashboard_battery_prefix_total_cycles, prefix) to s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it))) }
-        onBikeChargeCycles?.let { add(s(R.string.dashboard_battery_prefix_on_bike_cycles, prefix) to s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it))) }
-        offBikeChargeCycles?.let { add(s(R.string.dashboard_battery_prefix_off_bike_cycles, prefix) to s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it))) }
+    private fun BoschBattery.toBikeCardSummary(driveUnit: BoschDriveUnit?): String {
+        val health = estimateHealth(driveUnit)
+        val name = productName ?: s(R.string.dashboard_battery_fallback_title)
+        return when {
+            health.healthPercent != null && totalChargeCycles != null -> s(
+                R.string.dashboard_battery_health_cycles,
+                name,
+                health.healthPercent,
+                String.format(Locale.US, "%.1f", totalChargeCycles),
+            )
+
+            health.healthPercent != null -> s(
+                R.string.dashboard_battery_health_summary,
+                name,
+                health.healthPercent,
+            )
+
+            totalChargeCycles != null -> s(
+                R.string.dashboard_battery_cycles,
+                name,
+                String.format(Locale.US, "%.1f", totalChargeCycles),
+            )
+
+            else -> name
+        }
+    }
+
+    private fun BoschBattery.toDetailSection(
+        title: String,
+        driveUnit: BoschDriveUnit?,
+    ): DetailSectionUiModel {
+        val health = estimateHealth(driveUnit)
+        return DetailSectionUiModel(
+            title = title,
+            rows = buildList {
+                productName?.let { add(s(R.string.dashboard_label_product) to it) }
+                health.healthPercent?.let {
+                    add(s(R.string.dashboard_label_battery_health) to "${it} % • ${health.healthBand.toLabel()}")
+                }
+                health.cycleRisk?.let { add(s(R.string.dashboard_label_battery_cycle_risk) to it.toLabel()) }
+                health.nominalCapacityWh?.let { add(s(R.string.dashboard_label_battery_nominal_capacity) to s(R.string.dashboard_wh_value, it)) }
+                health.deliveredWhPerSupportHour?.let {
+                    add(
+                        s(R.string.dashboard_label_battery_stress) to
+                            s(
+                                R.string.dashboard_battery_stress_value,
+                                it.toWholeNumber(),
+                                health.stressLevel.toLabel(),
+                            ),
+                    )
+                }
+                partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
+                serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
+                deliveredWhOverLifetime?.let { add(s(R.string.dashboard_label_delivered_energy) to s(R.string.dashboard_wh_value, it)) }
+                totalChargeCycles?.let {
+                    add(
+                        s(R.string.dashboard_label_total_charge_cycles) to
+                            s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it)),
+                    )
+                }
+                onBikeChargeCycles?.let {
+                    add(
+                        s(R.string.dashboard_label_on_bike_cycles) to
+                            s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it)),
+                    )
+                }
+                offBikeChargeCycles?.let {
+                    add(
+                        s(R.string.dashboard_label_off_bike_cycles) to
+                            s(R.string.dashboard_cycles_value, String.format(Locale.US, "%.1f", it)),
+                    )
+                }
+            },
+            indicator = health.toIndicator(),
+        )
+    }
+
+    private fun BoschBatteryHealth.toIndicator(): DetailSectionIndicatorUiModel? {
+        val percent = healthPercent ?: return null
+        return DetailSectionIndicatorUiModel(
+            label = s(R.string.dashboard_label_battery_health),
+            value = "$percent %",
+            progress = progress ?: 0f,
+            tone = healthBand.toIndicatorTone(),
+            supportingText = listOfNotNull(
+                healthBand?.toLabel(),
+                cycleRisk?.let { "${s(R.string.dashboard_label_battery_cycle_risk)} ${it.toLabel()}" },
+                stressLevel?.let { "${s(R.string.dashboard_label_battery_stress_short)} ${it.toLabel()}" },
+            ).joinToString(" • "),
+        )
     }
 
     private fun BoschComponent.toRows(): List<Pair<String, String>> = buildList {
@@ -491,6 +570,39 @@ class DashboardUiModelMapper(
 
     private fun Double.toCoordinateText(): String =
         String.format(Locale.US, "%.5f", this)
+
+    private fun BoschBatteryHealthBand?.toLabel(): String = when (this) {
+        BoschBatteryHealthBand.OPTIMAL -> s(R.string.dashboard_battery_health_optimal)
+        BoschBatteryHealthBand.GOOD -> s(R.string.dashboard_battery_health_good)
+        BoschBatteryHealthBand.AGED -> s(R.string.dashboard_battery_health_aged)
+        BoschBatteryHealthBand.WORN -> s(R.string.dashboard_battery_health_worn)
+        BoschBatteryHealthBand.CRITICAL -> s(R.string.dashboard_battery_health_critical)
+        null -> s(R.string.pdf_value_not_available)
+    }
+
+    private fun BoschBatteryCycleRisk?.toLabel(): String = when (this) {
+        BoschBatteryCycleRisk.LOW -> s(R.string.dashboard_battery_cycle_risk_low)
+        BoschBatteryCycleRisk.MEDIUM -> s(R.string.dashboard_battery_cycle_risk_medium)
+        BoschBatteryCycleRisk.ELEVATED -> s(R.string.dashboard_battery_cycle_risk_elevated)
+        null -> s(R.string.pdf_value_not_available)
+    }
+
+    private fun BoschBatteryStressLevel?.toLabel(): String = when (this) {
+        BoschBatteryStressLevel.GENTLE -> s(R.string.dashboard_battery_stress_gentle)
+        BoschBatteryStressLevel.NORMAL -> s(R.string.dashboard_battery_stress_normal)
+        BoschBatteryStressLevel.INTENSIVE -> s(R.string.dashboard_battery_stress_intensive)
+        null -> s(R.string.pdf_value_not_available)
+    }
+
+    private fun BoschBatteryHealthBand?.toIndicatorTone(): DetailSectionIndicatorTone = when (this) {
+        BoschBatteryHealthBand.OPTIMAL -> DetailSectionIndicatorTone.POSITIVE
+        BoschBatteryHealthBand.GOOD -> DetailSectionIndicatorTone.INFORMATIVE
+        BoschBatteryHealthBand.AGED,
+        BoschBatteryHealthBand.WORN,
+        null,
+        -> DetailSectionIndicatorTone.WARNING
+        BoschBatteryHealthBand.CRITICAL -> DetailSectionIndicatorTone.DANGER
+    }
 
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)

@@ -4,14 +4,22 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -29,10 +37,14 @@ import info.meuse24.m24bikestats.presentation.dashboard.ActivitiesScreen
 import info.meuse24.m24bikestats.presentation.dashboard.ActivityDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeDetailScreen
 import info.meuse24.m24bikestats.presentation.dashboard.BikeListScreen
+import info.meuse24.m24bikestats.presentation.dashboard.DashboardUiState
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.FunctionsScreen
 import info.meuse24.m24bikestats.presentation.dashboard.HomeScreen
+import info.meuse24.m24bikestats.presentation.dashboard.PdfExportUiModel
 import info.meuse24.m24bikestats.presentation.dashboard.TrackScreen
+import info.meuse24.m24bikestats.presentation.dashboard.copyPdfReportToUri
+import info.meuse24.m24bikestats.presentation.dashboard.createPdfShareIntent
 import info.meuse24.m24bikestats.presentation.dashboard.toActivitiesUiState
 import info.meuse24.m24bikestats.presentation.dashboard.toActivityDetailScreenUiState
 import info.meuse24.m24bikestats.presentation.dashboard.toBikeDetailScreenUiState
@@ -47,6 +59,7 @@ import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsScreen
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 private const val ROOT_LOGIN_ROUTE = "login"
@@ -87,6 +100,7 @@ fun AppNavigation() {
         }
 
         composable(ROOT_MAIN_ROUTE) {
+            val context = LocalContext.current
             val shellNavController = rememberNavController()
             val shellBackStackEntry by shellNavController.currentBackStackEntryAsState()
             val currentRoute = shellBackStackEntry?.destination?.route
@@ -94,13 +108,40 @@ fun AppNavigation() {
             val topBarTitle = currentRoute.toTopBarTitle()
             val showTopBar = currentRoute.shouldShowShellTopBar()
             val snackbarHostState = remember { SnackbarHostState() }
+            val coroutineScope = rememberCoroutineScope()
             val dashboardViewModel: DashboardViewModel = koinViewModel()
             val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
+            var pendingPdfDialogExport by remember { mutableStateOf<PdfExportUiModel?>(null) }
+            var pendingPdfSaveExport by remember { mutableStateOf<PdfExportUiModel?>(null) }
+            val savePdfLauncher = rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.CreateDocument("application/pdf"),
+            ) { uri ->
+                val export = pendingPdfSaveExport
+                pendingPdfSaveExport = null
+                pendingPdfDialogExport = null
+                if (uri == null || export == null) return@rememberLauncherForActivityResult
+
+                val result = copyPdfReportToUri(context, export, uri)
+                result.exceptionOrNull()?.let { error ->
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar(
+                            error.message ?: context.getString(R.string.dashboard_error_pdf_export),
+                        )
+                    }
+                }
+            }
 
             LaunchedEffect(dashboardUiState.error) {
                 dashboardUiState.error?.let { message ->
                     snackbarHostState.showSnackbar(message)
                     dashboardViewModel.clearError()
+                }
+            }
+
+            LaunchedEffect(dashboardUiState.pendingPdfExport) {
+                dashboardUiState.pendingPdfExport?.let { export ->
+                    pendingPdfDialogExport = export
+                    dashboardViewModel.onPdfExportHandled()
                 }
             }
 
@@ -154,7 +195,17 @@ fun AppNavigation() {
                     }
                 },
                 topBarActions = {
-                    if (currentRoute.shouldShowRefreshAction()) {
+                    if (currentRoute.shouldShowPdfExportAction()) {
+                        IconButton(
+                            onClick = dashboardViewModel::exportPdfSummaryReport,
+                            enabled = dashboardUiState.canStartPdfExport(),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Print,
+                                contentDescription = stringResource(R.string.cd_export_pdf_summary),
+                            )
+                        }
+                    } else if (currentRoute.shouldShowRefreshAction()) {
                         IconButton(onClick = dashboardViewModel::refresh) {
                             Icon(
                                 imageVector = Icons.Default.Refresh,
@@ -316,6 +367,44 @@ fun AppNavigation() {
                     }
                 }
             }
+
+            pendingPdfDialogExport?.let { export ->
+                AlertDialog(
+                    onDismissRequest = { pendingPdfDialogExport = null },
+                    title = { Text(stringResource(R.string.home_pdf_dialog_title)) },
+                    text = { Text(stringResource(R.string.home_pdf_dialog_text, export.fileName)) },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    android.content.Intent.createChooser(
+                                        createPdfShareIntent(context, export),
+                                        context.getString(R.string.functions_share_chooser_pdf),
+                                    ),
+                                )
+                                pendingPdfDialogExport = null
+                            },
+                        ) {
+                            Text(stringResource(R.string.home_pdf_action_share))
+                        }
+                    },
+                    dismissButton = {
+                        androidx.compose.foundation.layout.Row {
+                            TextButton(
+                                onClick = {
+                                    pendingPdfSaveExport = export
+                                    savePdfLauncher.launch(export.fileName)
+                                },
+                            ) {
+                                Text(stringResource(R.string.home_pdf_action_save))
+                            }
+                            TextButton(onClick = { pendingPdfDialogExport = null }) {
+                                Text(stringResource(R.string.common_cancel))
+                            }
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -345,7 +434,6 @@ internal fun String?.shouldShowShellTopBar(): Boolean = when {
 }
 
 internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
-    MainDestination.HOME.route,
     MainDestination.ACTIVITIES.route,
     MainDestination.BIKE.route,
     MainDestination.STATISTICS.route,
@@ -353,3 +441,14 @@ internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
 
     else -> false
 }
+
+internal fun String?.shouldShowPdfExportAction(): Boolean =
+    this == MainDestination.HOME.route
+
+private fun DashboardUiState.canStartPdfExport(): Boolean =
+    !isInitialLoading &&
+        !isRefreshing &&
+        !isSyncingCloudData &&
+        !isExportingActivitiesCsv &&
+        !isExportingActivityDetailsCsv &&
+        !isExportingPdf

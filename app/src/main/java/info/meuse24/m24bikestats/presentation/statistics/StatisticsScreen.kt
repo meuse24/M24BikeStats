@@ -196,6 +196,11 @@ private fun GroupingSelector(
             onClick = { onGroupingSelected(StatisticsGrouping.MONTH) },
             label = { Text(stringResource(R.string.statistics_group_month)) },
         )
+        FilterChip(
+            selected = selectedGrouping == StatisticsGrouping.YEAR,
+            onClick = { onGroupingSelected(StatisticsGrouping.YEAR) },
+            label = { Text(stringResource(R.string.statistics_group_year)) },
+        )
     }
 }
 
