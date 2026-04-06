@@ -66,7 +66,7 @@
     <string name="help_functions_label">Functions</string>
     <string name="help_functions_text">CSV exports use only the activities and detail data already stored in the local cache, then open the Android share sheet. The CSV format preset from Setup controls separators, decimal numbers and date formatting.</string>
     <string name="help_statistics_label">Statistics</string>
-    <string name="help_statistics_text">The statistics screen aggregates all locally cached activities into weekly or monthly totals for distance, ride time and tour count. Tour counts appear as labels directly on each bar. Tap any period to expand the aggregated values below the chart. The refresh button in the top bar triggers a cloud sync that automatically updates the chart once new data arrives.</string>
+    <string name="help_statistics_text">The statistics screen aggregates all locally cached activities into weekly or monthly totals for distance, ride time and tour count. Tour counts appear as labels directly on each bar, average distance and average ride-time guide lines provide orientation, and the summary tiles also show average values per tour. Tap any period to expand the aggregated values below the chart. The refresh button in the top bar triggers a cloud sync that automatically updates the chart once new data arrives.</string>
     <string name="help_diagnostics_label">Diagnostics</string>
     <string name="help_diagnostics_text">The API test screen remains available as a diagnostic tool and is intentionally not part of the primary navigation.</string>
 
@@ -145,6 +145,8 @@
     <string name="statistics_summary_tours">Tours</string>
     <string name="statistics_summary_distance">Distance</string>
     <string name="statistics_summary_duration">Hours</string>
+    <string name="statistics_summary_avg_distance">Avg km / tour</string>
+    <string name="statistics_summary_avg_duration">Avg h / tour</string>
     <string name="statistics_group_week">Weeks</string>
     <string name="statistics_group_month">Months</string>
     <string name="statistics_legend_distance">Distance</string>
@@ -158,6 +160,7 @@
     <string name="statistics_chart_subtitle_scroll">Tap a period to inspect the aggregated values. Swipe horizontally to reveal more periods.</string>
     <string name="statistics_chart_subtitle_zoom">Tap a period to inspect the aggregated values. Swipe horizontally and use two fingers to zoom.</string>
     <string name="statistics_average_line_label">Avg %1$d km</string>
+    <string name="statistics_average_duration_label">Avg %1$d h</string>
     <string name="statistics_detail_title">Selected period</string>
     <string name="statistics_label_period">Period</string>
     <string name="statistics_label_tours">Tours</string>

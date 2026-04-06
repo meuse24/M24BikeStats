@@ -91,7 +91,7 @@ Regeln:
   - `StatisticsScreen.kt` = Compose-Screen (stateless)
   - `StatisticsViewModel.kt` = Grouping-State, Period-Selektion, `combine`-Pipeline
   - `StatisticsUiModelMapper.kt` = `List<BoschActivity>` → `List<PeriodStats>`, Android-frei
-  - `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsGrouping`
+  - `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsGrouping` plus testbare Formatierungs-Helfer
 
 ## Navigation
 
@@ -119,7 +119,7 @@ Regeln:
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
 - Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
-- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monatsaggregation, interaktiver Period-Selektion und Summary-Tiles; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
+- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monatsaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
@@ -164,6 +164,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
 - Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) für alle Daten nutzen, die nicht als Serien-Y-Wert modelliert sind
+- Vico-`dataLabelValueFormatter` bekommt nur den geplotteten Y-Wert; bei potenziell doppelten Distanzwerten keine positionsabhängige Zuordnung per Rohwert annehmen
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
@@ -187,6 +188,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Dashboard-UI-Mapper
 - Statistik-Mapper (`StatisticsUiModelMapperTest`): Gruppierung, Timezone-Grenzfälle
 - Statistik-ViewModel (`StatisticsViewModelTest`): Toggle, Grouping-Wechsel, Stale-Reference
+- Statistik-UI-Helfer (`StatisticsUiStateFormattingTest`): formatierte Distanz/Stunden, `durationHours`
 - Routing/Navigations-Mapping
 - Repository/Cache-Verhalten
 - GPX-/CSV-Exportpfade

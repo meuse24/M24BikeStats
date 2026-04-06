@@ -101,6 +101,28 @@ class StatisticsViewModelTest {
         collector.cancel()
     }
 
+    @Test
+    fun `ui state exposes total and average metrics`() = runTest {
+        val viewModel = createViewModel(
+            listOf(
+                activity("2026-04-01T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+                activity("2026-04-03T09:00:00Z", distanceMeters = 5000, durationSeconds = 900),
+            ),
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        with(viewModel.uiState.value) {
+            assertEquals(2, totalTours)
+            assertEquals(15.0, totalDistanceKm, 0.0)
+            assertEquals(0.75, totalDurationHours, 0.0)
+            assertEquals(7.5, avgDistanceKm, 0.0)
+            assertEquals(0.375, avgDurationHours, 0.0)
+        }
+
+        collector.cancel()
+    }
+
     private fun createViewModel(
         activities: List<BoschActivity>,
     ): StatisticsViewModel {

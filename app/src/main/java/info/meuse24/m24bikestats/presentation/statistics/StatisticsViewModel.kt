@@ -56,14 +56,21 @@ class StatisticsViewModel(
         grouping: StatisticsGrouping,
         periods: List<PeriodStats>,
         selectedPeriod: PeriodStats?,
-    ): StatisticsUiState =
-        StatisticsUiState(
+    ): StatisticsUiState {
+        val totalTours = size
+        val totalDistanceKm = sumOf { it.distanceMeters } / 1000.0
+        val totalDurationHours = sumOf { it.durationWithoutStopsSeconds }.toDouble() / 3600.0
+
+        return StatisticsUiState(
             periods = periods,
             selectedPeriod = selectedPeriod,
             grouping = grouping,
-            totalTours = size,
-            totalDistanceKm = sumOf { it.distanceMeters } / 1000.0,
-            totalDurationHours = sumOf { it.durationWithoutStopsSeconds }.toDouble() / 3600.0,
+            totalTours = totalTours,
+            totalDistanceKm = totalDistanceKm,
+            totalDurationHours = totalDurationHours,
+            avgDistanceKm = if (totalTours > 0) totalDistanceKm / totalTours else 0.0,
+            avgDurationHours = if (totalTours > 0) totalDurationHours / totalTours else 0.0,
             isLoading = false,
         )
+    }
 }

@@ -67,17 +67,15 @@ import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerVisibility
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import com.patrykandpatrick.vico.core.common.Position
 import info.meuse24.m24bikestats.R
-import java.util.Locale
 import kotlin.math.roundToInt
 
-private const val STATISTICS_SCROLL_THRESHOLD = 7
-private const val STATISTICS_ZOOM_THRESHOLD = 10
+private const val STATISTICS_SCROLL_THRESHOLD = 14
+private const val STATISTICS_ZOOM_THRESHOLD = 20
 private const val STATISTICS_MAX_ZOOM = 2f
 private const val STATISTICS_COLUMN_WIDTH_DP = 8f
 private const val STATISTICS_COLUMN_COLLECTION_SPACING_DP = 8f
 private const val STATISTICS_BOTTOM_AXIS_ROTATION_THRESHOLD = 12
 
-private val statisticsDistanceValuesKey = ExtraStore.Key<List<Double>>()
 private val statisticsTourCountsKey = ExtraStore.Key<List<Int>>()
 
 @Composable
@@ -130,25 +128,42 @@ fun StatisticsScreen(
 private fun StatisticsSummaryRow(
     uiState: StatisticsUiState,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        StatisticsMetricTile(
-            label = stringResource(R.string.statistics_summary_tours),
-            value = uiState.totalTours.toString(),
-            modifier = Modifier.weight(1f),
-        )
-        StatisticsMetricTile(
-            label = stringResource(R.string.statistics_summary_distance),
-            value = uiState.totalDistanceKm.toReadableDistance(),
-            modifier = Modifier.weight(1f),
-        )
-        StatisticsMetricTile(
-            label = stringResource(R.string.statistics_summary_duration),
-            value = uiState.totalDurationHours.toReadableHours(),
-            modifier = Modifier.weight(1f),
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            StatisticsMetricTile(
+                label = stringResource(R.string.statistics_summary_tours),
+                value = uiState.totalTours.toString(),
+                modifier = Modifier.weight(1f),
+            )
+            StatisticsMetricTile(
+                label = stringResource(R.string.statistics_summary_distance),
+                value = uiState.totalDistanceKm.toReadableDistance(),
+                modifier = Modifier.weight(1f),
+            )
+            StatisticsMetricTile(
+                label = stringResource(R.string.statistics_summary_duration),
+                value = uiState.totalDurationHours.toReadableHours(),
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            StatisticsMetricTile(
+                label = stringResource(R.string.statistics_summary_avg_distance),
+                value = uiState.avgDistanceKm.toReadableDistance(),
+                modifier = Modifier.weight(1f),
+            )
+            StatisticsMetricTile(
+                label = stringResource(R.string.statistics_summary_avg_duration),
+                value = uiState.avgDurationHours.toReadableHours(),
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 
@@ -176,13 +191,16 @@ private fun StatisticsChartCard(
     periods: List<PeriodStats>,
     onPeriodSelected: (Long) -> Unit,
 ) {
-    val locale = Locale.getDefault()
     val modelProducer = remember { CartesianChartModelProducer() }
     val distanceColor = MaterialTheme.colorScheme.primary
     val durationColor = MaterialTheme.colorScheme.tertiary
+    // Vico's column data-label formatter receives only the plotted Y value, not the bar index.
+    val chartDistanceValues = remember(periods) { periods.toChartDistanceValues() }
+    val chartDistanceValueIndices = remember(chartDistanceValues) {
+        chartDistanceValues.withIndex().associate { it.value to it.index }
+    }
     val marker = rememberStatisticsMarker(
         periods = periods,
-        locale = locale,
         distanceColor = distanceColor,
     )
     val markerVisibilityListener = remember(periods, onPeriodSelected) {
@@ -200,8 +218,8 @@ private fun StatisticsChartCard(
             }
         }
     }
-    val scrollThreshold = STATISTICS_SCROLL_THRESHOLD * 2
-    val zoomThreshold = STATISTICS_ZOOM_THRESHOLD * 2
+    val scrollThreshold = STATISTICS_SCROLL_THRESHOLD
+    val zoomThreshold = STATISTICS_ZOOM_THRESHOLD
     val scrollState = rememberVicoScrollState(
         scrollEnabled = periods.size > scrollThreshold,
     )
@@ -250,9 +268,19 @@ private fun StatisticsChartCard(
             ?.average()
             ?.takeIf { it > 0.0 }
     }
+    val averageDurationHours = remember(periods) {
+        periods.takeIf { it.size > 1 }
+            ?.map(PeriodStats::durationHours)
+            ?.average()
+            ?.takeIf { it > 0.0 }
+    }
     val averageDistanceLabel = stringResource(
         R.string.statistics_average_line_label,
         averageDistanceKm?.roundToInt() ?: 0,
+    )
+    val averageDurationLabel = stringResource(
+        R.string.statistics_average_duration_label,
+        averageDurationHours?.roundToInt() ?: 0,
     )
     val averageDistanceLine = rememberLineComponent(
         fill = fill(distanceColor.copy(alpha = 0.35f)),
@@ -268,33 +296,65 @@ private fun StatisticsChartCard(
             fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
         ),
     )
+    val averageDurationLine = rememberLineComponent(
+        fill = fill(durationColor.copy(alpha = 0.35f)),
+        thickness = 1.dp,
+        shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
+    )
+    val averageDurationLabelComponent = rememberTextComponent(
+        color = MaterialTheme.colorScheme.tertiary,
+        textSize = 10.sp,
+        padding = Insets(8f, 4f, 8f, 4f),
+        background = rememberShapeComponent(
+            shape = CorneredShape.rounded(allDp = 8f),
+            fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ),
+    )
     val decorations = remember(
         averageDistanceKm,
+        averageDurationHours,
         averageDistanceLabel,
+        averageDurationLabel,
         averageDistanceLine,
         averageDistanceLabelComponent,
+        averageDurationLine,
+        averageDurationLabelComponent,
     ) {
-        averageDistanceKm?.let { averageDistance ->
-            listOf(
-                HorizontalLine(
-                    y = { averageDistance },
-                    line = averageDistanceLine,
-                    labelComponent = averageDistanceLabelComponent,
-                    label = { averageDistanceLabel },
-                    horizontalLabelPosition = Position.Horizontal.End,
-                    verticalLabelPosition = Position.Vertical.Top,
-                    verticalAxisPosition = Axis.Position.Vertical.Start,
-                ),
-            )
-        }.orEmpty()
+        buildList {
+            averageDistanceKm?.let { averageDistance ->
+                add(
+                    HorizontalLine(
+                        y = { averageDistance },
+                        line = averageDistanceLine,
+                        labelComponent = averageDistanceLabelComponent,
+                        label = { averageDistanceLabel },
+                        horizontalLabelPosition = Position.Horizontal.End,
+                        verticalLabelPosition = Position.Vertical.Top,
+                        verticalAxisPosition = Axis.Position.Vertical.Start,
+                    ),
+                )
+            }
+            averageDurationHours?.let { averageDuration ->
+                add(
+                    HorizontalLine(
+                        y = { averageDuration },
+                        line = averageDurationLine,
+                        labelComponent = averageDurationLabelComponent,
+                        label = { averageDurationLabel },
+                        horizontalLabelPosition = Position.Horizontal.Start,
+                        verticalLabelPosition = Position.Vertical.Top,
+                        verticalAxisPosition = Axis.Position.Vertical.End,
+                    ),
+                )
+            }
+        }
     }
 
-    LaunchedEffect(periods) {
+    LaunchedEffect(periods, chartDistanceValues) {
         modelProducer.runTransaction {
-            columnSeries { series(periods.map { it.distanceKm }) }
+            columnSeries { series(chartDistanceValues) }
             lineSeries { series(periods.map { it.durationHours }) }
             extras { store ->
-                store.set(statisticsDistanceValuesKey, periods.map { it.distanceKm })
                 store.set(statisticsTourCountsKey, periods.map { it.tourCount })
             }
         }
@@ -348,19 +408,20 @@ private fun StatisticsChartCard(
                             dataLabel = rememberTextComponent(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textSize = 11.sp,
+                                padding = Insets(4f, 2f, 4f, 2f),
                                 background = rememberShapeComponent(
                                     shape = CorneredShape.rounded(allPercent = 50),
                                     fill = fill(MaterialTheme.colorScheme.surfaceContainer),
                                 ),
                             ),
-                            dataLabelValueFormatter = remember {
+                            dataLabelValueFormatter = remember(chartDistanceValueIndices) {
                                 CartesianValueFormatter { context, value, _ ->
-                                    val extras = context.model.extraStore
-                                    val distances = extras.getOrNull(statisticsDistanceValuesKey)
+                                    val tourCounts = context.model.extraStore.getOrNull(statisticsTourCountsKey)
                                         ?: return@CartesianValueFormatter ""
-                                    val tourCounts = extras.getOrNull(statisticsTourCountsKey)
-                                        ?: return@CartesianValueFormatter ""
-                                    tourCounts.getOrNull(distances.indexOf(value))?.toString().orEmpty()
+                                    chartDistanceValueIndices[value]
+                                        ?.let(tourCounts::getOrNull)
+                                        ?.toString()
+                                        .orEmpty()
                                 }
                             },
                             verticalAxisPosition = Axis.Position.Vertical.Start,
@@ -369,14 +430,14 @@ private fun StatisticsChartCard(
                             title = stringResource(R.string.statistics_axis_distance),
                             guideline = startAxisGuideline,
                             valueFormatter = remember {
-                                CartesianValueFormatter { _, value, _ -> value.roundToInt().toString() }
+                                CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} km" }
                             },
                         ),
                         endAxis = VerticalAxis.rememberEnd(
                             title = stringResource(R.string.statistics_axis_secondary),
                             guideline = null,
                             valueFormatter = remember {
-                                CartesianValueFormatter { _, value, _ -> value.roundToInt().toString() }
+                                CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} h" }
                             },
                         ),
                         bottomAxis = HorizontalAxis.rememberBottom(
@@ -408,7 +469,6 @@ private fun StatisticsChartCard(
 @Composable
 private fun rememberStatisticsMarker(
     periods: List<PeriodStats>,
-    locale: Locale,
     distanceColor: Color,
 ) : DefaultCartesianMarker {
     val indicatorStrokeColor = MaterialTheme.colorScheme.surfaceContainerHigh
@@ -425,7 +485,7 @@ private fun rememberStatisticsMarker(
                 strokeThickness = 1.dp,
             ),
         ),
-        valueFormatter = remember(periods, locale) {
+        valueFormatter = remember(periods) {
             DefaultCartesianMarker.ValueFormatter { _, targets ->
                 val period = targets.firstOrNull()
                     ?.x
@@ -636,11 +696,18 @@ private fun List<CartesianMarker.Target>.updateSelection(
     onPeriodSelected(period.startEpochMillis)
 }
 
-private fun Double.toReadableDistance(): String =
-    String.format(Locale.getDefault(), "%.1f km", this)
+private fun List<PeriodStats>.toChartDistanceValues(): List<Double> {
+    val duplicateCounts = mutableMapOf<Double, Int>()
 
-private fun Double.toReadableHours(): String =
-    String.format(Locale.getDefault(), "%.1f h", this)
+    return map { period ->
+        val duplicateIndex = duplicateCounts.getOrDefault(period.distanceKm, 0)
+        duplicateCounts[period.distanceKm] = duplicateIndex + 1
 
-private val PeriodStats.durationHours: Double
-    get() = durationMinutes / 60.0
+        // Preserve the rendered height while giving duplicate values a unique lookup key.
+        var chartValue = period.distanceKm
+        repeat(duplicateIndex) {
+            chartValue = Math.nextUp(chartValue)
+        }
+        chartValue
+    }
+}
