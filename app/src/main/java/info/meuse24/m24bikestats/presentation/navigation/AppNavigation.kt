@@ -158,9 +158,13 @@ fun AppNavigation() {
                 currentRoute = currentRoute,
                 topBarTitle = topBarTitle,
                 onNavigateToOverview = {
-                    shellNavController.navigate(MainDestination.HOME.route) {
-                        popUpTo(shellNavController.graph.findStartDestination().id)
-                        launchSingleTop = true
+                    if (currentRoute.isMapRoute()) {
+                        shellNavController.popBackStack()
+                    } else {
+                        shellNavController.navigate(MainDestination.HOME.route) {
+                            popUpTo(shellNavController.graph.findStartDestination().id)
+                            launchSingleTop = true
+                        }
                     }
                 },
                 showTopBar = showTopBar,
@@ -474,6 +478,8 @@ internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
 
 internal fun String?.shouldShowPdfExportAction(): Boolean =
     this == MainDestination.HOME.route
+
+internal fun String?.isMapRoute(): Boolean = this == MAP_ROUTE
 
 private fun DashboardUiState.canStartPdfExport(): Boolean =
     !isInitialLoading &&

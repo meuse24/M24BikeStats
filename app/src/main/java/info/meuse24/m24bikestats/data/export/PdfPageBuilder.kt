@@ -352,7 +352,7 @@ class PdfPageBuilder(
     ) {
         if (tileProvider == null) return
         val tilesPerAxis = 2.0.pow(viewport.zoom).toInt().coerceAtLeast(1)
-        val tileSize = 256.0
+        val tileSize = PDF_TILE_SIZE
         val startTileX = floor(viewport.topLeftWorldX / tileSize).toInt()
         val endTileX = floor((viewport.topLeftWorldX + mapRect.width()) / tileSize).toInt()
         val startTileY = floor(viewport.topLeftWorldY / tileSize).toInt()
@@ -367,7 +367,7 @@ class PdfPageBuilder(
                 val tile = tileProvider(viewport.zoom, wrappedX, tileY) ?: continue
                 val left = mapRect.left + ((tileX * tileSize) - viewport.topLeftWorldX).toFloat()
                 val top = mapRect.top + ((tileY * tileSize) - viewport.topLeftWorldY).toFloat()
-                val dest = RectF(left, top, left + 256f, top + 256f)
+                val dest = RectF(left, top, left + tileSize.toFloat(), top + tileSize.toFloat())
                 canvas.drawBitmap(tile, null, dest, null)
             }
         }
@@ -412,7 +412,7 @@ class PdfPageBuilder(
         longitude: Double,
         zoom: Int,
     ): Double {
-        val worldSize = 256.0 * 2.0.pow(zoom)
+        val worldSize = PDF_TILE_SIZE * 2.0.pow(zoom)
         return ((longitude.coerceIn(-180.0, 180.0) + 180.0) / 360.0) * worldSize
     }
 
@@ -420,15 +420,11 @@ class PdfPageBuilder(
         latitude: Double,
         zoom: Int,
     ): Double {
-        val worldSize = 256.0 * 2.0.pow(zoom)
-        val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
-        val radians = Math.toRadians(clamped)
-        val mercatorN = ln(tan((PI / 4.0) + (radians / 2.0)))
-        val normalized = (1.0 - (mercatorN / PI)) / 2.0
-        return normalized * worldSize
+        val worldSize = PDF_TILE_SIZE * 2.0.pow(zoom)
+        return latitudeToMercatorYNormalized(latitude) * worldSize
     }
 
-    private fun mercatorFraction(latitude: Double): Double {
+    private fun latitudeToMercatorYNormalized(latitude: Double): Double {
         val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
         val radians = Math.toRadians(clamped)
         return (1.0 - ln(tan(radians) + (1.0 / kotlin.math.cos(radians))) / PI) / 2.0
@@ -440,9 +436,11 @@ class PdfPageBuilder(
     ): MapViewport {
         val bounds = toPaddedBounds()
         val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0002)
-        val latitudeFraction = abs(mercatorFraction(bounds.maxLatitude) - mercatorFraction(bounds.minLatitude)).coerceAtLeast(0.0002)
-        val zoomLon = ln((mapWidthPx * 360.0) / (longitudeDelta * 256.0)) / ln(2.0)
-        val zoomLat = ln(mapHeightPx / (latitudeFraction * 256.0)) / ln(2.0)
+        val latitudeFraction = abs(
+            latitudeToMercatorYNormalized(bounds.maxLatitude) - latitudeToMercatorYNormalized(bounds.minLatitude),
+        ).coerceAtLeast(0.0002)
+        val zoomLon = ln((mapWidthPx * 360.0) / (longitudeDelta * PDF_TILE_SIZE)) / ln(2.0)
+        val zoomLat = ln(mapHeightPx / (latitudeFraction * PDF_TILE_SIZE)) / ln(2.0)
         val zoom = floor((minOf(zoomLon, zoomLat) - 0.15).coerceIn(2.5, 15.0)).toInt()
         val centerWorldX = longitudeToWorldX(bounds.centerLongitude, zoom)
         val centerWorldY = latitudeToWorldY(bounds.centerLatitude, zoom)
@@ -500,6 +498,8 @@ class PdfPageBuilder(
         }
 
     companion object {
+        // PDF map rendering uses direct raster tiles (256 px) from OSM-compatible providers.
+        private const val PDF_TILE_SIZE = 256.0
         const val PAGE_WIDTH = 595
         const val PAGE_HEIGHT = 842
         const val CONTENT_LEFT = 40f

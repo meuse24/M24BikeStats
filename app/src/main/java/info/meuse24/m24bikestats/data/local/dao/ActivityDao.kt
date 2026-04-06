@@ -76,4 +76,21 @@ interface ActivityDao {
         WHERE centerLatitude IS NULL
     """)
     suspend fun getIdsWithoutCenter(): List<String>
+
+    @Query(
+        """
+        SELECT a.id
+        FROM activities a
+        INNER JOIN activity_details d ON d.activityId = a.id
+        WHERE a.centerLatitude IS NOT NULL
+          AND NOT EXISTS (
+              SELECT 1
+              FROM activity_detail_points p
+              WHERE p.activityId = a.id
+                AND p.latitude IS NOT NULL
+                AND p.longitude IS NOT NULL
+          )
+        """
+    )
+    suspend fun getIdsWithCenterButWithoutGpsPointsInDetails(): List<String>
 }

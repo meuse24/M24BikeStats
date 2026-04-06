@@ -66,9 +66,11 @@ fun MainShell(
     val isCompact = !adaptiveInfo.windowSizeClass.isWidthAtLeastBreakpoint(
         WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND,
     )
-    val canOpenDrawer = isCompact && showTopBar
+    val isMapRoute = currentRoute.isMapRoute()
+    val canOpenDrawer = isCompact && showTopBar && !isMapRoute
     val canNavigateToOverview = showTopBar && currentRoute.canNavigateToOverview()
     val showHomeBrandTitle = currentRoute == MainDestination.HOME.route
+    val showOverflowDestinations = !isCompact && !isMapRoute
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     var overflowExpanded by remember { mutableStateOf(false) }
@@ -147,7 +149,7 @@ fun MainShell(
                             },
                             actions = {
                                 topBarActions()
-                                if (!isCompact) {
+                                if (showOverflowDestinations) {
                                     IconButton(onClick = { overflowExpanded = true }) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.MenuOpen,

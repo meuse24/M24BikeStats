@@ -7,7 +7,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +42,9 @@ import kotlin.math.tan
 private const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 private const val MAP_WORLD_TILE_SIZE = 512.0
 private const val MAP_CLICK_TOLERANCE_PX = 30.0
+private const val MAP_FIT_MARGIN_FRACTION = 0.10
+private const val MAP_MIN_ZOOM = 2.5
+private const val MAP_MAX_ZOOM = 14.0
 
 @Composable
 fun MapSummaryScreen(
@@ -74,6 +80,7 @@ private fun ActivityHeatMap(
 ) {
     val density = LocalDensity.current
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val pointsFingerprint = remember(points) { points.toFingerprint() }
         val viewportWidthPx = with(density) { maxWidth.toPx().toDouble().coerceAtLeast(1.0) }
         val viewportHeightPx = with(density) { maxHeight.toPx().toDouble().coerceAtLeast(1.0) }
         val autoFitPosition = remember(points, viewportWidthPx, viewportHeightPx) {
@@ -96,10 +103,14 @@ private fun ActivityHeatMap(
             if (useSavedCamera) savedCameraPosition!! else autoFitPosition
         }
         val cameraState = rememberCameraState(firstPosition = initialPosition)
+        var hasAppliedAutoFitForDataset by remember(pointsFingerprint) { mutableStateOf(false) }
 
-        LaunchedEffect(savedCameraPosition, autoFitPosition, useSavedCamera) {
-            if (!useSavedCamera) {
+        // Re-apply auto-fit only for new datasets. Viewport changes alone should not override
+        // an explicit user pan/zoom with a forced reset.
+        LaunchedEffect(pointsFingerprint, useSavedCamera, autoFitPosition) {
+            if (!useSavedCamera && !hasAppliedAutoFitForDataset) {
                 cameraState.position = autoFitPosition
+                hasAppliedAutoFitForDataset = true
             }
         }
 
@@ -232,7 +243,7 @@ private fun estimateMapZoom(
     val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
     val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * MAP_WORLD_TILE_SIZE)) / ln(2.0)
     val latitudeZoom = ln(usableHeight / (latitudeFraction * MAP_WORLD_TILE_SIZE)) / ln(2.0)
-    return (minOf(longitudeZoom, latitudeZoom) - 1.05).coerceIn(3.2, 14.0)
+    return (minOf(longitudeZoom, latitudeZoom) - 1.05).coerceIn(3.2, MAP_MAX_ZOOM)
 }
 
 private fun shouldUseSavedCameraPosition(
@@ -242,6 +253,8 @@ private fun shouldUseSavedCameraPosition(
     viewportWidthPx: Double,
     viewportHeightPx: Double,
 ): Boolean {
+    // Asymmetric tolerance is intentional:
+    // a slightly wider zoomed-out saved view is still usable, while too zoomed-in views often hide points.
     val zoomMatches = saved.zoom in (autoFit.zoom - 3.0)..(autoFit.zoom + 1.0)
     if (!zoomMatches) return false
     return pointsFitInViewport(
@@ -251,7 +264,7 @@ private fun shouldUseSavedCameraPosition(
         zoom = saved.zoom,
         viewportWidthPx = viewportWidthPx,
         viewportHeightPx = viewportHeightPx,
-        marginFraction = 0.10,
+        marginFraction = MAP_FIT_MARGIN_FRACTION,
     )
 }
 
@@ -263,25 +276,32 @@ private fun adjustZoomToFitPoints(
     viewportWidthPx: Double,
     viewportHeightPx: Double,
 ): Double {
-    var zoom = initialZoom
-    repeat(28) {
-        if (
-            pointsFitInViewport(
-                points = points,
-                centerLatitude = centerLatitude,
-                centerLongitude = centerLongitude,
-                zoom = zoom,
-                viewportWidthPx = viewportWidthPx,
-                viewportHeightPx = viewportHeightPx,
-                marginFraction = 0.10,
-            )
-        ) {
-            return zoom
+    fun fits(zoom: Double): Boolean =
+        pointsFitInViewport(
+            points = points,
+            centerLatitude = centerLatitude,
+            centerLongitude = centerLongitude,
+            zoom = zoom,
+            viewportWidthPx = viewportWidthPx,
+            viewportHeightPx = viewportHeightPx,
+            marginFraction = MAP_FIT_MARGIN_FRACTION,
+        )
+
+    val clampedInitialZoom = initialZoom.coerceIn(MAP_MIN_ZOOM, MAP_MAX_ZOOM)
+    if (fits(clampedInitialZoom)) return clampedInitialZoom
+    if (!fits(MAP_MIN_ZOOM)) return MAP_MIN_ZOOM
+
+    var low = MAP_MIN_ZOOM
+    var high = clampedInitialZoom
+    repeat(20) {
+        val mid = (low + high) / 2.0
+        if (fits(mid)) {
+            low = mid
+        } else {
+            high = mid
         }
-        zoom -= 0.3
-        if (zoom <= 2.5) return 2.5
     }
-    return zoom.coerceAtLeast(2.5)
+    return low
 }
 
 private fun pointsFitInViewport(
@@ -359,3 +379,11 @@ private fun List<ActivityMapPoint>.nearestWithinTolerance(
     return minByOrNull { hypot(it.latitude - lat, it.longitude - lng) }
         ?.takeIf { nearest -> hypot(nearest.latitude - lat, nearest.longitude - lng) < toleranceDeg }
 }
+
+private fun List<ActivityMapPoint>.toFingerprint(): Int =
+    fold(1) { acc, point ->
+        var value = 31 * acc + point.activityId.hashCode()
+        value = 31 * value + point.latitude.hashCode()
+        value = 31 * value + point.longitude.hashCode()
+        value
+    }
