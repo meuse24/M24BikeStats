@@ -6,6 +6,8 @@
     <string name="nav_bike">Account</string>
     <string name="nav_statistics">Statistics</string>
     <string name="nav_map">Map</string>
+    <string name="map_no_gps_data">No GPS data available yet</string>
+    <string name="activities_map_button">All tours on map</string>
     <string name="nav_functions">Functions</string>
     <string name="nav_export">Export</string>
     <string name="nav_setup">Setup</string>
@@ -62,7 +64,7 @@
     <string name="help_login_label">Login</string>
     <string name="help_login_text">Sign-in uses Bosch SingleKey ID and Bosch eBike Data Act access. After successful sign-in, the app opens the main navigation.</string>
     <string name="help_activities_label">Activities</string>
-    <string name="help_activities_text">The tour list loads locally cached activities first and refreshes in the background when needed. Filters, sorting and search operate directly on the loaded list.</string>
+    <string name="help_activities_text">The tour list loads locally cached activities first and refreshes in the background when needed. Filters, sorting and search operate directly on the loaded list. The "All tours on map" button opens a world map showing a representative GPS point for each tour. Tap a point to jump to the activity detail. The map remembers its last zoom level and position when you navigate back.</string>
     <string name="help_bike_label">Account</string>
     <string name="help_bike_text">The account area shows linked Bosch Smart System bikes together with Bosch account and OIDC details such as UserInfo, discovery metadata and signing certificate information. Bike data remains cache-first from Room. Bosch eBike System 2 and eBike Connect are not supported.</string>
     <string name="help_functions_label">Functions</string>

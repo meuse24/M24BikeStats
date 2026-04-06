@@ -66,6 +66,7 @@ import org.koin.androidx.compose.koinViewModel
 
 private const val ROOT_LOGIN_ROUTE = "login"
 private const val ROOT_MAIN_ROUTE = "main"
+internal const val MAP_ROUTE = "map"
 
 @Composable
 fun AppNavigation() {
@@ -248,6 +249,11 @@ fun AppNavigation() {
                             onActivityMapClick = { activityId ->
                                 shellNavController.navigate("activity/$activityId/track")
                             },
+                            onNavigateToMap = {
+                                shellNavController.navigate(MAP_ROUTE) {
+                                    launchSingleTop = true
+                                }
+                            },
                             onLoadMore = dashboardViewModel::loadMoreActivities,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
@@ -274,11 +280,17 @@ fun AppNavigation() {
                         )
                     }
 
-                    composable(MainDestination.MAP.route) {
+                    composable(MAP_ROUTE) {
                         val vm: MapSummaryViewModel = koinViewModel()
                         val uiState by vm.uiState.collectAsStateWithLifecycle()
+                        val savedCameraPosition by vm.savedCameraPosition.collectAsStateWithLifecycle()
                         MapSummaryScreen(
                             uiState = uiState,
+                            savedCameraPosition = savedCameraPosition,
+                            onCameraPositionChanged = vm::saveCameraPosition,
+                            onActivityClick = { activityId ->
+                                shellNavController.navigate("activity/$activityId")
+                            },
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }
@@ -427,7 +439,7 @@ internal fun String?.toTopBarTitleRes(): Int = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.labelRes
     this == MainDestination.BIKE.route -> MainDestination.BIKE.labelRes
     this == MainDestination.STATISTICS.route -> MainDestination.STATISTICS.labelRes
-    this == MainDestination.MAP.route -> MainDestination.MAP.labelRes
+    this == MAP_ROUTE -> R.string.nav_map
     this == DrawerDestination.EXPORT.route -> DrawerDestination.EXPORT.labelRes
     this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.labelRes
     this == DrawerDestination.HELP.route -> DrawerDestination.HELP.labelRes

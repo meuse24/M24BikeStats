@@ -63,6 +63,7 @@ presentation/
   apitest/
   dashboard/
   statistics/
+  map/
   navigation/
 
 shared/
@@ -92,6 +93,11 @@ Regeln:
   - `StatisticsViewModel.kt` = Grouping-State, Period-Selektion, `combine`-Pipeline
   - `StatisticsUiModelMapper.kt` = `List<BoschActivity>` → `PeriodStats` und `StatisticsHighlights`, Android-frei
   - `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsHighlights`, `StatisticsGrouping` plus testbare Formatierungs-Helfer
+- Weltkarte liegt in `presentation/map/`:
+  - `MapSummaryScreen.kt` = MapLibre-Composable, GeoJSON-CircleLayer, zoom-adaptive Tap-Erkennung
+  - `MapSummaryViewModel.kt` = `GetActivityMapPointsUseCase`-Flow, Camera-State-Persistenz
+  - `MapSummaryUiState.kt` = Datenhülle für Kartenpunkte und Ladezustand
+  - `ActivityMapPointGeoJsonMapper.kt` = `List<ActivityMapPoint>` → GeoJSON-FeatureCollection-String
 
 ## Navigation
 
@@ -99,10 +105,12 @@ Regeln:
 - Authentifizierter Bereich läuft in `MainShell`
 - Primärnavigation: `home`, `activities`, `bike_list` als Konto-Ansicht, `statistics` und `functions`
 - Sekundärnavigation: `setup`, `help`, `info`, `api_test`, `logout`
-- Compact: `ModalNavigationDrawer`
+- Zusätzliche Shell-Route `map` (kein Primär-Nav-Eintrag): Weltkarte erreichbar über Button im Aktivitäten-Screen
+- Compact: `ModalNavigationDrawer` mit `gesturesEnabled = false` auf der Karten-Route
 - größere Breiten: Overflow-Menü in der `TopAppBar`
 - Home zeigt in der Shell-Top-Bar den Brand-Titel `M24 Bike Stats`; `M24` ist visuell hervorgehoben
 - Support-Screens laufen in der Shell und bleiben damit über Hamburger oder Overview-Navigation erreichbar
+- `MAP_ROUTE` ist `internal` in `AppNavigation.kt` und wird von `MainShell.kt` referenziert
 
 ## Wichtige Features
 
@@ -116,6 +124,8 @@ Regeln:
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
 - Exporte sind cache-only und haben Cancel-Aktionen
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
+- Weltkarte (route `map`) zeigt alle gecachten Touren als Kreise auf einer MapLibre/OpenFreeMap-Karte; Tap auf einen Kreis navigiert zur Aktivitätsdetailseite; Camera-State bleibt beim Zurücknavigieren erhalten
+- GPS-Zentrum pro Tour: jene Koordinate aus `/details`, die am weitesten vom Startpunkt entfernt liegt (semantisch: Ziel- oder Wendepunkt); berechnet via `ActivityCenterCalculator`, gespeichert in `ActivityEntity.centerLatitude/Longitude`; fehlende Werte werden durch `ComputeActivityCentersWorker` (WorkManager, einmalig beim App-Start) nachberechnet; `upsertAllPreservingCenter` schützt gecachte Werte bei jedem Cloud-Sync
 - Aktivitätsdetailpunkte werden vor Karten-/GPX-Nutzung bereinigt und komprimiert
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
@@ -160,12 +170,15 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - `PdfReportFileExporter`, `PdfReportMetadataRepository`, `PdfStringResolver`
 - `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
 - `GetStatisticsUseCase`, `StatisticsUiModelMapper`, `StatisticsViewModel`
+- `GetActivityMapPointsUseCase`, `MapSummaryViewModel`
+- `ComputeActivityCentersWorker` (WorkManager, einmalig beim App-Start)
 
 ## Hinweise für Änderungen
 
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
 - Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) nur für Chart-spezifische Zusatzdaten nutzen, read-only Highlights/Rhythmus dagegen direkt im `StatisticsUiState` halten
+- Karten-Anpassungen bleiben in `presentation/map/`; `ActivityCenterCalculator` und `GpsPointProjection` gehören zur Datenschicht; keine zusätzliche Cloud-Abfrage nur für die Karte einführen
 - PDF-/Report-Datenmodelle dürfen keine `presentation`-States wie `StatisticsUiState` direkt referenzieren; dafür eigene domain-taugliche Aggregate oder Mapper-Grenzen vorsehen
 - PDF-Export bleibt cache-only; keine zusätzlichen Bosch-Cloud-Abfragen nur für Berichtserzeugung einführen
 - `PdfReportGenerator` ist Android-gebunden und liefert nur die Report-Datei; Aggregation und fachliche Kennzahlen gehören in `ExportPdfSummaryReportUseCase`
@@ -194,6 +207,8 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Statistik-Mapper (`StatisticsUiModelMapperTest`): Gruppierung, Timezone-Grenzfälle, Highlights-/Rhythmus-Berechnung
 - Statistik-ViewModel (`StatisticsViewModelTest`): Toggle, Grouping-Wechsel, Stale-Reference
 - Statistik-UI-Helfer (`StatisticsUiStateFormattingTest`): formatierte Distanz/Stunden, `durationHours`
+- Karten-Datenschicht (`ActivityCenterCalculatorTest`): leere Liste, Null-Koordinaten, Einzelpunkt, Kosinus-Korrektur
+- Karten-GeoJSON-Mapper (`ActivityMapPointGeoJsonMapperTest`): Koordinatenreihenfolge, leere Liste
 - Routing/Navigations-Mapping
 - Repository/Cache-Verhalten
 - GPX-/CSV-Exportpfade

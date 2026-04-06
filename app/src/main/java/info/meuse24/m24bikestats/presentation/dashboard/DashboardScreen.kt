@@ -124,6 +124,7 @@ fun DashboardScreen(
                             onActivitySortOptionChanged = onActivitySortOptionChanged,
                             onActivityClick = onNavigateToActivityDetail,
                             onActivityMapClick = {},
+                            onNavigateToMap = {},
                             onLoadMore = onLoadMoreActivities,
                         )
 

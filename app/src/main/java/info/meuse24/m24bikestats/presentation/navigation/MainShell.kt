@@ -191,6 +191,7 @@ fun MainShell(
     if (canOpenDrawer) {
         ModalNavigationDrawer(
             drawerState = drawerState,
+            gesturesEnabled = currentRoute != MAP_ROUTE,
             drawerContent = {
                 AppDrawer(
                     currentRoute = currentRoute,

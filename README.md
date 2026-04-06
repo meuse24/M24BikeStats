@@ -21,6 +21,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
 - Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monatsaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
+- Weltkarte mit allen gecachten Touren als anklickbare Kreise; Tap navigiert zur Aktivitätsdetailseite; Kameraposition bleibt beim Zurücknavigieren erhalten; GPS-Zentrum per Tour = am weitesten vom Startpunkt entfernte Koordinate
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
 - Kontodetails zeigen zusätzlich Bosch-`USERINFO`, OIDC-Discovery und das aktuell passende OIDC-Signaturzertifikat aus der JWKS-Antwort
@@ -59,7 +60,8 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 
 - `Home`: Übersicht, letzter Cloud-Abgleich, letzte Tour, Bike-Status, letzte Exporte
 - `Home` zeigt in der Shell-Top-Bar den App-Titel `M24 Bike Stats`, wobei `M24` hervorgehoben ist
-- `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
+- `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung; enthält Button zur Weltkarte
+- `Weltkarte`: alle Touren als Kreise auf OpenFreeMap-Karte; Tap auf Kreis öffnet Aktivitätsdetail
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
 - `Funktionen`: CSV-Exporte und PDF-Zusammenfassungsbericht
 - `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
@@ -167,6 +169,7 @@ Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 - Room- und Migrations-Tests auf Android
 - GPX-/CSV-Exporttests
 - API-Test-Share- und Detailpunkt-Mapping-Tests
+- Karten-Tests: `ActivityCenterCalculatorTest` (Algorithmus, Kosinus-Korrektur), `ActivityMapPointGeoJsonMapperTest` (GeoJSON-Format)
 
 ## Lizenz
 

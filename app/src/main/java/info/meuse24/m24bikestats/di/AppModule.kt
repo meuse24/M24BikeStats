@@ -17,7 +17,6 @@ import info.meuse24.m24bikestats.data.export.PdfReportGenerator
 import info.meuse24.m24bikestats.data.export.PdfReportMetadataRepositoryImpl
 import info.meuse24.m24bikestats.data.export.PdfStringResolver
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
-import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
@@ -97,7 +96,6 @@ val appModule = module {
             BoschDatabase::class.java,
             "bosch_cache.db",
         )
-            .addMigrations(*BoschDatabaseMigrations.ALL)
             .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }

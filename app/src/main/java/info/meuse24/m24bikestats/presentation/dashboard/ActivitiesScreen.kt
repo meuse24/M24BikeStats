@@ -12,9 +12,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +41,7 @@ fun ActivitiesScreen(
     onActivitySortOptionChanged: (ActivitySortOption) -> Unit,
     onActivityClick: (String) -> Unit,
     onActivityMapClick: (String) -> Unit,
+    onNavigateToMap: () -> Unit,
     onLoadMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -97,6 +102,20 @@ fun ActivitiesScreen(
                         CompactMetricPill(label = label, value = value)
                     },
                 )
+            }
+        }
+
+        item {
+            Button(
+                onClick = onNavigateToMap,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Map,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+                Text(stringResource(R.string.activities_map_button))
             }
         }
 

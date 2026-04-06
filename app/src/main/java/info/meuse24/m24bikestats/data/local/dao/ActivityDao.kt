@@ -31,10 +31,12 @@ interface ActivityDao {
     @Upsert
     suspend fun upsertAll(activities: List<ActivityEntity>)
 
+    @Query("SELECT * FROM activities WHERE centerLatitude IS NOT NULL")
+    suspend fun getAllWithCenter(): List<ActivityEntity>
+
     @Transaction
     suspend fun upsertAllPreservingCenter(activities: List<ActivityEntity>) {
-        val existingCenters = getAll()
-            .filter { it.centerLatitude != null }
+        val existingCenters = getAllWithCenter()
             .associate { it.id to (it.centerLatitude!! to it.centerLongitude!!) }
         upsertAll(activities)
         for ((id, center) in existingCenters) {
