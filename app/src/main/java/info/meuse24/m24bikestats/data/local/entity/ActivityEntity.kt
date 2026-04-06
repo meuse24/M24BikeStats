@@ -24,4 +24,6 @@ data class ActivityEntity(
     val elevationGainMeters: Int?,
     val elevationLossMeters: Int?,
     val caloriesBurned: Double?,
+    val centerLatitude: Double? = null,
+    val centerLongitude: Double? = null,
 )

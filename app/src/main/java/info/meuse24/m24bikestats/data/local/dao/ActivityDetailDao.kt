@@ -8,6 +8,7 @@ import info.meuse24.m24bikestats.data.local.entity.ActivityDetailEntity
 import info.meuse24.m24bikestats.data.local.entity.ActivityDetailPointEntity
 import info.meuse24.m24bikestats.data.local.model.ActivityDetailCacheOverviewProjection
 import info.meuse24.m24bikestats.data.local.model.CachedActivityDetail
+import info.meuse24.m24bikestats.data.local.model.GpsPointProjection
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -42,6 +43,15 @@ interface ActivityDetailDao {
 
     @Upsert
     suspend fun upsertPoints(points: List<ActivityDetailPointEntity>)
+
+    @Query("""
+        SELECT latitude, longitude
+        FROM activity_detail_points
+        WHERE activityId = :activityId
+          AND latitude IS NOT NULL
+          AND longitude IS NOT NULL
+    """)
+    suspend fun getGpsPointsForActivity(activityId: String): List<GpsPointProjection>
 
     @Query("DELETE FROM activity_details WHERE activityId = :activityId")
     suspend fun deleteDetailByActivityId(activityId: String)

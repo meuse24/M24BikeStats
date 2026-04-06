@@ -57,6 +57,8 @@ import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
+import info.meuse24.m24bikestats.presentation.map.MapSummaryScreen
+import info.meuse24.m24bikestats.presentation.map.MapSummaryViewModel
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsScreen
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
 import kotlinx.coroutines.launch
@@ -272,6 +274,15 @@ fun AppNavigation() {
                         )
                     }
 
+                    composable(MainDestination.MAP.route) {
+                        val vm: MapSummaryViewModel = koinViewModel()
+                        val uiState by vm.uiState.collectAsStateWithLifecycle()
+                        MapSummaryScreen(
+                            uiState = uiState,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
+
                     composable(DrawerDestination.EXPORT.route!!) {
                         FunctionsScreen(
                             uiState = dashboardUiState.toFunctionsUiState(),
@@ -416,6 +427,7 @@ internal fun String?.toTopBarTitleRes(): Int = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.labelRes
     this == MainDestination.BIKE.route -> MainDestination.BIKE.labelRes
     this == MainDestination.STATISTICS.route -> MainDestination.STATISTICS.labelRes
+    this == MainDestination.MAP.route -> MainDestination.MAP.labelRes
     this == DrawerDestination.EXPORT.route -> DrawerDestination.EXPORT.labelRes
     this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.labelRes
     this == DrawerDestination.HELP.route -> DrawerDestination.HELP.labelRes

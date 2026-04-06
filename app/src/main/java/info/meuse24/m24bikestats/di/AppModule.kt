@@ -10,6 +10,7 @@ import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
 import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
 import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
 import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
+import info.meuse24.m24bikestats.background.ComputeActivityCentersWorker
 import info.meuse24.m24bikestats.data.auth.AuthManager
 import info.meuse24.m24bikestats.data.export.AndroidPdfStringResolver
 import info.meuse24.m24bikestats.data.export.PdfReportGenerator
@@ -34,6 +35,7 @@ import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetActivityMapPointsUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
@@ -69,10 +71,15 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.AndroidLoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
+import info.meuse24.m24bikestats.presentation.map.MapSummaryViewModel
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsUiModelMapper
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
 import info.meuse24.m24bikestats.api.BoschRepository
 import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
+import androidx.work.WorkManager
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Constraints
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -129,6 +136,7 @@ val appModule = module {
     }
 
     // --- Domain ---
+    factory { GetActivityMapPointsUseCase(get()) }
     factory { IsAuthenticatedUseCase(get()) }
     factory { ClearAuthenticationUseCase(get()) }
     factory { FetchBoschDataUseCase(get(), get()) }
@@ -208,4 +216,5 @@ val appModule = module {
     viewModelOf(::ApiTestViewModel)
     viewModelOf(::DashboardViewModel)
     viewModelOf(::StatisticsViewModel)
+    viewModelOf(::MapSummaryViewModel)
 }

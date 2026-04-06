@@ -25,7 +25,7 @@ import info.meuse24.m24bikestats.data.local.entity.BikeEntity
         BikeBatteryEntity::class,
         BikeAssistModeEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 abstract class BoschDatabase : RoomDatabase() {

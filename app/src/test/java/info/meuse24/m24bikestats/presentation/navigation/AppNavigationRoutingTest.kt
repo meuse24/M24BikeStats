@@ -37,6 +37,21 @@ class AppNavigationRoutingTest {
     }
 
     @Test
+    fun `map route maps to map destination`() {
+        assertEquals(MainDestination.MAP, MainDestination.MAP.route.toMainDestination())
+    }
+
+    @Test
+    fun `map route has correct top bar title`() {
+        assertEquals(R.string.nav_map, MainDestination.MAP.route.toTopBarTitleRes())
+    }
+
+    @Test
+    fun `map route can navigate to overview`() {
+        assertTrue(MainDestination.MAP.route.canNavigateToOverview())
+    }
+
+    @Test
     fun `drawer routes expose matching top bar title`() {
         assertEquals(
             null,
@@ -87,6 +102,7 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.ACTIVITIES.route.shouldShowRefreshAction())
         assertTrue(MainDestination.BIKE.route.shouldShowRefreshAction())
         assertTrue(MainDestination.STATISTICS.route.shouldShowRefreshAction())
+        assertFalse(MainDestination.MAP.route.shouldShowRefreshAction())
         assertFalse(DrawerDestination.EXPORT.route.shouldShowRefreshAction())
         assertFalse(DrawerDestination.INFO.route.shouldShowRefreshAction())
     }
@@ -126,6 +142,7 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
         assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
         assertTrue(MainDestination.STATISTICS.route.canNavigateToOverview())
+        assertTrue(MainDestination.MAP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.EXPORT.route.canNavigateToOverview())
         assertFalse(DrawerDestination.SETUP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.HELP.route.canNavigateToOverview())

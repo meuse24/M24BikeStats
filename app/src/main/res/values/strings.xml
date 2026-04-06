@@ -5,6 +5,7 @@
     <string name="nav_activities">Activities</string>
     <string name="nav_bike">Account</string>
     <string name="nav_statistics">Statistics</string>
+    <string name="nav_map">Map</string>
     <string name="nav_functions">Functions</string>
     <string name="nav_export">Export</string>
     <string name="nav_setup">Setup</string>

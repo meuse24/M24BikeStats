@@ -24,6 +24,8 @@ fun ActivityEntity.toDomain(): BoschActivity =
         elevationGainMeters = elevationGainMeters,
         elevationLossMeters = elevationLossMeters,
         caloriesBurned = caloriesBurned,
+        centerLatitude = centerLatitude,
+        centerLongitude = centerLongitude,
     )
 
 fun BoschActivity.toEntity(): ActivityEntity =
@@ -47,6 +49,8 @@ fun BoschActivity.toEntity(): ActivityEntity =
         elevationGainMeters = elevationGainMeters,
         elevationLossMeters = elevationLossMeters,
         caloriesBurned = caloriesBurned,
+        centerLatitude = centerLatitude,
+        centerLongitude = centerLongitude,
     )
 
 private fun String.toEpochMillis(): Long =

@@ -2,7 +2,12 @@ package info.meuse24.m24bikestats
 
 import android.app.Application
 import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
+import info.meuse24.m24bikestats.background.ComputeActivityCentersWorker
 import info.meuse24.m24bikestats.di.appModule
+import androidx.work.WorkManager
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.Constraints
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,5 +28,12 @@ class M24BikeStatsApp : Application() {
             modules(appModule)
         }
         GlobalContext.get().get<BackgroundSyncSettingsObserver>().start(applicationScope)
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            ComputeActivityCentersWorker.WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<ComputeActivityCentersWorker>()
+                .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
+                .build()
+        )
     }
 }

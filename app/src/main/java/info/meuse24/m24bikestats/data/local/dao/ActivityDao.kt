@@ -31,6 +31,17 @@ interface ActivityDao {
     @Upsert
     suspend fun upsertAll(activities: List<ActivityEntity>)
 
+    @Transaction
+    suspend fun upsertAllPreservingCenter(activities: List<ActivityEntity>) {
+        val existingCenters = getAll()
+            .filter { it.centerLatitude != null }
+            .associate { it.id to (it.centerLatitude!! to it.centerLongitude!!) }
+        upsertAll(activities)
+        for ((id, center) in existingCenters) {
+            updateCenter(id, center.first, center.second)
+        }
+    }
+
     @Query("DELETE FROM activities")
     suspend fun clearAll()
 
@@ -42,4 +53,18 @@ interface ActivityDao {
         clearAll()
         upsertAll(activities)
     }
+
+    @Query("""
+        UPDATE activities
+        SET centerLatitude = :lat, centerLongitude = :lng
+        WHERE id = :activityId
+    """)
+    suspend fun updateCenter(activityId: String, lat: Double, lng: Double)
+
+    @Query("""
+        SELECT id
+        FROM activities
+        WHERE centerLatitude IS NULL
+    """)
+    suspend fun getIdsWithoutCenter(): List<String>
 }

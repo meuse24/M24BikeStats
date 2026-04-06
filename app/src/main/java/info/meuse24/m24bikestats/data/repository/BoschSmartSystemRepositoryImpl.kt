@@ -113,7 +113,7 @@ class BoschSmartSystemRepositoryImpl(
             )
             val json = jsonBodyExtractor.extract(response) ?: error("Keine Aktivitätendaten erhalten")
             parser.parseActivitiesPage(json, limit, offset).also { page ->
-                activityDao.upsertAll(page.items.map { it.toEntity() })
+                activityDao.upsertAllPreservingCenter(page.items.map { it.toEntity() })
                 activityDao.upsertCacheState(
                     ActivityCacheStateEntity(
                         totalCount = page.total,
@@ -149,10 +149,18 @@ class BoschSmartSystemRepositoryImpl(
             )
             val json = jsonBodyExtractor.extract(response) ?: error("Keine Aktivitätsdetaildaten erhalten")
             parser.parseActivityDetail(activityId, json).also { detail ->
+                val points = detail.toPointEntities()
                 activityDetailDao.replaceDetail(
                     detail = detail.toEntity(updatedAtEpochMillis = currentTimeMillis()),
-                    points = detail.toPointEntities(),
+                    points = points,
                 )
+                val gpsCoords = points
+                    .filter { it.latitude != null && it.longitude != null }
+                    .map { it.latitude!! to it.longitude!! }
+                val center = ActivityCenterCalculator.calculate(gpsCoords)
+                if (center != null) {
+                    activityDao.updateCenter(activityId, center.first, center.second)
+                }
             }
         }
 
