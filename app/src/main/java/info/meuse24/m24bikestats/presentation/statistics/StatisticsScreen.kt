@@ -190,9 +190,9 @@ private fun StatisticsChartCard(
         modelProducer.runTransaction {
             columnSeries { series(periods.map { it.distanceKm }) }
             lineSeries { series(periods.map { it.durationHours }) }
-            extras {
-                this[statisticsDistanceValuesKey] = periods.map { it.distanceKm }
-                this[statisticsTourCountsKey] = periods.map { it.tourCount }
+            extras { store ->
+                store.set(statisticsDistanceValuesKey, periods.map { it.distanceKm })
+                store.set(statisticsTourCountsKey, periods.map { it.tourCount })
             }
         }
     }
