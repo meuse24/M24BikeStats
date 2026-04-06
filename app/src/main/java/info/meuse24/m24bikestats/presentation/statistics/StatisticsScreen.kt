@@ -41,26 +41,38 @@ import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.compose.common.component.shapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
 import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.core.cartesian.FadingEdges
+import com.patrykandpatrick.vico.core.cartesian.Zoom
+import com.patrykandpatrick.vico.core.common.Insets
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
+import com.patrykandpatrick.vico.core.common.shape.DashedShape
 import com.patrykandpatrick.vico.core.cartesian.axis.Axis
 import com.patrykandpatrick.vico.core.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.core.cartesian.axis.VerticalAxis
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.core.cartesian.decoration.HorizontalLine
 import com.patrykandpatrick.vico.core.cartesian.data.columnSeries
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.common.data.ExtraStore
 import com.patrykandpatrick.vico.core.cartesian.layer.ColumnCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
+import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerVisibilityListener
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.core.common.Position
 import info.meuse24.m24bikestats.R
 import java.util.Locale
 import kotlin.math.roundToInt
+
+private const val STATISTICS_SCROLL_THRESHOLD = 7
+private const val STATISTICS_ZOOM_THRESHOLD = 10
+private const val STATISTICS_MAX_ZOOM = 2f
 
 private val statisticsDistanceValuesKey = ExtraStore.Key<List<Double>>()
 private val statisticsTourCountsKey = ExtraStore.Key<List<Int>>()
@@ -100,7 +112,6 @@ fun StatisticsScreen(
         item {
             StatisticsChartCard(
                 periods = uiState.periods,
-                selectedPeriod = uiState.selectedPeriod,
                 onPeriodSelected = onPeriodSelected,
             )
         }
@@ -160,14 +171,17 @@ private fun GroupingSelector(
 @Composable
 private fun StatisticsChartCard(
     periods: List<PeriodStats>,
-    selectedPeriod: PeriodStats?,
     onPeriodSelected: (Long) -> Unit,
 ) {
     val locale = Locale.getDefault()
     val modelProducer = remember { CartesianChartModelProducer() }
-    val marker = rememberStatisticsMarker(periods, locale)
     val distanceColor = MaterialTheme.colorScheme.primary
     val durationColor = MaterialTheme.colorScheme.tertiary
+    val marker = rememberStatisticsMarker(
+        periods = periods,
+        locale = locale,
+        distanceColor = distanceColor,
+    )
     val markerVisibilityListener = remember(periods, onPeriodSelected) {
         object : CartesianMarkerVisibilityListener {
             override fun onShown(marker: CartesianMarker, targets: List<CartesianMarker.Target>) {
@@ -183,8 +197,83 @@ private fun StatisticsChartCard(
             }
         }
     }
-    val scrollState = rememberVicoScrollState(scrollEnabled = periods.size > 7)
-    val zoomState = rememberVicoZoomState(zoomEnabled = false)
+    val scrollState = rememberVicoScrollState(
+        scrollEnabled = periods.size > STATISTICS_SCROLL_THRESHOLD,
+    )
+    val zoomEnabled = periods.size >= STATISTICS_ZOOM_THRESHOLD
+    val minimumZoom = remember(zoomEnabled) {
+        if (zoomEnabled) {
+            Zoom.max(Zoom.fixed(), Zoom.Content)
+        } else {
+            Zoom.Content
+        }
+    }
+    val maximumZoom = remember(zoomEnabled) {
+        if (zoomEnabled) {
+            Zoom.max(Zoom.fixed(STATISTICS_MAX_ZOOM), Zoom.Content)
+        } else {
+            Zoom.Content
+        }
+    }
+    val zoomState = rememberVicoZoomState(
+        zoomEnabled = zoomEnabled,
+        initialZoom = minimumZoom,
+        minZoom = minimumZoom,
+        maxZoom = maximumZoom,
+    )
+    val markerController = remember { CartesianMarkerController.toggleOnTap() }
+    val fadingEdges = remember(periods.size) {
+        if (periods.size > STATISTICS_SCROLL_THRESHOLD) {
+            FadingEdges(widthDp = 16f)
+        } else {
+            null
+        }
+    }
+    val chartSubtitle = when {
+        zoomEnabled -> stringResource(R.string.statistics_chart_subtitle_zoom)
+        periods.size > STATISTICS_SCROLL_THRESHOLD -> stringResource(R.string.statistics_chart_subtitle_scroll)
+        else -> stringResource(R.string.statistics_chart_subtitle)
+    }
+    val startAxisGuideline = rememberLineComponent(
+        fill = fill(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.22f)),
+        thickness = 1.dp,
+        shape = DashedShape(dashLengthDp = 8f, gapLengthDp = 6f),
+    )
+    val averageDistanceKm = remember(periods) {
+        periods.takeIf { it.size > 1 }
+            ?.map(PeriodStats::distanceKm)
+            ?.average()
+            ?.takeIf { it > 0.0 }
+    }
+    val averageDistanceLabel = averageDistanceKm?.let {
+        stringResource(R.string.statistics_average_line_label, it.roundToInt())
+    }
+    val averageDistanceDecoration = averageDistanceKm?.let { averageDistance ->
+        HorizontalLine(
+            y = { averageDistance },
+            line = rememberLineComponent(
+                fill = fill(distanceColor.copy(alpha = 0.35f)),
+                thickness = 1.dp,
+                shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
+            ),
+            labelComponent = rememberTextComponent(
+                color = MaterialTheme.colorScheme.primary,
+                textSize = 10.sp,
+                padding = Insets(8f, 4f, 8f, 4f),
+                background = rememberShapeComponent(
+                    shape = CorneredShape.rounded(allDp = 8f),
+                    fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
+                ),
+            ),
+            label = { averageDistanceLabel.orEmpty() },
+            horizontalLabelPosition = Position.Horizontal.End,
+            verticalLabelPosition = Position.Vertical.Top,
+            verticalAxisPosition = Axis.Position.Vertical.Start,
+        )
+    }
+    val decorations = remember(averageDistanceDecoration) {
+        averageDistanceDecoration?.let(::listOf).orEmpty()
+    }
 
     LaunchedEffect(periods) {
         modelProducer.runTransaction {
@@ -212,7 +301,7 @@ private fun StatisticsChartCard(
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                text = stringResource(R.string.statistics_chart_subtitle),
+                text = chartSubtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -235,7 +324,10 @@ private fun StatisticsChartCard(
                         ),
                         rememberColumnCartesianLayer(
                             columnProvider = ColumnCartesianLayer.ColumnProvider.series(
-                                rememberLineComponent(fill = fill(distanceColor)),
+                                rememberLineComponent(
+                                    fill = fill(distanceColor),
+                                    shape = CorneredShape.rounded(topLeftDp = 6f, topRightDp = 6f),
+                                ),
                             ),
                             dataLabel = rememberTextComponent(
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -259,12 +351,14 @@ private fun StatisticsChartCard(
                         ),
                         startAxis = VerticalAxis.rememberStart(
                             title = stringResource(R.string.statistics_axis_distance),
+                            guideline = startAxisGuideline,
                             valueFormatter = remember {
                                 CartesianValueFormatter { _, value, _ -> value.roundToInt().toString() }
                             },
                         ),
                         endAxis = VerticalAxis.rememberEnd(
                             title = stringResource(R.string.statistics_axis_secondary),
+                            guideline = null,
                             valueFormatter = remember {
                                 CartesianValueFormatter { _, value, _ -> value.roundToInt().toString() }
                             },
@@ -279,6 +373,9 @@ private fun StatisticsChartCard(
                         ),
                         marker = marker,
                         markerVisibilityListener = markerVisibilityListener,
+                        markerController = markerController,
+                        fadingEdges = fadingEdges,
+                        decorations = decorations,
                     ),
                     modelProducer = modelProducer,
                     modifier = Modifier
@@ -296,8 +393,22 @@ private fun StatisticsChartCard(
 private fun rememberStatisticsMarker(
     periods: List<PeriodStats>,
     locale: Locale,
-)= rememberDefaultCartesianMarker(
-        label = rememberTextComponent(color = MaterialTheme.colorScheme.onPrimary),
+    distanceColor: Color,
+) : DefaultCartesianMarker {
+    val indicatorStrokeColor = MaterialTheme.colorScheme.surfaceContainerHigh
+
+    return rememberDefaultCartesianMarker(
+        label = rememberTextComponent(
+            color = MaterialTheme.colorScheme.onSurface,
+            textSize = 12.sp,
+            padding = Insets(12f, 8f, 12f, 8f),
+            background = rememberShapeComponent(
+                shape = CorneredShape.rounded(allDp = 12f),
+                fill = fill(MaterialTheme.colorScheme.surfaceBright),
+                strokeFill = fill(MaterialTheme.colorScheme.outlineVariant),
+                strokeThickness = 1.dp,
+            ),
+        ),
         valueFormatter = remember(periods, locale) {
             DefaultCartesianMarker.ValueFormatter { _, targets ->
                 val period = targets.firstOrNull()
@@ -317,7 +428,21 @@ private fun rememberStatisticsMarker(
             }
         },
         labelPosition = DefaultCartesianMarker.LabelPosition.Top,
+        indicator = { color ->
+            shapeComponent(
+                fill = fill(color),
+                shape = CorneredShape.Pill,
+                strokeFill = fill(indicatorStrokeColor),
+                strokeThickness = 2.dp,
+            )
+        },
+        guideline = rememberLineComponent(
+            fill = fill(distanceColor.copy(alpha = 0.45f)),
+            thickness = 1.dp,
+            shape = DashedShape(),
+        ),
     )
+}
 
 @Composable
 private fun StatisticsDetailCard(

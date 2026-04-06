@@ -155,6 +155,9 @@
     <string name="statistics_empty_subtitle">After the first successful sync, weekly and monthly usage appears here.</string>
     <string name="statistics_section_overview">Usage overview</string>
     <string name="statistics_chart_subtitle">Tap a period to inspect the aggregated values.</string>
+    <string name="statistics_chart_subtitle_scroll">Tap a period to inspect the aggregated values. Swipe horizontally to reveal more periods.</string>
+    <string name="statistics_chart_subtitle_zoom">Tap a period to inspect the aggregated values. Swipe horizontally and use two fingers to zoom.</string>
+    <string name="statistics_average_line_label">Avg %1$d km</string>
     <string name="statistics_detail_title">Selected period</string>
     <string name="statistics_label_period">Period</string>
     <string name="statistics_label_tours">Tours</string>
