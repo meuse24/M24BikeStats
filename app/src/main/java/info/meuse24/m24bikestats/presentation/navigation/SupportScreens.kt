@@ -77,6 +77,7 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         "AndroidX Window" to "1.4.0 • Google AndroidX team",
         "MapLibre Compose" to "0.12.1 • MapLibre community",
         "Vico" to "2.3.6 • Patryk Michalik and contributors",
+        "Android PdfDocument / StaticLayout" to "Android SDK • Google Android team",
     )
     val credits = listOf(
         "BOSCH" to stringResource(R.string.info_credit_bosch),

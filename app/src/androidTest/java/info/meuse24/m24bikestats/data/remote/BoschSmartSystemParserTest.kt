@@ -13,21 +13,21 @@ class BoschSmartSystemParserTest {
     private val bodyExtractor = BoschJsonBodyExtractor()
 
     @Test
-    fun `extractor returns json payload after http header block`() {
+    fun extractorReturnsJsonPayloadAfterHttpHeaderBlock() {
         val payload = bodyExtractor.extract("HTTP 200 OK\n\n{\"bikes\":[]}")
 
         assertEquals("{\"bikes\":[]}", payload)
     }
 
     @Test
-    fun `extractor returns null for non json content`() {
+    fun extractorReturnsNullForNonJsonContent() {
         val payload = bodyExtractor.extract("HTTP 500 FAIL\n\n<html>error</html>")
 
         assertNull(payload)
     }
 
     @Test
-    fun `parser reads activities page including pagination`() {
+    fun parserReadsActivitiesPageIncludingPagination() {
         val page = parser.parseActivitiesPage(
             json = """
                 {"pagination":{"total":2,"offset":20,"limit":20},"activitySummaries":[
@@ -46,7 +46,7 @@ class BoschSmartSystemParserTest {
     }
 
     @Test
-    fun `parser reads activity detail points`() {
+    fun parserReadsActivityDetailPoints() {
         val detail = parser.parseActivityDetail(
             activityId = "a1",
             json = """
@@ -62,7 +62,7 @@ class BoschSmartSystemParserTest {
     }
 
     @Test
-    fun `parser reads bike with assist modes and battery data`() {
+    fun parserReadsBikeWithAssistModesAndBatteryData() {
         val bikes = parser.parseBikes(
             """
                 {"bikes":[

@@ -4,6 +4,8 @@ import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
+import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
@@ -17,11 +19,14 @@ import java.time.format.DateTimeFormatter
 class DashboardOperationsHandler(
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val exportActivityDetailsCsv: ExportSmartSystemActivityDetailsCsvUseCase,
+    private val exportPdfSummaryReportUseCase: ExportPdfSummaryReportUseCase,
+    private val pdfReportFileExporter: PdfReportFileExporter,
     private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val stringResolver: DashboardStringResolver,
 ) {
     private var activitiesExportJob: Job? = null
     private var activityDetailsExportJob: Job? = null
+    private var pdfExportJob: Job? = null
     private var cloudSyncJob: Job? = null
 
     fun exportAllActivitiesCsv(
@@ -178,6 +183,75 @@ class DashboardOperationsHandler(
         }
     }
 
+    fun exportPdfSummaryReport(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        if (!currentState().canRunBackgroundOperation()) return
+
+        pdfExportJob = scope.launch {
+            updateState {
+                it.copy(
+                    isExportingPdf = true,
+                    pendingPdfExport = null,
+                    error = null,
+                )
+            }
+
+            val reportData = exportPdfSummaryReportUseCase().getOrElse { error ->
+                if (error is CancellationException) {
+                    updateState {
+                        it.copy(
+                            isExportingPdf = false,
+                            error = s(R.string.dashboard_info_export_cancelled),
+                        )
+                    }
+                    pdfExportJob = null
+                    return@launch
+                }
+                updateState {
+                    it.copy(
+                        isExportingPdf = false,
+                        error = error.message ?: s(R.string.dashboard_error_pdf_export),
+                    )
+                }
+                pdfExportJob = null
+                return@launch
+            }
+
+            val fileName = buildPdfFileName()
+            val file = runCatching {
+                pdfReportFileExporter.generate(reportData, fileName)
+            }.getOrElse { error ->
+                updateState {
+                    it.copy(
+                        isExportingPdf = false,
+                        error = error.message ?: s(R.string.dashboard_error_pdf_export),
+                    )
+                }
+                pdfExportJob = null
+                return@launch
+            }
+
+            updateState {
+                it.copy(
+                    isExportingPdf = false,
+                    pendingPdfExport = PdfExportUiModel(
+                        fileName = fileName,
+                        filePath = file.absolutePath,
+                    ),
+                    lastPdfExport = PdfExportSummaryUiModel(
+                        fileName = fileName,
+                        exportedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
+                    ),
+                    error = null,
+                )
+            }
+            pdfExportJob = null
+        }
+    }
+
     fun cancelActivitiesCsvExport(
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
@@ -210,6 +284,20 @@ class DashboardOperationsHandler(
         }
     }
 
+    fun cancelPdfExport(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        pdfExportJob?.cancel()
+        pdfExportJob = null
+        updateState {
+            it.copy(
+                isExportingPdf = false,
+                pendingPdfExport = null,
+                error = s(R.string.dashboard_info_export_cancelled),
+            )
+        }
+    }
+
     fun onActivitiesCsvExportHandled(
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
@@ -230,6 +318,16 @@ class DashboardOperationsHandler(
                 pendingActivityDetailsCsvExport = null,
                 exportDetailedLoadedActivityCount = 0,
                 exportDetailedTotalActivityCount = 0,
+            )
+        }
+    }
+
+    fun onPdfExportHandled(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        updateState {
+            it.copy(
+                pendingPdfExport = null,
             )
         }
     }
@@ -333,7 +431,8 @@ class DashboardOperationsHandler(
             !isRefreshing &&
             !isSyncingCloudData &&
             !isExportingActivitiesCsv &&
-            !isExportingActivityDetailsCsv
+            !isExportingActivityDetailsCsv &&
+            !isExportingPdf
 
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)
@@ -353,5 +452,8 @@ class DashboardOperationsHandler(
     private companion object {
         private val EXPORT_DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+
+        fun buildPdfFileName(): String =
+            "m24-bericht-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}.pdf"
     }
 }

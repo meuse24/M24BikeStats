@@ -1,5 +1,4 @@
 package info.meuse24.m24bikestats.presentation.dashboard
-
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
 
@@ -103,6 +102,16 @@ data class ActivityDetailsCsvExportSummaryUiModel(
     val fileName: String,
     val activityCount: Int,
     val detailPointCount: Int,
+    val exportedAtLabel: String,
+)
+
+data class PdfExportUiModel(
+    val fileName: String,
+    val filePath: String,
+)
+
+data class PdfExportSummaryUiModel(
+    val fileName: String,
     val exportedAtLabel: String,
 )
 

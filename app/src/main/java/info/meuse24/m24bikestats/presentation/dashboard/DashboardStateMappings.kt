@@ -11,6 +11,7 @@ fun DashboardUiState.toHomeUiState(): HomeUiState =
         isSyncingCloudData = isSyncingCloudData,
         isExportingActivitiesCsv = isExportingActivitiesCsv,
         isExportingActivityDetailsCsv = isExportingActivityDetailsCsv,
+        isExportingPdf = isExportingPdf,
         syncPhase = syncPhase,
         syncPhaseLabel = syncPhaseLabel,
         syncLoadedActivityCount = syncLoadedActivityCount,
@@ -48,14 +49,17 @@ fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
         isRefreshing = isRefreshing,
         isExportingActivitiesCsv = isExportingActivitiesCsv,
         isExportingActivityDetailsCsv = isExportingActivityDetailsCsv,
+        isExportingPdf = isExportingPdf,
         exportLoadedActivityCount = exportLoadedActivityCount,
         exportTotalActivityCount = exportTotalActivityCount,
         exportDetailedLoadedActivityCount = exportDetailedLoadedActivityCount,
         exportDetailedTotalActivityCount = exportDetailedTotalActivityCount,
         pendingActivitiesCsvExport = pendingActivitiesCsvExport,
         pendingActivityDetailsCsvExport = pendingActivityDetailsCsvExport,
+        pendingPdfExport = pendingPdfExport,
         lastActivitiesCsvExport = lastActivitiesCsvExport,
         lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
+        lastPdfExport = lastPdfExport,
     )
 
 fun DashboardUiState.toBikeListUiState(): BikeListUiState =

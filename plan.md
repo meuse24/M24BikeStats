@@ -1,304 +1,390 @@
-# Implementierungsplan: Statistik-Highlights & Rhythmus-Block
+# Plan: PDF-Zusammenfassungsbericht
 
-Stand: 2026-04-06
-
-## Ziel
-
-Unter dem bestehenden Vico-Diagramm erscheint eine neue Sektion **"Highlights & Rhythmus"** mit formattierten
-Aha-Werten und Bestleistungen — berechnet aus allen gecachten `BoschActivity`-Einträgen, unabhängig von
-Wochen-/Monatsgruppierung des Charts.
-
-Die Sektion ist rein lesend und nutzt denselben `GetStatisticsUseCase`-Flow wie der Rest des Screens.
-Kein neuer API-Call, kein neuer Room-Query.
+**Stand:** 2026-04-06  
+**Ziel:** Herunterladbarer PDF-Bericht mit übersichtlicher Zusammenfassung aller vorhandenen App-Daten (Nutzer, Konto, Fahrräder/Komponenten, Aktivitäten, Statistik inkl. Diagramm). Keine Einzelauflistung von Aktivitäten – nur aggregierte Kennzahlen.
 
 ---
 
-## Neue Datenstrukturen
+## 1. Bibliothekswahl
 
-### `StatisticsHighlights` — in `StatisticsUiState.kt`
+**Empfehlung: Android native `android.graphics.pdf.PdfDocument` + `Canvas`**
 
-```kotlin
-data class StatisticsHighlights(
-    // Bestleistungen
-    val longestTourKm: Double,
-    val totalElevationGainM: Int,           // 0 wenn alle Activities null haben
-    val maxSpeedKmh: Double?,               // null wenn kein Wert vorhanden
-    val maxRiderPowerWatts: Double?,
-    val totalCaloriesBurned: Double?,
+| Kriterium | Bewertung |
+|---|---|
+| Keine Zusatz-Abhängigkeit | ✅ Im Android SDK seit API 19, minSdk 29 erfüllt |
+| Lizenz | ✅ Kein AGPL/LGPL-Problem (iText 7 = AGPL, OpenPDF = LGPL) |
+| Volle Canvas-Kontrolle | ✅ Exaktes Layout, Farben, Diagramme direkt zeichenbar |
+| Vico-Chart im PDF | ✅ Balkendiagramm mit Canvas-Primitiven nativ replizierbar |
+| Proguard-sicher | ✅ Kein zusätzliches Keep-Rule nötig |
 
-    // Effizienz
-    val avgTravelSpeedKmh: Double?,         // Gesamtdistanz / Gesamtfahrzeit; null bei 0 Dauer
+**Begründung gegen externe Libs:**
+- iText 7 Community → AGPL, erfordert Source-Offenlegung bei Verbreitung
+- PdfBox-Android → Apache 2.0, aber instabiler Community-Port, kein offizielles Android-AAR
+- Android-native Lösung ist Best Practice für reine Android-Apps ohne komplexe Office-Kompatibilität
 
-    // Rhythmus
-    val favoriteDayOfWeek: java.time.DayOfWeek?,       // häufigster Starttag
-    val dayOfWeekDistribution: Map<java.time.DayOfWeek, Int>,  // DayOfWeek → Tourenanzahl
-    val weeklyFrequencyHistogram: Map<Int, Int>,        // toursPerWeek → Wochenanzahl
-    val activeWeeksRatio: Double?,          // null wenn Zeitraum < 2 Kalenderwochen
-)
-```
-
-`StatisticsUiState` bekommt ein neues Feld:
-
-```kotlin
-data class StatisticsUiState(
-    // ... bestehende Felder ...
-    val highlights: StatisticsHighlights? = null,   // null solange isLoading oder 0 Aktivitäten
-)
-```
+**Für Text-Rendering auf Canvas wird `android.text.StaticLayout` verwendet** (korrekte Mehrzeilen-Umbrüche, RTL-sicher).
 
 ---
 
-## Schicht: Berechnung
+## 2. Inhalt und Seitenstruktur
 
-### Neue Methode in `StatisticsUiModelMapper`
+Das PDF besteht aus **6 Abschnitten** auf ca. 4–6 DIN-A4-Seiten (595 × 842 pt bei 72 dpi):
 
-Statt einer eigenen Klasse wird `mapHighlights()` direkt in den bestehenden Mapper aufgenommen —
-konsistent mit `mapPeriods()`, selbe Abhängigkeiten (`zoneId`, `locale`), kein extra DI-Binding nötig.
+### Seite 1 – Deckblatt
+- App-Titel **M24 Bike Stats** (M24 visuell hervorgehoben, Primärfarbe)
+- Untertitel: „Persönlicher Fahrtenbericht"
+- Erstellt-Datum, Uhrzeit, Zeitzone
+- Benutzer-E-Mail und Username (aus `OidcUserInfoUiModel`)
+- Horizontaler Trenner
+- Kurz-Übersicht als kompakte Kennzahlen-Zeile:  
+  Gesamttouren · Gesamtdistanz · Gesamtfahrtzeit · Zeitraum (früheste → späteste Aktivität)
+
+### Seite 2 – Konto & Profil
+- **Abschnitt Nutzerkonto**: E-Mail, Username, Subject (OIDC Sub)
+- **Abschnitt OAuth-Endpunkte**: Issuer, Token-Endpoint, UserInfo-Endpoint (aus `OidcDiscoveryInfoUiModel`)
+- Alle Felder als zweispaltige Label/Wert-Tabelle dargestellt
+
+### Seite 3 – Fahrräder & Komponenten
+Für jedes `BoschBike`:
+- **Antriebseinheit (DriveUnit)**: Produktname, Seriennummer, Gesamtkilometer (Odometer), Betriebsstunden (`totalPowerOnHours`), max. Unterstützungsgeschwindigkeit, aktive Assistenzmodi als Liste
+- **Akku/Batterien**: Pro Batterie Produktname, Ladezyklen gesamt/im Sattel/außerhalb, gelieferte Wh über Lebenszeit
+- **Fernbedienung & Head Unit**: Produktname, Seriennummer (falls vorhanden)
+- Trennlinie zwischen Bikes
+
+### Seite 4 – Aktivitäten-Übersicht
+Aggregierte Gesamtstatistik über alle gecachten Aktivitäten:
+
+| Kennzahl | Quelle |
+|---|---|
+| Anzahl Touren gesamt | `totalTours` |
+| Gesamtdistanz (km) | `totalDistanceKm` |
+| Gesamtfahrtzeit (h) | `totalDurationHours` |
+| Ø Distanz/Tour (km) | `avgDistanceKm` |
+| Ø Fahrtzeit/Tour (h) | `avgDurationHours` |
+| Zeitraum (von – bis) | früheste/späteste `startTime` aus Aktivitätsliste |
+| Ø Reisetempo (km/h) | `avgTravelSpeedKmh` aus Highlights |
+| Gesamter Höhengewinn (m) | `totalElevationGainM` |
+| Verbrauchte Kalorien gesamt | `totalCaloriesBurned` |
+
+Darstellung als **3-spaltige Kennzahlen-Kacheln** (ähnlich den Summary-Tiles auf dem Statistik-Screen).
+
+### Seite 5 – Statistik & Diagramm
+- **Gruppierer**: Monatsweise (feste Wahl für PDF – sinnvollste Verdichtung)
+- **Balkendiagramm Distanz**: Canvas-Balken für jeden `PeriodStats.distanceKm`, X-Achse = Monats-Label, Y-Achse = km (automatische Skalierung). Balken in Primärfarbe. Tourenzahl als Label über dem Balken.
+- **Linie Fahrtzeit**: Zweite Y-Achse rechts, Linienpunkte über den Balken in Sekundärfarbe.
+- **Durchschnittslinien**: Horizontale gestrichelte Linie für Ø-Distanz und Ø-Fahrtzeit.
+- Legende unterhalb des Charts
+- Darunter: Highlights-Kacheln (Bestleistungen)
+
+| Highlight | Quelle |
+|---|---|
+| Längste Tour | `longestTourKm` |
+| Max. Geschwindigkeit | `maxSpeedKmh` |
+| Max. Fahrerleistung | `maxRiderPowerWatts` |
+| Lieblings-Wochentag | `favoriteDayOfWeek` |
+
+### Seite 6 – Rhythmus & Frequenz
+- **Wochentagsverteilung**: Horizontales Balkendiagramm (Mo–So), Balkenbreite proportional zur Tour-Häufigkeit, Anzahl als Label
+- **Wochenfrequenz-Histogramm**: „Wie viele Wochen hattest du X Touren?" als kompakte Tabelle (0 Touren / 1 Tour / 2 Touren / 3+ Touren)
+- **Aktivitätsquote**: Prozent der Wochen mit mind. 1 Tour (`activeWeeksRatio`)
+- Footer mit App-Name, Version und Generierungsdatum
+
+---
+
+## 3. Neue Dateien und Klassen
+
+### 3.1 Domain Layer (Android-frei)
+
+**`domain/model/PdfReportData.kt`**  
+Aggregiertes Datenmodell, das alle für das PDF benötigten Informationen trägt. Wird vom UseCase befüllt und an den Generator übergeben.
 
 ```kotlin
-fun mapHighlights(activities: List<BoschActivity>): StatisticsHighlights? {
-    if (activities.isEmpty()) return null
-    // ... Berechnungen (s.u.) ...
+data class PdfReportData(
+    val generatedAt: Instant,
+    val userInfo: OidcUserInfoUiModel?,
+    val discoveryInfo: OidcDiscoveryInfoUiModel?,
+    val bikes: List<BoschBike>,
+    val statisticsState: StatisticsUiState,   // enthält periods, highlights, totals
+    val earliestActivityDate: Instant?,
+    val latestActivityDate: Instant?,
+)
+```
+
+**`domain/usecase/ExportPdfSummaryReportUseCase.kt`**  
+Orchestriert die Datenbeschaffung aus bestehenden Repositories. Gibt `Result<PdfReportData>` zurück.
+
+```
+Ablauf:
+1. userInfoProvider.loadCurrentUserInfo()
+2. discoveryInfoProvider.loadCurrentDiscovery()
+3. bikesRepository.getCachedBikes()
+4. getStatisticsUseCase() → Liste<BoschActivity>
+5. statisticsMapper.map(activities, grouping = MONTH) → StatisticsUiState
+6. Datum-Grenzen aus Aktivitätsliste ermitteln
+7. PdfReportData(...) zusammenbauen → Result.success(...)
+```
+
+### 3.2 Data Layer
+
+**`data/export/PdfReportGenerator.kt`**  
+Context-gebundener Generator. Erzeugt ein `PdfDocument` aus einem `PdfReportData`-Objekt und schreibt es in eine Datei im Cache-Dir. Gibt `Uri` (FileProvider) zurück.
+
+Unterklassen/Helfer (package-private):
+
+- **`PdfPageBuilder.kt`** – Wrapper um `PdfDocument.Page` + `Canvas`. Kapselt:
+  - `drawSectionHeader(text)` – Abschnittstitel mit Unterstrich
+  - `drawLabelValueRow(label, value)` – Zweispaltige Zeile
+  - `drawMetricTile(label, value, unit)` – Kachel mit großem Wert
+  - `drawBarChart(periods, avgDistance, avgDuration)` – Balken + Linie auf Canvas
+  - `drawHorizontalBarChart(data: Map<String, Int>)` – Wochentagsverteilung
+  - `drawText(text, x, y, paint)` – StaticLayout-basierter Mehrzeilen-Text
+  - Automatische Y-Cursor-Verwaltung (aktueller Zeichnungspunkt), Seitenüberlauf-Erkennung → neue Seite
+
+- **`PdfColorScheme.kt`** – Farb-Konstanten (Primär, Sekundär, Grau, Weiß, Schwarz) als `Int`-Werte, unabhängig von Compose-Themes
+
+- **`PdfTypography.kt`** – `Paint`-Objekte für Titelzeilen, Fließtext, Labels, Werte, kleine Texte (Größen, Bold, Color vorkonfiguriert)
+
+### 3.3 Presentation Layer
+
+**`presentation/dashboard/DashboardScreenStates.kt`** (bestehende Datei, erweitern)  
+`FunctionsUiState` bekommt drei neue Felder:
+```kotlin
+val isExportingPdf: Boolean = false
+val pendingPdfExport: PdfExportUiModel? = null    // fileName + Uri
+val lastPdfExport: PdfExportSummaryUiModel? = null // fileName, exportedAtLabel
+```
+
+**`presentation/dashboard/DashboardUiModels.kt`** (bestehende Datei, erweitern)  
+Zwei neue UI-Modelle:
+```kotlin
+data class PdfExportUiModel(val fileName: String, val uri: Uri)
+data class PdfExportSummaryUiModel(val fileName: String, val exportedAtLabel: String)
+```
+
+**`presentation/dashboard/DashboardViewModel.kt`** (bestehende Datei, erweitern)  
+Drei neue Methoden nach dem bestehenden CSV-Muster:
+```kotlin
+fun exportPdfSummaryReport()     // startet Coroutine, setzt isExportingPdf
+fun onPdfExportHandled()         // löscht pendingPdfExport aus State
+fun cancelPdfExport()            // bricht laufende Job-Coroutine ab
+```
+
+**`presentation/dashboard/FunctionsScreen.kt`** (bestehende Datei, erweitern)  
+- Neues `LaunchedEffect` für `pendingPdfExport` → `Intent.ACTION_SEND` mit `type = "application/pdf"`
+- Neue Signatur-Parameter: `onExportPdf`, `onCancelPdfExport`, `onPdfExportHandled`
+- Neues `FunctionsExportCard`-Item für den PDF-Bericht unterhalb der CSV-Karten
+
+**`DashboardScreen.kt`** (bestehende Datei, minimal erweitern)  
+Nur Parameter-Durchreichung der neuen Callbacks an `FunctionsScreen`.
+
+### 3.4 Dependency Injection
+
+**`di/AppModule.kt`** (bestehende Datei, erweitern)  
+```kotlin
+single { PdfReportGenerator(androidContext()) }
+factory {
+    ExportPdfSummaryReportUseCase(
+        userInfoProvider = get<OidcUserInfoProvider>(),
+        discoveryInfoProvider = get<OidcDiscoveryInfoProvider>(),
+        bikesRepository = get<BoschSmartSystemRepository>(),
+        getStatisticsUseCase = get<GetStatisticsUseCase>(),
+        statisticsMapper = get<StatisticsUiModelMapper>(),
+    )
+}
+```
+`PdfReportGenerator` und `ExportPdfSummaryReportUseCase` werden per Koin-Injection in den `DashboardViewModel` gereicht.
+
+### 3.5 FileProvider
+
+Der bestehende `shared_exports`-Cache-Path in `file_paths.xml` deckt `.pdf`-Dateien bereits ab. **Kein Änderungsbedarf** in AndroidManifest oder `file_paths.xml`.
+
+---
+
+## 4. Implementierungsreihenfolge
+
+| # | Schritt | Dateien | Abhängigkeiten |
+|---|---|---|---|
+| 1 | Domain-Modell anlegen | `domain/model/PdfReportData.kt` | – |
+| 2 | UseCase anlegen | `domain/usecase/ExportPdfSummaryReportUseCase.kt` | Schritt 1 |
+| 3 | `PdfColorScheme` + `PdfTypography` | `data/export/PdfColorScheme.kt`, `PdfTypography.kt` | – |
+| 4 | `PdfPageBuilder` | `data/export/PdfPageBuilder.kt` | Schritt 3 |
+| 5 | `PdfReportGenerator` | `data/export/PdfReportGenerator.kt` | Schritte 1, 4 |
+| 6 | UI-Modelle erweitern | `DashboardUiModels.kt`, `DashboardScreenStates.kt` | – |
+| 7 | ViewModel erweitern | `DashboardViewModel.kt` | Schritte 2, 5, 6 |
+| 8 | FunctionsScreen erweitern | `FunctionsScreen.kt` | Schritt 6 |
+| 9 | DashboardScreen Callbacks | `DashboardScreen.kt` | Schritt 8 |
+| 10 | DI verkabeln | `AppModule.kt` | Schritte 2, 5, 7 |
+| 11 | String-Ressourcen | `strings.xml`, `strings-de.xml` | – |
+| 12 | Tests: UseCase | `ExportPdfSummaryReportUseCaseTest.kt` | Schritte 1–2 |
+| 13 | Tests: Generator | `PdfReportGeneratorTest.kt` | Schritte 1–5 |
+| 14 | `assembleRelease` prüfen | – | alle Schritte |
+
+---
+
+## 5. Technische Entscheidungen im Detail
+
+### 5.1 Canvas-Koordinatensystem
+
+Seitengröße: **595 × 842 pt** (DIN A4 bei 72 dpi – PDF-Standard). Android `PdfDocument` verwendet Pixel, 72 dpi wird von allen PDF-Viewern korrekt als DIN A4 interpretiert.
+
+Rand: `margin = 40 px` links/rechts. Schreibbereich: `x ∈ [40, 555]`, `y`-Cursor startet bei `60`, Seitenende-Schwelle bei `y > 800` → automatisch neue Seite.
+
+### 5.2 Balken-/Liniendiagramm ohne Vico
+
+Das Diagramm wird **direkt auf Canvas gezeichnet** – keine Compose-zu-Bitmap-Konvertierung. Compose-Snapshots erfordern `ComposeView` + `ViewTreeLifecycleOwner` im Hintergrund-Thread und sind fehleranfällig; alle benötigten Daten sind bereits in `StatisticsUiState.periods` vorhanden.
+
+Zeichenreihenfolge:
+1. Hintergrundgitter (hellgraue horizontale Linien)
+2. Balken (Distanz, Primärfarbe, abgerundete Ecken via `drawRoundRect`)
+3. Linienpfad (Fahrtzeit, Sekundärfarbe, `Path` + `drawPath`)
+4. Datenpunkte der Linie (Kreise, `drawCircle`)
+5. Tourenzahl-Labels über Balken
+6. X-Achsen-Labels (Monats-Kurznamen), Y-Achsen-Labels links (km)
+7. Durchschnittslinien (gestrichelt via `PathEffect.dashPathEffect`)
+8. Legende
+
+Automatische Y-Skalierung: `maxY = periods.maxOf { distanceKm } * 1.15f`
+
+### 5.3 Coroutine-Struktur im ViewModel
+
+```kotlin
+private var pdfExportJob: Job? = null
+
+fun exportPdfSummaryReport() {
+    pdfExportJob?.cancel()
+    pdfExportJob = viewModelScope.launch(Dispatchers.IO) {
+        _uiState.update { ... isExportingPdf = true }
+        exportPdfSummaryReportUseCase()
+            .onSuccess { reportData ->
+                val uri = pdfReportGenerator.generate(reportData)
+                val fileName = buildPdfFileName()   // "m24-bericht-2026-04-06.pdf"
+                _uiState.update { ... pendingPdfExport = PdfExportUiModel(fileName, uri) }
+            }
+            .onFailure { /* Fehler in bestehenden Snackbar-Kanal leiten */ }
+        _uiState.update { ... isExportingPdf = false }
+    }
 }
 ```
 
-**Bestleistungen:**
+### 5.4 Datei-Benennung und FileProvider
 
-```kotlin
-val longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0
-val totalElevationGainM = activities.sumOf { it.elevationGainMeters ?: 0 }
-val maxSpeedKmh = activities.mapNotNull { it.maxSpeedKmh }.maxOrNull()
-val maxRiderPowerWatts = activities.mapNotNull { it.maxRiderPowerWatts }.maxOrNull()
-val totalCaloriesBurned = activities.mapNotNull { it.caloriesBurned }
-    .takeIf { it.isNotEmpty() }?.sum()
+```
+Dateiname:    m24-bericht-2026-04-06.pdf
+Cache-Pfad:   context.cacheDir/shared_exports/m24-bericht-2026-04-06.pdf
+Content-URI:  content://info.meuse24.m24bikestats.fileprovider/shared_exports/m24-bericht-2026-04-06.pdf
 ```
 
-**Effizienz — effektive Reisegeschwindigkeit:**
+Bereinigung analog zu `createSharedCsvUri`: lowercase, `[^a-z0-9._-]` → `-`.
 
+Share-Intent:
 ```kotlin
-val totalDistanceKm = activities.sumOf { it.distanceMeters } / 1000.0
-val totalDurationHours = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0
-val avgTravelSpeedKmh = if (totalDurationHours > 0) totalDistanceKm / totalDurationHours else null
+Intent(Intent.ACTION_SEND).apply {
+    type = "application/pdf"
+    putExtra(Intent.EXTRA_STREAM, uri)
+    putExtra(Intent.EXTRA_SUBJECT, fileName)
+    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+}
 ```
 
-**Rhythmus — Wochentag-Verteilung:**
+### 5.5 Lokalisierung im PDF-Generator
 
-```kotlin
-val dayOfWeekDistribution: Map<DayOfWeek, Int> = activities
-    .mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
-    .groupingBy { it }
-    .eachCount()
-
-val favoriteDayOfWeek: DayOfWeek? = dayOfWeekDistribution
-    .maxByOrNull { it.value }?.key
-```
-
-**Rhythmus — Wochen-Frequenz-Histogram:**
-
-Zählt, wie viele Kalenderwochen (ISO) es mit 0, 1, 2 … Touren gab.
-
-```kotlin
-// Alle Touren ihren ISO-Wochen-Startdaten zuordnen
-val toursPerWeek: Map<LocalDate, Int> = activities
-    .mapNotNull { it.startTime.toLocalDate(zoneId)?.toPeriodStart(StatisticsGrouping.WEEK, locale) }
-    .groupingBy { it }
-    .eachCount()
-
-// Lückenwochen (0 Touren) auffüllen — nur innerhalb des Aktivitätszeitraums
-val firstWeek = toursPerWeek.keys.minOrNull()
-val lastWeek = toursPerWeek.keys.maxOrNull()
-val allWeeks: List<LocalDate> = generateSequence(firstWeek) { it.plusWeeks(1) }
-    .takeWhile { !it.isAfter(lastWeek!!) }
-    .toList()
-
-val weeklyFrequencyHistogram: Map<Int, Int> = allWeeks
-    .map { week -> toursPerWeek[week] ?: 0 }
-    .groupingBy { it }
-    .eachCount()
-    .toSortedMap()
-
-// Aktivitäts-Quote
-val activeWeeksRatio: Double? = if (allWeeks.size >= 2) {
-    toursPerWeek.size.toDouble() / allWeeks.size
-} else null
-```
-
-### Anpassung `StatisticsViewModel`
-
-In der `combine`-Pipeline wird `mapHighlights` aufgerufen und in `toUiState` eingebaut:
-
-```kotlin
-val highlights = uiModelMapper.mapHighlights(activities)
-// in toUiState():
-highlights = highlights,
-```
+- `Locale.getDefault()` für alle Zahlenformatierungen (Dezimaltrenner, Tausendertrennzeichen)
+- `DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)` für Datumsangaben
+- PDF-Abschnittstitel werden über einen schlanken `PdfStringResolver`-Wrapper aufgelöst (analog zu `DashboardStringResolver`), damit `PdfReportGenerator` Android-Context-frei bleibt und testbar ist
 
 ---
 
-## Schicht: UI
-
-### Aufbau der neuen Sektion
-
-`StatisticsHighlightsSection` wird als eigenes `@Composable` in `StatisticsScreen.kt` ergänzt.
-Es erscheint als letztes `item { }` in der `LazyColumn`, nach dem Detail-Card.
-`AnimatedVisibility` wrappen — wird nur gezeigt wenn `highlights != null`.
-
-Sektion ist in **drei thematische Blöcke** unterteilt, jeweils als eigene `Card`:
-
----
-
-#### Block A — Bestleistungen (`StatisticsPersonalBestsCard`)
-
-2-spaltige Grid-Anordnung mit `StatisticsMetricTile`:
-
-| Tile | Wert | Immer sichtbar? |
-|---|---|---|
-| Längste Tour | `"42.3 km"` | ja |
-| Gesamte Höhenmeter | `"1 234 m"` | ja (0 m wenn keine Daten) |
-| Top-Geschwindigkeit | `"38.4 km/h"` | nur wenn ≥ 1 Aktivität mit Wert |
-| Max. Eigenleistung | `"312 W"` | nur wenn ≥ 1 Aktivität mit Wert |
-| Verbrauchte Kalorien | `"8 540 kcal"` | nur wenn ≥ 1 Aktivität mit Wert |
-
-Nullable Tiles werden per `if (highlights.maxSpeedKmh != null)` bedingt gerendert — kein Leer-Placeholder.
-
-Formatierungen:
-- km: `"%.1f km"` (Locale.getDefault())
-- m: `"%,d m"` — Tausender-Trenner für > 999 m
-- km/h: `"%.1f km/h"`
-- W: `"%d W"`
-- kcal: `"%,.0f kcal"`
-
----
-
-#### Block B — Effizienz (`StatisticsEfficiencyCard`)
-
-Einzeiliges Statement-Format statt Tiles:
-
-```
-Effektive Reisegeschwindigkeit
-  ⌀ 18.4 km/h  (Strecke ÷ Fahrzeit ohne Pausen)
-```
-
-Als `Row` mit großem Wert-Text (`titleLarge`, `FontWeight.Bold`) links und erläuterndem
-`bodySmall`-Text darunter. Wird nur gezeigt wenn `highlights.avgTravelSpeedKmh != null`.
-
----
-
-#### Block C — Rhythmus (`StatisticsRhythmCard`)
-
-**Statement-Zeile:**
-
-```
-Dein aktivster Tag: Samstag (23 Touren)
-```
-
-Als farblich hervorgehobener Text: Label `onSurfaceVariant`, Wochentag `primary + SemiBold`, Anzahl `onSurface`.
-
-**Wochentag-Mini-Bar:**
-
-7 Spalten (Mo–So) als `Row` mit `weight(1f)` pro Spalte. Jede Spalte zeigt:
-- Balken: `Box` mit `fillMaxWidth()` und Höhe proportional zum Maximum, gefärbt mit `primary.copy(alpha = ...)`
-- Favoritentag bekommt vollen `primary`-Alpha, andere skaliert
-- Darunter: 2-stellige Kurzbezeichnung (`"Mo"`, `"Di"` … oder `"Mon"`, `"Tue"`)
-- Ganz unten: Tourenzahl als kleine Zahl
-
-Höhe der gesamten Mini-Bar: 64 dp. Kein Vico, rein Compose.
-
-**Wochen-Frequenz-Tabelle:**
-
-Kompakte `Column` mit Zeilen für jeden `(toursPerWeek, weekCount)`-Eintrag:
-
-```
-0 Touren/Woche  → 4 Wochen
-1 Tour/Woche    → 11 Wochen
-2 Touren/Woche  →  7 Wochen
-3+ Touren/Woche →  2 Wochen
-```
-
-Zeilen mit `toursPerWeek >= 3` werden zusammengefasst zu `"3+ Touren/Woche"` (Overflow-Schutz).
-Jede Zeile als `Row` mit `Spacer(Modifier.weight(1f))` zwischen Label und Wert.
-Die Zeile mit dem häufigsten Wert wird mit `surfaceContainerHigh`-Hintergrund hervorgehoben.
-
-**Aktivitäts-Quote:**
-
-Nur wenn `highlights.activeWeeksRatio != null`:
-
-```
-Aktiv in 73 % aller Wochen
-```
-
-Als `LinearProgressIndicator` (0..1) mit Wert-Text daneben. Farbe: `primary`.
-
----
-
-### String-Ressourcen (neu)
-
-**`res/values/strings.xml`:**
+## 6. Neue String-Ressourcen (Auswahl)
 
 ```xml
-<!-- Highlights Section -->
-<string name="statistics_highlights_section">Highlights &amp; Rhythmus</string>
-<string name="statistics_highlights_personal_bests">Bestleistungen</string>
-<string name="statistics_highlights_longest_tour">Längste Tour</string>
-<string name="statistics_highlights_total_elevation">Gesamthöhenmeter</string>
-<string name="statistics_highlights_max_speed">Top-Geschwindigkeit</string>
-<string name="statistics_highlights_max_power">Max. Eigenleistung</string>
-<string name="statistics_highlights_total_calories">Kalorien gesamt</string>
-<string name="statistics_highlights_efficiency">Effizienz</string>
-<string name="statistics_highlights_avg_speed">Effektive Reisegeschw.</string>
-<string name="statistics_highlights_avg_speed_hint">Strecke ÷ Fahrzeit ohne Pausen</string>
-<string name="statistics_highlights_rhythm">Rhythmus</string>
-<string name="statistics_highlights_favorite_day">Aktivster Tag: %1$s (%2$d Touren)</string>
-<string name="statistics_highlights_active_weeks">Aktiv in %1$d\u2009%% aller Wochen</string>
-<string name="statistics_highlights_freq_row_zero">0 Touren / Woche</string>
-<string name="statistics_highlights_freq_row_one">1 Tour / Woche</string>
-<string name="statistics_highlights_freq_row_n">%1$d Touren / Woche</string>
-<string name="statistics_highlights_freq_row_overflow">%1$d+ Touren / Woche</string>
-<string name="statistics_highlights_freq_weeks">%1$d Wochen</string>
+<!-- FunctionsScreen - PDF-Karte -->
+<string name="functions_export_pdf_title">Zusammenfassungsbericht</string>
+<string name="functions_export_pdf_subtitle">Kompakter PDF-Bericht mit Nutzerprofil, Fahrrädern, Aktivitätsstatistik und Diagramm</string>
+<string name="functions_export_pdf_button">PDF erstellen</string>
+<string name="functions_export_pdf_running">PDF wird erstellt …</string>
+<string name="functions_cancel_pdf_button">Abbrechen</string>
+<string name="functions_share_chooser_pdf">Bericht teilen</string>
+<string name="functions_chip_pdf">PDF</string>
+<string name="functions_scope_full_summary">Vollständige Zusammenfassung</string>
+
+<!-- PDF-Abschnittstitel -->
+<string name="pdf_section_cover">Fahrtenbericht</string>
+<string name="pdf_section_account">Konto &amp; Profil</string>
+<string name="pdf_section_bikes">Fahrräder &amp; Komponenten</string>
+<string name="pdf_section_activities">Aktivitäten-Übersicht</string>
+<string name="pdf_section_statistics">Statistik &amp; Diagramm</string>
+<string name="pdf_section_rhythm">Rhythmus &amp; Frequenz</string>
+<string name="pdf_label_generated">Erstellt am</string>
+<string name="pdf_label_period">Zeitraum</string>
+<string name="pdf_footer">Erstellt mit M24 Bike Stats</string>
 ```
 
-**`res/values-de/strings.xml`:** analog Deutsch — Wochentagnamen kommen aus `DayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())`, daher keine statischen String-Ressourcen nötig.
+---
+
+## 7. Test-Strategie
+
+**`ExportPdfSummaryReportUseCaseTest`** (JVM, kein Instrument nötig)
+- Fake-Implementierungen für alle Provider/Repositories
+- Prüft: korrektes Befüllen von `PdfReportData` aus den Fakes
+- Prüft: `Result.failure` bei Fehler im userInfo-Provider wird korrekt propagiert
+
+**`PdfReportGeneratorTest`** (Robolectric oder Instrumentierungstest)
+- Prüft: Datei wird in `cacheDir/shared_exports/` angelegt
+- Prüft: `PdfDocument.getPages().size >= 4`
+- Prüft: FileProvider-URI hat Schema `content://`
+
+**Manuelle Smoke-Tests:**
+- PDF öffnen in: Google Drive, Adobe Acrobat, Samsung-eigener Viewer
+- Release-Build: `assembleRelease` ohne R8-Fehler (kein Keep-Rule nötig, da native Android API)
 
 ---
 
-## Tests
+## 8. Nicht im Scope (bewusste Abgrenzungen)
 
-### `StatisticsUiModelMapperTest` (Erweiterung)
-
-Neue Testfälle für `mapHighlights()`:
-
-| Testfall | Was geprüft wird |
-|---|---|
-| Leere Liste | Rückgabe `null` |
-| Alle nullable Felder null | `maxSpeedKmh == null`, `totalCaloriesBurned == null` |
-| Einzelne Aktivität | `activeWeeksRatio == null` (< 2 Wochen), `favoriteDayOfWeek` korrekt |
-| Zwei Aktivitäten, selber Wochentag | `favoriteDayOfWeek` = dieser Tag, `activeWeeksRatio` berechnet |
-| Aktivitäten über 3 Wochen, eine Woche leer | Histogram enthält `0 → 1`, Quote = 2/3 |
-| Wochentag-Verteilung Mo+Sa dominiert | `favoriteDayOfWeek` = Sa bei Sa > Mo |
-| `avgTravelSpeedKmh` bei 0 Dauer | `null`, kein Division-by-zero |
+- **Keine Einzelauflistung von Aktivitäten** – nur Aggregate
+- **Kein Kartenausschnitt / GPX-Visualisierung** (MapLibre renderbar nur im UI-Thread mit SurfaceView)
+- **Kein `ACTION_PRINT`-Intent** – Share-Intent reicht, OS-Druck-Dialog ist vom Nutzer aufrufbar
+- **Keine PDF-Verschlüsselung** – Daten sind app-intern, keine Übertragung ohne Nutzer-Aktion
+- **Keine Setup-Einstellung für PDF-Format** – immer System-Locale
 
 ---
 
-## Reihenfolge der Umsetzung
+## 9. Betroffene Dateien – Gesamtübersicht
 
-| # | Schritt | Datei(en) |
-|---|---------|-----------|
-| 1 | `StatisticsHighlights` Datenklasse ergänzen | `StatisticsUiState.kt` |
-| 2 | `mapHighlights()` im Mapper implementieren | `StatisticsUiModelMapper.kt` |
-| 3 | ViewModel-Pipeline um `highlights` erweitern | `StatisticsViewModel.kt` |
-| 4 | String-Ressourcen ergänzen (EN + DE) | `strings.xml`, evtl. `strings-de.xml` |
-| 5 | `StatisticsPersonalBestsCard` implementieren | `StatisticsScreen.kt` |
-| 6 | `StatisticsEfficiencyCard` implementieren | `StatisticsScreen.kt` |
-| 7 | `StatisticsRhythmCard` implementieren (Statement + Mini-Bar + Tabelle + Quote) | `StatisticsScreen.kt` |
-| 8 | Tests für `mapHighlights()` schreiben | `StatisticsUiModelMapperTest.kt` |
+### Neu anlegen
+```
+app/src/main/java/info/meuse24/m24bikestats/
+  domain/model/PdfReportData.kt
+  domain/usecase/ExportPdfSummaryReportUseCase.kt
+  data/export/PdfColorScheme.kt
+  data/export/PdfTypography.kt
+  data/export/PdfPageBuilder.kt
+  data/export/PdfReportGenerator.kt
 
-Schritte 1–3 sind ein Commit (Datenmodell + Logik), Schritte 4–7 ein zweiter (UI), Schritt 8 kann direkt nach Schritt 2 erfolgen (TDD-Stil möglich).
+app/src/test/java/info/meuse24/m24bikestats/
+  domain/usecase/ExportPdfSummaryReportUseCaseTest.kt
+  data/export/PdfReportGeneratorTest.kt
+```
 
----
+### Bestehende Dateien erweitern
+```
+app/src/main/java/info/meuse24/m24bikestats/
+  presentation/dashboard/DashboardUiModels.kt         (+2 Datenklassen)
+  presentation/dashboard/DashboardScreenStates.kt     (+3 Felder in FunctionsUiState)
+  presentation/dashboard/DashboardViewModel.kt        (+3 Methoden, +1 Job-Feld)
+  presentation/dashboard/FunctionsScreen.kt           (+LaunchedEffect, +Karte, +Parameter)
+  presentation/dashboard/DashboardScreen.kt           (+Callback-Durchreichung)
+  di/AppModule.kt                                     (+2 Bindings)
 
-## Nicht im Plan
+app/src/main/res/values/strings.xml                   (+~15 Strings)
+app/src/main/res/values-de/strings.xml                (+~15 Strings DE)
+```
 
-- Vergleich mit Vorjahr / Vormonat (fehlen historische Referenzpunkte im Cache-Modell)
-- Höhenprofile oder Track-Metriken (kommen aus `BoschActivityDetail`, nicht aus `BoschActivity`)
-- Push-Notifications für Bestleistungen
-- Persistierung der Highlights (sie sind deterministisch aus dem Cache berechenbar, kein eigener Store nötig)
+### Keine Änderungen nötig
+```
+AndroidManifest.xml        (FileProvider bereits konfiguriert)
+file_paths.xml             (shared_exports deckt .pdf ab)
+AppNavigation.kt           (keine neue Route)
+MainShell.kt               (keine neue Route)
+build.gradle.kts           (keine neue Abhängigkeit)
+```

@@ -12,10 +12,16 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.PdfReportData
+import info.meuse24.m24bikestats.domain.model.PdfReportDiscoveryInfo
+import info.meuse24.m24bikestats.domain.model.PdfReportUserInfo
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
+import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
+import info.meuse24.m24bikestats.domain.repository.PdfReportMetadataRepository
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
@@ -43,6 +49,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -180,6 +187,28 @@ class DashboardViewModelTest {
         assertNotNull(state.lastActivityDetailsCsvExport)
         assertEquals(2, state.lastActivityDetailsCsvExport?.activityCount)
         assertEquals(2, state.lastActivityDetailsCsvExport?.detailPointCount)
+    }
+
+    @Test
+    fun `pdf export stores last export summary`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                listOf(testActivity(id = "a1", title = "Tour")),
+                totalCount = 1,
+            )
+            setBikes(emptyList())
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.exportPdfSummaryReport()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.pendingPdfExport)
+        assertNotNull(state.lastPdfExport)
+        assertTrue(state.pendingPdfExport?.filePath?.endsWith(".pdf") == true)
+        assertTrue(state.lastPdfExport?.fileName?.endsWith(".pdf") == true)
     }
 
     @Test
@@ -360,6 +389,11 @@ class DashboardViewModelTest {
             operationsHandler = DashboardOperationsHandler(
                 exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
                 exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
+                exportPdfSummaryReportUseCase = ExportPdfSummaryReportUseCase(
+                    metadataRepository = FakePdfReportMetadataRepository(),
+                    repository = repository,
+                ),
+                pdfReportFileExporter = FakePdfReportFileExporter(),
                 syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
                 stringResolver = TestStringResolver(),
             ),
@@ -411,6 +445,35 @@ class DashboardViewModelTest {
         elevationLossMeters = null,
         caloriesBurned = null,
     )
+}
+
+private class FakePdfReportMetadataRepository : PdfReportMetadataRepository {
+    override suspend fun getCurrentUserInfo(): Result<PdfReportUserInfo?> =
+        Result.success(
+            PdfReportUserInfo(
+                email = "test@example.com",
+                username = "tester",
+                subject = "sub-1",
+            )
+        )
+
+    override suspend fun getCurrentDiscoveryInfo(): Result<PdfReportDiscoveryInfo?> =
+        Result.success(
+            PdfReportDiscoveryInfo(
+                issuer = "https://issuer.example",
+                authorizationEndpoint = "https://issuer.example/auth",
+                tokenEndpoint = "https://issuer.example/token",
+                userInfoEndpoint = "https://issuer.example/userinfo",
+            )
+        )
+}
+
+private class FakePdfReportFileExporter : PdfReportFileExporter {
+    override fun generate(
+        reportData: PdfReportData,
+        fileName: String,
+    ): File =
+        kotlin.io.path.createTempFile(fileName.removeSuffix(".pdf"), ".pdf").toFile()
 }
 
 private class TestStringResolver : DashboardStringResolver {

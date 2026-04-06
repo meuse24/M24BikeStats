@@ -3,9 +3,9 @@ package info.meuse24.m24bikestats.data.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import info.meuse24.m24bikestats.api.BoschRequest
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
-import info.meuse24.m24bikestats.support.apitest.BoschRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After

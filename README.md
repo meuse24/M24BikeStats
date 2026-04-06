@@ -13,6 +13,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
 - optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
+- PDF-Zusammenfassungsbericht als cache-only Export mit Nutzerkonto, Bikes, Aktivitätsübersicht, Statistikdiagramm und Rhythmus-Seite
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
@@ -60,7 +61,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Home` zeigt in der Shell-Top-Bar den App-Titel `M24 Bike Stats`, wobei `M24` hervorgehoben ist
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
-- `Funktionen`: CSV-Exporte
+- `Funktionen`: CSV-Exporte und PDF-Zusammenfassungsbericht
 - `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
@@ -84,6 +85,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
 - Der optionale Hintergrund-Sync plant genau einen eindeutigen periodischen WorkManager-Job und übernimmt dabei den im Setup gewählten Detail-Sync-Modus.
 - Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
+- Der PDF-Bericht nutzt ebenfalls nur bereits lokal gecachte Daten und ergänzt sie um OIDC-UserInfo-/Discovery-Metadaten.
 - Der Home-Sync zeigt Fortschritt und kann abgebrochen werden.
 - Der Home-Sync kann datensparsam nur fehlende Aktivitätsdetails laden oder optional veraltete Details mitaktualisieren.
 - Die Home-Übersicht zeigt zusätzlich die Anzahl gecachter Detaildatensätze und GPS-Punkte.
@@ -108,6 +110,9 @@ Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
 - `presentation/dashboard`: Home, Aktivitäten, Konto, Funktionen sowie Detail- und Track-Screens
+- `data/export`: CSV-/PDF-Export-Helfer, PDF-Layout-Builder und Android-gebundene Report-Dateigenerierung
+- `domain/model/PdfReportData.kt`: Android-freies Aggregat für den PDF-Bericht
+- `domain/usecase/ExportPdfSummaryReportUseCase.kt`: baut den Bericht aus Cache-, Bike- und OIDC-Daten auf
 - `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer, Durchschnittskennzahlen und read-only Highlights-/Rhythmus-Metriken aus gecachten `BoschActivity`-Daten
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
@@ -126,6 +131,7 @@ Ergänzungen:
 - Aktive Nutzertexte liegen in `app/src/main/res/values/strings.xml` und `app/src/main/res/values-de/strings.xml`.
 - Sichtbare Compose-Texte in Navigation, Setup, Dashboard-Listen und Detail-Flows sollen über `stringResource(...)` kommen.
 - ViewModel-seitige Nutzertexte laufen über kleine Resolver wie `DashboardStringResolver` und `LoginStringResolver`.
+- Der PDF-Generator nutzt denselben Ansatz über `PdfStringResolver`, damit sichtbare Report-Texte testbar und lokalisiert bleiben.
 - Technische Literale wie MIME-Types, Routen, JSON-Keys oder Dateinamen bleiben bewusst im Code.
 
 Mehr Projektdetails: [CLAUDE.md](CLAUDE.md)

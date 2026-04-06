@@ -64,7 +64,7 @@
     <string name="help_bike_label">Konto</string>
     <string name="help_bike_text">Der Kontobereich zeigt verknüpfte Bosch Smart System Bikes zusammen mit Bosch-Konto- und OIDC-Details wie UserInfo, Discovery-Metadaten und Signaturzertifikatsinformationen. Bike-Daten bleiben cache-first aus Room. Bosch eBike System 2 und eBike Connect werden nicht unterstützt.</string>
     <string name="help_functions_label">Funktionen</string>
-    <string name="help_functions_text">CSV-Exporte verwenden nur die bereits im lokalen Cache gespeicherten Aktivitäten und Detaildaten und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
+    <string name="help_functions_text">CSV- und PDF-Exporte verwenden nur die bereits lokal gecachten Aktivitäten, Detaildaten und Kontometadaten und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat; der PDF-Bericht folgt immer der aktiven System-Locale.</string>
     <string name="help_statistics_label">Statistiken</string>
     <string name="help_statistics_text">Der Statistikscreen aggregiert alle lokal gecachten Aktivitäten zu Wochen- oder Monatstotalen für Distanz, Fahrtzeit und Tourenzahl. Die Tourenzahl erscheint als Label direkt auf dem jeweiligen Balken, Durchschnittslinien für Distanz und Fahrtzeit geben Orientierung und die Summary-Tiles zeigen zusätzlich Durchschnittswerte pro Tour. Eine separate Sektion für Highlights und Rhythmus unter dem Diagramm zeigt zusätzlich längste Tour, Höhenmeter, Geschwindigkeit, Eigenleistung, Kalorien, effektive Reisegeschwindigkeit, aktivsten Wochentag und die wöchentliche Fahrhäufigkeit aus demselben Cache-Datensatz. Durch Antippen eines Zeitraums werden die aggregierten Werte darunter aufgeklappt. Der Aktualisieren-Button in der Top-Bar löst einen Cloud-Sync aus, der das Diagramm automatisch aktualisiert, sobald neue Daten vorliegen.</string>
     <string name="help_diagnostics_label">Diagnose</string>
@@ -179,12 +179,24 @@
     <string name="statistics_highlights_rhythm">Rhythmus</string>
     <string name="statistics_highlights_favorite_day_prefix">Aktivster Tag:</string>
     <string name="statistics_highlights_favorite_day_suffix">(%1$d Touren)</string>
+    <string name="statistics_highlights_favorite_day_pdf">Lieblings-Wochentag</string>
     <string name="statistics_highlights_active_weeks">Aktiv in %1$d %% aller Wochen</string>
     <string name="statistics_highlights_freq_row_zero">0 Touren / Woche</string>
     <string name="statistics_highlights_freq_row_one">1 Tour / Woche</string>
     <string name="statistics_highlights_freq_row_n">%1$d Touren / Woche</string>
     <string name="statistics_highlights_freq_row_overflow">%1$d+ Touren / Woche</string>
     <string name="statistics_highlights_freq_weeks">%1$d Wochen</string>
+    <string name="pdf_section_cover_subtitle">Persönlicher Fahrtenbericht</string>
+    <string name="pdf_section_account">Konto &amp; Profil</string>
+    <string name="pdf_section_bikes">Fahrräder &amp; Komponenten</string>
+    <string name="pdf_section_activities">Aktivitäten-Übersicht</string>
+    <string name="pdf_section_statistics">Statistik &amp; Diagramm</string>
+    <string name="pdf_section_rhythm">Rhythmus &amp; Frequenz</string>
+    <string name="pdf_label_generated">Erstellt</string>
+    <string name="pdf_label_period">Zeitraum</string>
+    <string name="pdf_label_oauth_endpoints">OAuth-Endpunkte</string>
+    <string name="pdf_footer">Erstellt mit M24 Bike Stats</string>
+    <string name="pdf_value_not_available">Nicht verfügbar</string>
 
     <string name="api_test_title">API-Test</string>
     <string name="api_test_fetch">Abrufen</string>
@@ -257,16 +269,22 @@
 
     <string name="functions_hero_eyebrow">Funktionen</string>
     <string name="functions_hero_title">Datenexport</string>
-    <string name="functions_hero_subtitle">Aktivitätenlisten und Detailpunkte als teilbare CSV-Dateien exportieren.</string>
+    <string name="functions_hero_subtitle">Zwischengespeicherte Aktivitätsdaten entweder als teilbare CSV-Dateien oder als kompakten PDF-Zusammenfassungsbericht exportieren.</string>
+    <string name="functions_export_pdf_title">Zusammenfassungsbericht als PDF exportieren</string>
+    <string name="functions_export_pdf_subtitle">Erstellt ein kompaktes PDF mit Kontodaten, Bikes, Aktivitätstotalen, Monatsdiagramm und Fahr-Rhythmus.</string>
     <string name="functions_export_activities_title">Aktivitäten als CSV exportieren</string>
     <string name="functions_export_activities_subtitle">Exportiert nur zwischengespeicherte Aktivitäten und ergänzt jede Zeile um bekannte Detailmetriken aus dem Cache ohne rohe GPS-Koordinaten.</string>
     <string name="functions_export_details_title">Sichtbare Detailpunkte als CSV exportieren</string>
     <string name="functions_export_details_subtitle">Verwendet den aktuell sichtbaren Aktivitätssatz und exportiert nur Detailpunkte, die bereits im lokalen Cache liegen.</string>
+    <string name="functions_chip_format">Format</string>
     <string name="functions_chip_csv">CSV</string>
+    <string name="functions_chip_pdf">PDF</string>
     <string name="functions_chip_scope">Umfang</string>
     <string name="functions_chip_rows">Zeilen</string>
+    <string name="functions_scope_full_summary">Vollständige Zusammenfassung</string>
     <string name="functions_scope_all_activities">Alle Fahrten</string>
     <string name="functions_scope_visible_activities">Sichtbare Fahrten</string>
+    <string name="functions_rows_pdf_sections">6 Abschnitte</string>
     <string name="functions_rows_one_per_activity">1 pro Fahrt</string>
     <string name="functions_rows_detail_points">Punkte</string>
     <string name="functions_label_file">Datei</string>
@@ -278,13 +296,16 @@
     <string name="functions_label_loaded_activities">Geladene Aktivitäten</string>
     <string name="functions_last_exported">Zuletzt exportiert</string>
     <string name="functions_progress_processed">%1$d von %2$d Aktivitäten verarbeitet</string>
+    <string name="functions_export_pdf_running">PDF-Export läuft</string>
     <string name="functions_export_running">Export läuft</string>
     <string name="functions_cancel_button">Export abbrechen</string>
+    <string name="functions_export_pdf_button">PDF exportieren</string>
     <string name="functions_export_button">CSV exportieren</string>
     <string name="functions_detail_export_running">Detail-Export läuft</string>
     <string name="functions_detail_export_button">Detail-CSV exportieren</string>
     <string name="functions_share_chooser_csv">CSV exportieren</string>
     <string name="functions_share_chooser_detail_csv">Detail-CSV exportieren</string>
+    <string name="functions_share_chooser_pdf">Bericht teilen</string>
 
     <string name="filter_section_title">Filter &amp; Sortierung</string>
     <string name="filter_search_label">Aktivität suchen</string>
@@ -344,6 +365,7 @@
     <string name="dashboard_error_csv_export">CSV-Export konnte nicht erstellt werden</string>
     <string name="dashboard_error_no_visible_activities">Keine sichtbaren Aktivitäten für den Detail-Export verfügbar</string>
     <string name="dashboard_error_detail_csv_export">Detail-CSV konnte nicht erstellt werden</string>
+    <string name="dashboard_error_pdf_export">PDF-Bericht konnte nicht erstellt werden</string>
     <string name="dashboard_error_cloud_sync">Cloud-Abgleich konnte nicht durchgeführt werden</string>
     <string name="dashboard_info_export_cancelled">Export abgebrochen</string>
     <string name="dashboard_info_sync_cancelled">Cloud-Abgleich abgebrochen</string>

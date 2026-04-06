@@ -61,12 +61,24 @@ class DashboardViewModel(
         )
     }
 
+    fun exportPdfSummaryReport() {
+        operationsHandler.exportPdfSummaryReport(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            updateState = _uiState::update,
+        )
+    }
+
     fun cancelActivitiesCsvExport() {
         operationsHandler.cancelActivitiesCsvExport(_uiState::update)
     }
 
     fun cancelActivityDetailsCsvExport() {
         operationsHandler.cancelActivityDetailsCsvExport(_uiState::update)
+    }
+
+    fun cancelPdfExport() {
+        operationsHandler.cancelPdfExport(_uiState::update)
     }
 
     fun updateActivityDateRangeFilter(filter: ActivityDateRangeFilter) {
@@ -96,6 +108,10 @@ class DashboardViewModel(
 
     fun onActivityDetailsCsvExportHandled() {
         operationsHandler.onActivityDetailsCsvExportHandled(_uiState::update)
+    }
+
+    fun onPdfExportHandled() {
+        operationsHandler.onPdfExportHandled(_uiState::update)
     }
 
     fun updateCsvExportFormat(format: CsvExportFormat) {

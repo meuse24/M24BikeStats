@@ -112,6 +112,7 @@ Regeln:
 - mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
 - optionaler täglicher Hintergrund-Sync über WorkManager mit einstellbarer Netzbedingung
 - CSV-Export für Aktivitäten, Details und Tracks
+- PDF-Zusammenfassungsbericht mit `PdfDocument`/`Canvas`, cache-only und mit teilbarem FileProvider-Export
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
 - Exporte sind cache-only und haben Cancel-Aktionen
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
@@ -156,6 +157,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - alle UseCases
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
+- `PdfReportFileExporter`, `PdfReportMetadataRepository`, `PdfStringResolver`
 - `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
 - `GetStatisticsUseCase`, `StatisticsUiModelMapper`, `StatisticsViewModel`
 
@@ -165,6 +167,8 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
 - Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) nur für Chart-spezifische Zusatzdaten nutzen, read-only Highlights/Rhythmus dagegen direkt im `StatisticsUiState` halten
 - PDF-/Report-Datenmodelle dürfen keine `presentation`-States wie `StatisticsUiState` direkt referenzieren; dafür eigene domain-taugliche Aggregate oder Mapper-Grenzen vorsehen
+- PDF-Export bleibt cache-only; keine zusätzlichen Bosch-Cloud-Abfragen nur für Berichtserzeugung einführen
+- `PdfReportGenerator` ist Android-gebunden und liefert nur die Report-Datei; Aggregation und fachliche Kennzahlen gehören in `ExportPdfSummaryReportUseCase`
 - Vico-`dataLabelValueFormatter` bekommt nur den geplotteten Y-Wert; bei potenziell doppelten Distanzwerten keine positionsabhängige Zuordnung per Rohwert annehmen
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV

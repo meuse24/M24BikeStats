@@ -226,10 +226,13 @@ fun AppNavigation() {
                             uiState = dashboardUiState.toFunctionsUiState(),
                             onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
                             onExportActivityDetailsCsv = dashboardViewModel::exportVisibleActivityDetailsCsv,
+                            onExportPdf = dashboardViewModel::exportPdfSummaryReport,
                             onCancelActivitiesCsvExport = dashboardViewModel::cancelActivitiesCsvExport,
                             onCancelActivityDetailsCsvExport = dashboardViewModel::cancelActivityDetailsCsvExport,
+                            onCancelPdfExport = dashboardViewModel::cancelPdfExport,
                             onActivitiesCsvExportHandled = dashboardViewModel::onActivitiesCsvExportHandled,
                             onActivityDetailsCsvExportHandled = dashboardViewModel::onActivityDetailsCsvExportHandled,
+                            onPdfExportHandled = dashboardViewModel::onPdfExportHandled,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }

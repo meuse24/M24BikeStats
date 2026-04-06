@@ -35,10 +35,13 @@ fun FunctionsScreen(
     uiState: FunctionsUiState,
     onExportActivitiesCsv: () -> Unit,
     onExportActivityDetailsCsv: () -> Unit,
+    onExportPdf: () -> Unit,
     onCancelActivitiesCsvExport: () -> Unit,
     onCancelActivityDetailsCsvExport: () -> Unit,
+    onCancelPdfExport: () -> Unit,
     onActivitiesCsvExportHandled: () -> Unit,
     onActivityDetailsCsvExportHandled: () -> Unit,
+    onPdfExportHandled: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -69,6 +72,19 @@ fun FunctionsScreen(
         onActivityDetailsCsvExportHandled()
     }
 
+    LaunchedEffect(uiState.pendingPdfExport) {
+        val export = uiState.pendingPdfExport ?: return@LaunchedEffect
+        val pdfUri = createPdfReportUri(context, export)
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "application/pdf"
+            putExtra(Intent.EXTRA_STREAM, pdfUri)
+            putExtra(Intent.EXTRA_SUBJECT, export.fileName)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.functions_share_chooser_pdf)))
+        onPdfExportHandled()
+    }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -91,6 +107,38 @@ fun FunctionsScreen(
         }
         item {
             FunctionsExportCard(
+                title = stringResource(R.string.functions_export_pdf_title),
+                subtitle = stringResource(R.string.functions_export_pdf_subtitle),
+                summary = listOf(
+                    stringResource(R.string.functions_chip_format) to stringResource(R.string.functions_chip_pdf),
+                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_full_summary),
+                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_pdf_sections),
+                ),
+                isRunning = uiState.isExportingPdf,
+                progressCurrent = 0,
+                progressTotal = 0,
+                onClick = onExportPdf,
+                onCancel = onCancelPdfExport,
+                enabled = !uiState.isExportingActivitiesCsv &&
+                    !uiState.isExportingActivityDetailsCsv &&
+                    !uiState.isExportingPdf &&
+                    !uiState.isInitialLoading &&
+                    !uiState.isRefreshing,
+                idleButtonLabel = stringResource(R.string.functions_export_pdf_button),
+                runningButtonLabel = stringResource(R.string.functions_export_pdf_running),
+            ) {
+                uiState.lastPdfExport?.let { exportSummary ->
+                    ExportSummarySection(
+                        rows = listOf(
+                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+                        )
+                    )
+                }
+            }
+        }
+        item {
+            FunctionsExportCard(
                 title = stringResource(R.string.functions_export_activities_title),
                 subtitle = stringResource(R.string.functions_export_activities_subtitle),
                 summary = listOf(
@@ -105,6 +153,7 @@ fun FunctionsScreen(
                 onCancel = onCancelActivitiesCsvExport,
                 enabled = !uiState.isExportingActivitiesCsv &&
                     !uiState.isExportingActivityDetailsCsv &&
+                    !uiState.isExportingPdf &&
                     !uiState.isInitialLoading &&
                     !uiState.isRefreshing,
                 idleButtonLabel = stringResource(R.string.functions_export_button),
@@ -138,6 +187,7 @@ fun FunctionsScreen(
                 enabled = uiState.visibleActivityCount > 0 &&
                     !uiState.isExportingActivitiesCsv &&
                     !uiState.isExportingActivityDetailsCsv &&
+                    !uiState.isExportingPdf &&
                     !uiState.isInitialLoading &&
                     !uiState.isRefreshing,
                 idleButtonLabel = stringResource(R.string.functions_detail_export_button),
@@ -212,10 +262,12 @@ private fun FunctionsExportCard(
                 )
                 content()
                 if (isRunning) {
-                    ExportProgressSection(
-                        current = progressCurrent,
-                        total = progressTotal,
-                    )
+                    if (progressCurrent > 0 || progressTotal > 0) {
+                        ExportProgressSection(
+                            current = progressCurrent,
+                            total = progressTotal,
+                        )
+                    }
                     OutlinedButton(
                         onClick = onCancel,
                         modifier = Modifier.fillMaxWidth(),

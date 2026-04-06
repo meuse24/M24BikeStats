@@ -30,6 +30,16 @@ fun createActivityDetailsCsvUri(
     )
 }
 
+fun createPdfReportUri(
+    context: Context,
+    export: PdfExportUiModel,
+): Uri =
+    FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.fileprovider",
+        File(export.filePath),
+    )
+
 private fun createSharedCsvUri(
     context: Context,
     fileName: String,

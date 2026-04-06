@@ -11,6 +11,10 @@ import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
 import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
 import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
 import info.meuse24.m24bikestats.data.auth.AuthManager
+import info.meuse24.m24bikestats.data.export.AndroidPdfStringResolver
+import info.meuse24.m24bikestats.data.export.PdfReportGenerator
+import info.meuse24.m24bikestats.data.export.PdfReportMetadataRepositoryImpl
+import info.meuse24.m24bikestats.data.export.PdfStringResolver
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
@@ -24,7 +28,10 @@ import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
+import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
+import info.meuse24.m24bikestats.domain.repository.PdfReportMetadataRepository
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
@@ -115,6 +122,11 @@ val appModule = module {
     single<OidcCertificateInfoProvider> { LiveOidcCertificateInfoProvider(get(), get()) }
     single<OidcUserInfoProvider> { LiveOidcUserInfoProvider(get()) }
     single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get()) }
+    single<PdfReportMetadataRepository> { PdfReportMetadataRepositoryImpl(get(), get()) }
+    single<PdfStringResolver> { AndroidPdfStringResolver(androidContext()) }
+    single<PdfReportFileExporter> {
+        PdfReportGenerator(androidContext(), get(), info.meuse24.m24bikestats.BuildConfig.VERSION_NAME)
+    }
 
     // --- Domain ---
     factory { IsAuthenticatedUseCase(get()) }
@@ -137,6 +149,7 @@ val appModule = module {
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
+    factory { ExportPdfSummaryReportUseCase(get(), get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
@@ -169,6 +182,8 @@ val appModule = module {
         DashboardOperationsHandler(
             exportActivitiesCsv = get(),
             exportActivityDetailsCsv = get(),
+            exportPdfSummaryReportUseCase = get(),
+            pdfReportFileExporter = get(),
             syncSmartSystemCloudUseCase = get(),
             stringResolver = get(),
         )
