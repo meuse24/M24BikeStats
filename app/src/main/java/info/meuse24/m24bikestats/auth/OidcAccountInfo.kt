@@ -1,7 +1,7 @@
 package info.meuse24.m24bikestats.auth
 
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import org.json.JSONObject
 
 data class OidcUserInfoUiModel(
@@ -18,7 +18,7 @@ class LiveOidcUserInfoProvider(
     private val fetchBoschData: FetchBoschDataUseCase,
 ) : OidcUserInfoProvider {
     override suspend fun loadCurrentUserInfo(): OidcUserInfoUiModel? {
-        val response = fetchBoschData(BoschEndpoint.USERINFO).getOrNull() ?: return null
+        val response = fetchBoschData(BoschEndpoint.USERINFO.toRequest()).getOrNull() ?: return null
         return parseOidcUserInfo(response)
     }
 }
@@ -43,7 +43,7 @@ class LiveOidcDiscoveryInfoProvider(
     private val fetchBoschData: FetchBoschDataUseCase,
 ) : OidcDiscoveryInfoProvider {
     override suspend fun loadCurrentDiscovery(): OidcDiscoveryInfoUiModel? {
-        val response = fetchBoschData(BoschEndpoint.OIDC_DISCOVERY).getOrNull() ?: return null
+        val response = fetchBoschData(BoschEndpoint.OIDC_DISCOVERY.toRequest()).getOrNull() ?: return null
         return parseOidcDiscoveryInfo(response)
     }
 }

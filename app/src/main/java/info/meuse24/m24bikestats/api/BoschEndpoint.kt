@@ -1,5 +1,7 @@
 package info.meuse24.m24bikestats.api
 
+import info.meuse24.m24bikestats.domain.model.BoschApiRequest
+
 /**
  * Bosch eBike Data Act API – Endpunkte für Smart System (BES3 / Flow-App).
  *
@@ -67,17 +69,17 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
     fun toRequest(
         activityId: String? = null,
         bikeId: String? = null,
-    ): BoschRequest {
+    ): BoschApiRequest {
+        require(this != TOKEN_INFO) { "TOKEN_INFO is local-only and does not map to BoschApiRequest" }
+
         val resolvedPath = path
             .replace("ACTIVITY_ID", activityId ?: "ACTIVITY_ID")
             .replace("BIKE_ID", bikeId ?: "BIKE_ID")
 
-        return BoschRequest(
+        return BoschApiRequest(
             label = label,
             baseUrl = baseUrl,
             path = resolvedPath,
-            debugName = name,
-            isLocalOnly = this == TOKEN_INFO,
         )
     }
 }

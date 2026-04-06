@@ -97,7 +97,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 
 ```text
 domain/        Interfaces, Modelle, UseCases
-api/           gemeinsame Bosch-Endpoint-/Request-Abstraktionen
+api/           Bosch-Endpoint-Katalog für API-Test/Diagnose
 data/          API- und Repository-Implementierungen, Room-Zugriff
 auth/          OAuth2/AppAuth, Token-Verwaltung, OIDC-Helfer
 background/    WorkManager-Scheduling und Settings-Beobachtung
@@ -123,7 +123,7 @@ Ergänzungen:
 - `presentation/dashboard/DashboardSharedUi.kt`: wiederverwendete Hero-/Metric-/Section-Komponenten
 - `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
 - `presentation/login/LoginStringResolver`: sichtbare Login-Statusmeldungen bleiben ebenfalls resource-basiert und testbar ohne Android-`Context` direkt im ViewModel
-- `api/`: neutrale Bosch-Endpoint-, Request- und Fetch-Abstraktionen für produktive Nutzung und Diagnose
+- `api/`: Endpoint-Definitionen für API-Test-/Diagnose-Flows; `BoschApiRequest`/`FetchBoschDataUseCase` liegen in `domain/`
 - `auth/AuthFlowCoordinator`: Android-spezifischer Login-/Logout-Intent-Flow außerhalb der Präsentationsschicht
 - `auth/OidcAccountInfo`: produktive OIDC-UserInfo-/Discovery-Logik für Kontodetails
 - `auth/OidcCertificateInfo`: produktive OIDC-JWKS-/Zertifikatslogik für Kontodetails

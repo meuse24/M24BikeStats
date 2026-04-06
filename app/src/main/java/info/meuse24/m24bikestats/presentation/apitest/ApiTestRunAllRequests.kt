@@ -1,21 +1,41 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.api.BoschRequest
+import info.meuse24.m24bikestats.domain.model.BoschApiRequest
+import java.net.URI
+
+internal data class ApiTestRequest(
+    val label: String,
+    val debugName: String,
+    val url: String,
+    val request: BoschApiRequest?,
+    val isLocalOnly: Boolean = false,
+)
 
 internal fun buildRunAllRequests(
     activityId: String?,
     bikeId: String?,
-): List<BoschRequest> = buildList {
-    addAll(
-        BoschEndpoint.entries
-            .map { endpoint ->
-                endpoint.toRequest(activityId = activityId, bikeId = bikeId)
-            }
-    )
+): List<ApiTestRequest> = BoschEndpoint.entries.map { endpoint ->
+    if (endpoint == BoschEndpoint.TOKEN_INFO) {
+        ApiTestRequest(
+            label = endpoint.label,
+            debugName = endpoint.name,
+            url = "local://token-info",
+            request = null,
+            isLocalOnly = true,
+        )
+    } else {
+        val request = endpoint.toRequest(activityId = activityId, bikeId = bikeId)
+        ApiTestRequest(
+            label = request.label,
+            debugName = endpoint.name,
+            url = request.url,
+            request = request,
+        )
+    }
 }
 
-internal fun buildAdditionalActivityRequests(activitiesResponse: String?): List<BoschRequest> {
+internal fun buildAdditionalActivityRequests(activitiesResponse: String?): List<ApiTestRequest> {
     val json = extractJsonBody(activitiesResponse) ?: return emptyList()
     val seenUrls = mutableSetOf<String>()
 
@@ -38,7 +58,7 @@ internal fun buildAdditionalActivityRequests(activitiesResponse: String?): List<
 private fun createLinkedActivityRequest(
     relation: String,
     url: String,
-): BoschRequest? {
+): ApiTestRequest? {
     val relationInfo = when (relation) {
         "prev" -> "vorherige Seite" to "SMART_ACTIVITIES_PREV_LINK"
         "next" -> "nächste Seite" to "SMART_ACTIVITIES_NEXT_LINK"
@@ -48,13 +68,38 @@ private fun createLinkedActivityRequest(
     val offset = extractOffset(url)
     val offsetLabel = offset?.let { ", offset=$it" }.orEmpty()
     val offsetDebug = offset?.let { "_OFFSET_$it" }.orEmpty()
-
-    return BoschRequest(
+    val request = toAbsoluteRequest(
         label = "Aktivitäten ${relationInfo.first} (links.$relation$offsetLabel)",
-        baseUrl = "",
-        path = "",
+        url = url,
+    ) ?: return null
+
+    return ApiTestRequest(
+        label = request.label,
         debugName = relationInfo.second + offsetDebug,
-        absoluteUrl = url,
+        url = request.url,
+        request = request,
+    )
+}
+
+private fun toAbsoluteRequest(
+    label: String,
+    url: String,
+): BoschApiRequest? {
+    val uri = runCatching { URI(url) }.getOrNull() ?: return null
+    val scheme = uri.scheme ?: return null
+    val authority = uri.rawAuthority ?: return null
+    val baseUrl = "$scheme://$authority"
+    val path = buildString {
+        append(uri.rawPath.orEmpty())
+        uri.rawQuery?.takeIf { it.isNotBlank() }?.let {
+            append('?')
+            append(it)
+        }
+    }
+    return BoschApiRequest(
+        label = label,
+        baseUrl = baseUrl,
+        path = path,
     )
 }
 

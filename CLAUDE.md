@@ -37,10 +37,7 @@ domain/
   usecase/     fachliche Anwendungsfälle
 
 api/
-  BoschEndpoint
-  BoschRequest
-  BoschRepository
-  FetchBoschDataUseCase
+  BoschEndpoint   (API-Test-/Diagnose-Endpunktkatalog)
 
 data/
   remote/      Bosch API Zugriff
@@ -158,13 +155,14 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - `AuthManager` als `AuthRepository` und `AuthFlowCoordinator`
 - `BackgroundSyncScheduler` und `BackgroundSyncSettingsObserver`
 - `BoschApiClient` als `BoschApiDataSource`
-- `BoschRepositoryImpl`
+- `BoschRepositoryImpl` als `BoschApiRepository`
 - `BoschSmartSystemRepositoryImpl`
 - `LiveOidcUserInfoProvider`
 - `LiveOidcDiscoveryInfoProvider`
 - `LiveOidcCertificateInfoProvider`
 - `AppSettingsRepositoryImpl`
 - alle UseCases
+- darunter `FetchBoschDataUseCase` (domain/usecase)
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
 - `PdfReportFileExporter`, `PdfReportMetadataRepository`, `PdfStringResolver`

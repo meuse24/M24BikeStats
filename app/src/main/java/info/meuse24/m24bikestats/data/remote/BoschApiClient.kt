@@ -1,8 +1,6 @@
 package info.meuse24.m24bikestats.data.remote
 
-import info.meuse24.m24bikestats.shared.TokenInfoFormat
-import info.meuse24.m24bikestats.shared.decodeJwtParts
-import info.meuse24.m24bikestats.api.BoschRequest
+import info.meuse24.m24bikestats.domain.model.BoschApiRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -16,13 +14,8 @@ class BoschApiClient : BoschApiDataSource {
         .readTimeout(15, TimeUnit.SECONDS)
         .build()
 
-    override suspend fun get(request: BoschRequest, accessToken: String): String =
+    override suspend fun get(request: BoschApiRequest, accessToken: String): String =
         withContext(Dispatchers.IO) {
-            // TOKEN_INFO: kein HTTP-Call, Token lokal dekodieren
-            if (request.isLocalOnly) {
-                return@withContext decodeJwt(accessToken)
-            }
-
             val httpRequest = Request.Builder()
                 .url(request.url)
                 .header("Authorization", "Bearer $accessToken")
@@ -34,19 +27,4 @@ class BoschApiClient : BoschApiDataSource {
                 "HTTP ${response.code} ${response.message}\n\n$body"
             }
         }
-
-    /**
-     * Dekodiert den JWT-Payload (mittleres Segment) ohne Signaturprüfung.
-     * Zeigt Scopes, Audience, Sub und Ablaufzeit des Access Tokens.
-     */
-    private fun decodeJwt(token: String): String {
-        return try {
-            val parts = decodeJwtParts(token)
-                ?: return "Kein gültiges JWT"
-
-            TokenInfoFormat.format(header = parts.header, payload = parts.payload)
-        } catch (e: Exception) {
-            "JWT-Decodierung fehlgeschlagen: ${e.message}"
-        }
-    }
 }

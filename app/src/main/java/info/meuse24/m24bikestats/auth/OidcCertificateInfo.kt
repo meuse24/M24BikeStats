@@ -2,7 +2,7 @@ package info.meuse24.m24bikestats.auth
 
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import info.meuse24.m24bikestats.shared.decodeJwtBase64UrlSegment
 import org.json.JSONObject
 import java.security.cert.CertificateFactory
@@ -37,7 +37,7 @@ class LiveOidcCertificateInfoProvider(
     private val authRepository: AuthRepository,
 ) : OidcCertificateInfoProvider {
     override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? {
-        val response = fetchBoschData(BoschEndpoint.OIDC_CERTS).getOrNull() ?: return null
+        val response = fetchBoschData(BoschEndpoint.OIDC_CERTS.toRequest()).getOrNull() ?: return null
         return parseOidcCertificateInfo(response, authRepository.getAccessToken())
     }
 }

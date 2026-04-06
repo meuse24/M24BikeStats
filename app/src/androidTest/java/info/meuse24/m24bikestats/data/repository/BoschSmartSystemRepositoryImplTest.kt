@@ -3,9 +3,9 @@ package info.meuse24.m24bikestats.data.repository
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import info.meuse24.m24bikestats.api.BoschRequest
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
+import info.meuse24.m24bikestats.domain.model.BoschApiRequest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -152,7 +152,7 @@ private class FakeBoschApiDataSource : BoschApiDataSource {
     var bikesResponse: String = """{"bikes":[]}"""
     var bikeDetailResponse: String = """{"id":"bike-1"}"""
 
-    override suspend fun get(request: BoschRequest, accessToken: String): String {
+    override suspend fun get(request: BoschApiRequest, accessToken: String): String {
         val body = when {
             request.path.startsWith("/activity/smart-system/v1/activities?") -> activitiesResponse
             request.path.contains("/activity/smart-system/v1/activities/") -> activityDetailResponse

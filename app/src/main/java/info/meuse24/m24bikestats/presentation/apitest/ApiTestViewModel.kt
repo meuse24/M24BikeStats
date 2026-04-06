@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.BuildConfig
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.shared.TokenInfoFormat
+import info.meuse24.m24bikestats.shared.decodeJwtParts
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +23,8 @@ data class ApiTestUiState(
 )
 
 class ApiTestViewModel(
-    private val fetchBoschData: FetchBoschDataUseCase
+    private val fetchBoschData: FetchBoschDataUseCase,
+    private val authRepository: AuthRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ApiTestUiState())
@@ -33,7 +37,12 @@ class ApiTestViewModel(
     fun fetch() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            val result = fetchBoschData(_uiState.value.selectedEndpoint)
+            val selectedEndpoint = _uiState.value.selectedEndpoint
+            val result = if (selectedEndpoint == BoschEndpoint.TOKEN_INFO) {
+                decodeAccessTokenInfo()
+            } else {
+                fetchBoschData(selectedEndpoint.toRequest())
+            }
             _uiState.update {
                 it.copy(
                     isLoading = false,
@@ -47,8 +56,8 @@ class ApiTestViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, jsonOutput = "") }
 
-            val activitiesResponse = fetchBoschData(BoschEndpoint.SMART_ACTIVITIES)
-            val bikesResponse = fetchBoschData(BoschEndpoint.SMART_BIKES)
+            val activitiesResponse = fetchBoschData(BoschEndpoint.SMART_ACTIVITIES.toRequest())
+            val bikesResponse = fetchBoschData(BoschEndpoint.SMART_BIKES.toRequest())
             val activityId = extractFirstActivityId(activitiesResponse.getOrNull())
             val bikeId = extractFirstBikeId(bikesResponse.getOrNull())
             val requests = buildRunAllRequests(activityId = activityId, bikeId = bikeId).toMutableList()
@@ -76,7 +85,11 @@ class ApiTestViewModel(
                 val request = requests[index++]
                 debugLog("START ${request.debugName} -> ${request.url}")
 
-                val result = seededResults[request.debugName] ?: fetchBoschData(request)
+                val result = seededResults[request.debugName] ?: when {
+                    request.isLocalOnly -> decodeAccessTokenInfo()
+                    request.request != null -> fetchBoschData(request.request)
+                    else -> Result.failure(IllegalStateException("Ungültige API-Test-Anfrage"))
+                }
                 val body = result.getOrElse { error -> "Fehler: ${error.message}" }
 
                 reportBuilder.appendLine("=== ${request.label} (${request.debugName}) ===")
@@ -139,5 +152,13 @@ class ApiTestViewModel(
         val json = extractJsonBody(response) ?: return null
         val bikes = JSONObject(json).optJSONArray("bikes") ?: return null
         return bikes.optJSONObject(0)?.optString("id")?.takeIf { it.isNotBlank() }
+    }
+
+    private fun decodeAccessTokenInfo(): Result<String> = runCatching {
+        val token = authRepository.getAccessToken()
+            ?: error("Kein Access Token verfügbar")
+        val parts = decodeJwtParts(token)
+            ?: error("Kein gültiges JWT")
+        TokenInfoFormat.format(header = parts.header, payload = parts.payload)
     }
 }

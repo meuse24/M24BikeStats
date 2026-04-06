@@ -27,6 +27,7 @@ import info.meuse24.m24bikestats.data.repository.BoschRepositoryImpl
 import info.meuse24.m24bikestats.data.repository.BoschSmartSystemRepositoryImpl
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.repository.BoschApiRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
@@ -35,6 +36,7 @@ import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetActivityMapPointsUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
@@ -74,8 +76,6 @@ import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import info.meuse24.m24bikestats.presentation.map.MapSummaryViewModel
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsUiModelMapper
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
-import info.meuse24.m24bikestats.api.BoschRepository
-import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -103,7 +103,7 @@ val appModule = module {
     single { get<BoschDatabase>().activityDao() }
     single { get<BoschDatabase>().activityDetailDao() }
     single { get<BoschDatabase>().bikeDao() }
-    single<BoschRepository> { BoschRepositoryImpl(get()) }
+    single<BoschApiRepository> { BoschRepositoryImpl(get()) }
     single {
         BoschSmartSystemRepositoryImpl(
             parser = get(),

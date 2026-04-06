@@ -11,7 +11,7 @@ import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschJsonBodyExtractor
 import info.meuse24.m24bikestats.data.remote.BoschSmartSystemParser
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.api.BoschRequest
+import info.meuse24.m24bikestats.domain.model.BoschApiRequest
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
@@ -104,7 +104,7 @@ class BoschSmartSystemRepositoryImpl(
         runCatching {
             val updatedAtEpochMillis = currentTimeMillis()
             val response = apiClient.get(
-                BoschRequest(
+                BoschApiRequest(
                     label = BoschEndpoint.SMART_ACTIVITIES.label,
                     baseUrl = BoschEndpoint.SMART_ACTIVITIES.baseUrl,
                     path = "/activity/smart-system/v1/activities?limit=$limit&offset=$offset",
