@@ -334,7 +334,7 @@ private fun StatisticsChartCard(
         }
     }
 
-    LaunchedEffect(periods, chartDistanceValues) {
+    LaunchedEffect(periods) {
         modelProducer.runTransaction {
             columnSeries { series(chartDistanceValues) }
             lineSeries { series(periods.map { it.durationHours }) }
@@ -616,23 +616,34 @@ private fun StatisticsDetailCard(
 private fun StatisticsHighlightsSection(
     highlights: StatisticsHighlights,
 ) {
+    val locale = Locale.getDefault()
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
             text = stringResource(R.string.statistics_highlights_section),
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.SemiBold,
         )
-        StatisticsPersonalBestsCard(highlights = highlights)
-        StatisticsEfficiencyCard(highlights = highlights)
-        StatisticsRhythmCard(highlights = highlights)
+        StatisticsPersonalBestsCard(
+            highlights = highlights,
+            locale = locale,
+        )
+        StatisticsEfficiencyCard(
+            highlights = highlights,
+            locale = locale,
+        )
+        StatisticsRhythmCard(
+            highlights = highlights,
+            locale = locale,
+        )
     }
 }
 
 @Composable
 private fun StatisticsPersonalBestsCard(
     highlights: StatisticsHighlights,
+    locale: Locale,
 ) {
-    val locale = Locale.getDefault()
     val items = buildList {
         add(
             StatisticsMetricItem(
@@ -710,6 +721,7 @@ private fun StatisticsPersonalBestsCard(
 @Composable
 private fun StatisticsEfficiencyCard(
     highlights: StatisticsHighlights,
+    locale: Locale,
 ) {
     val avgTravelSpeedKmh = highlights.avgTravelSpeedKmh ?: return
 
@@ -733,7 +745,7 @@ private fun StatisticsEfficiencyCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = avgTravelSpeedKmh.toReadableSpeed(),
+                text = avgTravelSpeedKmh.toReadableSpeed(locale),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
@@ -749,8 +761,8 @@ private fun StatisticsEfficiencyCard(
 @Composable
 private fun StatisticsRhythmCard(
     highlights: StatisticsHighlights,
+    locale: Locale,
 ) {
-    val locale = Locale.getDefault()
     val favoriteDay = highlights.favoriteDayOfWeek
     val favoriteCount = favoriteDay?.let { highlights.dayOfWeekDistribution[it] ?: 0 }
     val frequencyRows = remember(highlights.weeklyFrequencyHistogram) {
@@ -794,6 +806,7 @@ private fun StatisticsRhythmCard(
             StatisticsDayOfWeekBars(
                 distribution = highlights.dayOfWeekDistribution,
                 favoriteDay = favoriteDay,
+                locale = locale,
             )
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 frequencyRows.forEach { row ->
@@ -855,8 +868,8 @@ private fun StatisticsRhythmCard(
 private fun StatisticsDayOfWeekBars(
     distribution: Map<DayOfWeek, Int>,
     favoriteDay: DayOfWeek?,
+    locale: Locale,
 ) {
-    val locale = Locale.getDefault()
     val maxCount = max(1, distribution.values.maxOrNull() ?: 0)
 
     Row(
@@ -1056,7 +1069,7 @@ private data class StatisticsMetricItem(
     val value: String,
 )
 
-private data class StatisticsFrequencyRow(
+internal data class StatisticsFrequencyRow(
     val toursPerWeek: Int,
     val weekCount: Int,
     val isOverflow: Boolean,
@@ -1070,7 +1083,7 @@ private fun StatisticsFrequencyRow.toLabel(): String = when {
     else -> stringResource(R.string.statistics_highlights_freq_row_n, toursPerWeek)
 }
 
-private fun Map<Int, Int>.toFrequencyRows(): List<StatisticsFrequencyRow> {
+internal fun Map<Int, Int>.toFrequencyRows(): List<StatisticsFrequencyRow> {
     if (isEmpty()) return emptyList()
 
     val overflowCount = entries

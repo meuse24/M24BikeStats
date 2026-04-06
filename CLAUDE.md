@@ -164,6 +164,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
 - Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) nur für Chart-spezifische Zusatzdaten nutzen, read-only Highlights/Rhythmus dagegen direkt im `StatisticsUiState` halten
+- PDF-/Report-Datenmodelle dürfen keine `presentation`-States wie `StatisticsUiState` direkt referenzieren; dafür eigene domain-taugliche Aggregate oder Mapper-Grenzen vorsehen
 - Vico-`dataLabelValueFormatter` bekommt nur den geplotteten Y-Wert; bei potenziell doppelten Distanzwerten keine positionsabhängige Zuordnung per Rohwert annehmen
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV

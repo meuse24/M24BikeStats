@@ -2,7 +2,6 @@ package info.meuse24.m24bikestats.presentation.statistics
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.usecase.GetStatisticsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,25 +16,34 @@ class StatisticsViewModel(
     private val uiModelMapper: StatisticsUiModelMapper,
 ) : ViewModel() {
 
-    private val grouping = MutableStateFlow(StatisticsGrouping.MONTH)
-    private val selectedPeriodStart = MutableStateFlow<Long?>(null)
+    private val selectionState = MutableStateFlow(StatisticsSelectionState())
 
     val uiState: StateFlow<StatisticsUiState> = combine(
         getStatisticsUseCase(),
-        grouping,
-        selectedPeriodStart,
-    ) { activities, grouping, selectedPeriodStart ->
+        selectionState,
+    ) { activities, selectionState ->
+        val grouping = selectionState.grouping
+        val totalTours = activities.size
+        val totalDistanceKm = activities.sumOf { it.distanceMeters } / 1000.0
+        val totalDurationHours = activities.sumOf { it.durationWithoutStopsSeconds }.toDouble() / 3600.0
         val periods = uiModelMapper.mapPeriods(
             activities = activities,
             grouping = grouping,
         )
-        val highlights = uiModelMapper.mapHighlights(activities)
-        val selectedPeriod = periods.firstOrNull { it.startEpochMillis == selectedPeriodStart }
-        activities.toUiState(
+        val highlights = uiModelMapper.mapHighlights(
+            activities = activities,
+            totalDistanceKm = totalDistanceKm,
+            totalDurationHours = totalDurationHours,
+        )
+        val selectedPeriod = periods.firstOrNull { it.startEpochMillis == selectionState.selectedPeriodStart }
+        toUiState(
             grouping = grouping,
             periods = periods,
             selectedPeriod = selectedPeriod,
             highlights = highlights,
+            totalTours = totalTours,
+            totalDistanceKm = totalDistanceKm,
+            totalDurationHours = totalDurationHours,
         )
     }.distinctUntilChanged().stateIn(
         scope = viewModelScope,
@@ -44,26 +52,35 @@ class StatisticsViewModel(
     )
 
     fun updateGrouping(grouping: StatisticsGrouping) {
-        this.grouping.update { grouping }
-        selectedPeriodStart.update { null }
-    }
-
-    fun toggleSelectedPeriod(startEpochMillis: Long) {
-        selectedPeriodStart.update { current ->
-            if (current == startEpochMillis) null else startEpochMillis
+        selectionState.update { current ->
+            current.copy(
+                grouping = grouping,
+                selectedPeriodStart = null,
+            )
         }
     }
 
-    private fun List<BoschActivity>.toUiState(
+    fun toggleSelectedPeriod(startEpochMillis: Long) {
+        selectionState.update { current ->
+            current.copy(
+                selectedPeriodStart = if (current.selectedPeriodStart == startEpochMillis) {
+                    null
+                } else {
+                    startEpochMillis
+                },
+            )
+        }
+    }
+
+    private fun toUiState(
         grouping: StatisticsGrouping,
         periods: List<PeriodStats>,
         selectedPeriod: PeriodStats?,
         highlights: StatisticsHighlights?,
+        totalTours: Int,
+        totalDistanceKm: Double,
+        totalDurationHours: Double,
     ): StatisticsUiState {
-        val totalTours = size
-        val totalDistanceKm = sumOf { it.distanceMeters } / 1000.0
-        val totalDurationHours = sumOf { it.durationWithoutStopsSeconds }.toDouble() / 3600.0
-
         return StatisticsUiState(
             periods = periods,
             selectedPeriod = selectedPeriod,
@@ -77,4 +94,9 @@ class StatisticsViewModel(
             isLoading = false,
         )
     }
+
+    private data class StatisticsSelectionState(
+        val grouping: StatisticsGrouping = StatisticsGrouping.MONTH,
+        val selectedPeriodStart: Long? = null,
+    )
 }

@@ -25,4 +25,15 @@ class StatisticsUiStateFormattingTest {
 
         assertEquals(1.5, period.durationHours, 0.0)
     }
+
+    @Test
+    fun `frequency rows merge overflow tours into one bucket`() {
+        assertEquals(
+            listOf(
+                StatisticsFrequencyRow(toursPerWeek = 1, weekCount = 2, isOverflow = false),
+                StatisticsFrequencyRow(toursPerWeek = 3, weekCount = 2, isOverflow = true),
+            ),
+            mapOf(1 to 2, 3 to 1, 5 to 1).toFrequencyRows(),
+        )
+    }
 }

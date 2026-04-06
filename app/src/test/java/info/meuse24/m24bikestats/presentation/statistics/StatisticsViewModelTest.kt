@@ -19,6 +19,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
+import java.time.DayOfWeek
 import java.time.ZoneId
 import java.util.Locale
 
@@ -139,6 +140,8 @@ class StatisticsViewModelTest {
         assertEquals(42.0, highlights!!.longestTourKm, 0.0)
         assertEquals(20.8, highlights.avgTravelSpeedKmh!!, 0.0)
         assertEquals(1.0, highlights.activeWeeksRatio!!, 0.0)
+        assertEquals(DayOfWeek.SATURDAY, highlights.favoriteDayOfWeek)
+        assertEquals(2, highlights.dayOfWeekDistribution[DayOfWeek.SATURDAY])
 
         collector.cancel()
     }

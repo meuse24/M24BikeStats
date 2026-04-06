@@ -15,7 +15,11 @@ class StatisticsUiModelMapper(
     private val zoneId: ZoneId = ZoneId.systemDefault(),
     private val locale: Locale = Locale.getDefault(),
 ) {
-    fun mapHighlights(activities: List<BoschActivity>): StatisticsHighlights? {
+    fun mapHighlights(
+        activities: List<BoschActivity>,
+        totalDistanceKm: Double = activities.sumOf { it.distanceMeters } / 1000.0,
+        totalDurationHours: Double = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0,
+    ): StatisticsHighlights? {
         if (activities.isEmpty()) return null
 
         val longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0
@@ -24,9 +28,6 @@ class StatisticsUiModelMapper(
         val maxRiderPowerWatts = activities.mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull()
         val totalCaloriesValues = activities.mapNotNull(BoschActivity::caloriesBurned)
         val totalCaloriesBurned = totalCaloriesValues.takeIf { it.isNotEmpty() }?.sum()
-
-        val totalDistanceKm = activities.sumOf { it.distanceMeters } / 1000.0
-        val totalDurationHours = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0
         val avgTravelSpeedKmh = if (totalDurationHours > 0.0) totalDistanceKm / totalDurationHours else null
 
         val dayOfWeekDistribution = activities
@@ -147,6 +148,7 @@ class StatisticsUiModelMapper(
     ): String = when (grouping) {
         StatisticsGrouping.WEEK -> {
             val week = get(WeekFields.of(locale).weekOfWeekBasedYear())
+            // Intentionally key off the language so German locales like de_AT and de_CH also use "KW".
             if (locale.language == Locale.GERMAN.language) {
                 "KW $week"
             } else {
