@@ -73,6 +73,9 @@ import kotlin.math.roundToInt
 private const val STATISTICS_SCROLL_THRESHOLD = 7
 private const val STATISTICS_ZOOM_THRESHOLD = 10
 private const val STATISTICS_MAX_ZOOM = 2f
+private const val STATISTICS_COLUMN_WIDTH_DP = 8f
+private const val STATISTICS_COLUMN_COLLECTION_SPACING_DP = 8f
+private const val STATISTICS_BOTTOM_AXIS_ROTATION_THRESHOLD = 12
 
 private val statisticsDistanceValuesKey = ExtraStore.Key<List<Double>>()
 private val statisticsTourCountsKey = ExtraStore.Key<List<Int>>()
@@ -197,10 +200,12 @@ private fun StatisticsChartCard(
             }
         }
     }
+    val scrollThreshold = STATISTICS_SCROLL_THRESHOLD * 2
+    val zoomThreshold = STATISTICS_ZOOM_THRESHOLD * 2
     val scrollState = rememberVicoScrollState(
-        scrollEnabled = periods.size > STATISTICS_SCROLL_THRESHOLD,
+        scrollEnabled = periods.size > scrollThreshold,
     )
-    val zoomEnabled = periods.size >= STATISTICS_ZOOM_THRESHOLD
+    val zoomEnabled = periods.size >= zoomThreshold
     val minimumZoom = remember(zoomEnabled) {
         if (zoomEnabled) {
             Zoom.max(Zoom.fixed(), Zoom.Content)
@@ -223,7 +228,7 @@ private fun StatisticsChartCard(
     )
     val markerController = remember { CartesianMarkerController.toggleOnTap() }
     val fadingEdges = remember(periods.size) {
-        if (periods.size > STATISTICS_SCROLL_THRESHOLD) {
+        if (periods.size > scrollThreshold) {
             FadingEdges(widthDp = 16f)
         } else {
             null
@@ -231,7 +236,7 @@ private fun StatisticsChartCard(
     }
     val chartSubtitle = when {
         zoomEnabled -> stringResource(R.string.statistics_chart_subtitle_zoom)
-        periods.size > STATISTICS_SCROLL_THRESHOLD -> stringResource(R.string.statistics_chart_subtitle_scroll)
+        periods.size > scrollThreshold -> stringResource(R.string.statistics_chart_subtitle_scroll)
         else -> stringResource(R.string.statistics_chart_subtitle)
     }
     val startAxisGuideline = rememberLineComponent(
@@ -245,34 +250,43 @@ private fun StatisticsChartCard(
             ?.average()
             ?.takeIf { it > 0.0 }
     }
-    val averageDistanceLabel = averageDistanceKm?.let {
-        stringResource(R.string.statistics_average_line_label, it.roundToInt())
-    }
-    val averageDistanceDecoration = averageDistanceKm?.let { averageDistance ->
-        HorizontalLine(
-            y = { averageDistance },
-            line = rememberLineComponent(
-                fill = fill(distanceColor.copy(alpha = 0.35f)),
-                thickness = 1.dp,
-                shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
-            ),
-            labelComponent = rememberTextComponent(
-                color = MaterialTheme.colorScheme.primary,
-                textSize = 10.sp,
-                padding = Insets(8f, 4f, 8f, 4f),
-                background = rememberShapeComponent(
-                    shape = CorneredShape.rounded(allDp = 8f),
-                    fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
+    val averageDistanceLabel = stringResource(
+        R.string.statistics_average_line_label,
+        averageDistanceKm?.roundToInt() ?: 0,
+    )
+    val averageDistanceLine = rememberLineComponent(
+        fill = fill(distanceColor.copy(alpha = 0.35f)),
+        thickness = 1.dp,
+        shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
+    )
+    val averageDistanceLabelComponent = rememberTextComponent(
+        color = MaterialTheme.colorScheme.primary,
+        textSize = 10.sp,
+        padding = Insets(8f, 4f, 8f, 4f),
+        background = rememberShapeComponent(
+            shape = CorneredShape.rounded(allDp = 8f),
+            fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
+        ),
+    )
+    val decorations = remember(
+        averageDistanceKm,
+        averageDistanceLabel,
+        averageDistanceLine,
+        averageDistanceLabelComponent,
+    ) {
+        averageDistanceKm?.let { averageDistance ->
+            listOf(
+                HorizontalLine(
+                    y = { averageDistance },
+                    line = averageDistanceLine,
+                    labelComponent = averageDistanceLabelComponent,
+                    label = { averageDistanceLabel },
+                    horizontalLabelPosition = Position.Horizontal.End,
+                    verticalLabelPosition = Position.Vertical.Top,
+                    verticalAxisPosition = Axis.Position.Vertical.Start,
                 ),
-            ),
-            label = { averageDistanceLabel.orEmpty() },
-            horizontalLabelPosition = Position.Horizontal.End,
-            verticalLabelPosition = Position.Vertical.Top,
-            verticalAxisPosition = Axis.Position.Vertical.Start,
-        )
-    }
-    val decorations = remember(averageDistanceDecoration) {
-        averageDistanceDecoration?.let(::listOf).orEmpty()
+            )
+        }.orEmpty()
     }
 
     LaunchedEffect(periods) {
@@ -326,9 +340,11 @@ private fun StatisticsChartCard(
                             columnProvider = ColumnCartesianLayer.ColumnProvider.series(
                                 rememberLineComponent(
                                     fill = fill(distanceColor),
+                                    thickness = STATISTICS_COLUMN_WIDTH_DP.dp,
                                     shape = CorneredShape.rounded(topLeftDp = 6f, topRightDp = 6f),
                                 ),
                             ),
+                            columnCollectionSpacing = STATISTICS_COLUMN_COLLECTION_SPACING_DP.dp,
                             dataLabel = rememberTextComponent(
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textSize = 11.sp,
@@ -364,7 +380,7 @@ private fun StatisticsChartCard(
                             },
                         ),
                         bottomAxis = HorizontalAxis.rememberBottom(
-                            labelRotationDegrees = if (periods.size > 6) 45f else 0f,
+                            labelRotationDegrees = if (periods.size > STATISTICS_BOTTOM_AXIS_ROTATION_THRESHOLD) 45f else 0f,
                             valueFormatter = remember(periods) {
                                 CartesianValueFormatter { _, value, _ ->
                                     periods.getOrNull(value.roundToInt())?.label.orEmpty()

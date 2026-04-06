@@ -155,7 +155,7 @@
     <string name="statistics_empty_subtitle">Nach dem ersten erfolgreichen Sync erscheinen hier die aggregierten Wochen- und Monatswerte.</string>
     <string name="statistics_section_overview">Nutzungsübersicht</string>
     <string name="statistics_chart_subtitle">Tippe auf einen Zeitraum, um die aggregierten Werte darunter zu sehen.</string>
-    <string name="statistics_chart_subtitle_scroll">Tippe auf einen Zeitraum. Wische horizontal, um weitere Zeitraeume zu sehen.</string>
+    <string name="statistics_chart_subtitle_scroll">Tippe auf einen Zeitraum. Wische horizontal, um weitere Zeiträume zu sehen.</string>
     <string name="statistics_chart_subtitle_zoom">Tippe auf einen Zeitraum. Wische horizontal und zoome mit zwei Fingern.</string>
     <string name="statistics_average_line_label">Im Schnitt %1$d km</string>
     <string name="statistics_detail_title">Ausgewählter Zeitraum</string>
