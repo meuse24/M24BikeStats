@@ -45,6 +45,8 @@ import info.meuse24.m24bikestats.presentation.login.LoginStatus
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 import info.meuse24.m24bikestats.presentation.navigation.model.MainDestination
+import info.meuse24.m24bikestats.presentation.statistics.StatisticsScreen
+import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
 import org.koin.androidx.compose.koinViewModel
 
 private const val ROOT_LOGIN_ROUTE = "login"
@@ -208,7 +210,18 @@ fun AppNavigation() {
                         )
                     }
 
-                    composable(MainDestination.FUNCTIONS.route) {
+                    composable(MainDestination.STATISTICS.route) {
+                        val statisticsViewModel: StatisticsViewModel = koinViewModel()
+                        val statisticsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
+                        StatisticsScreen(
+                            uiState = statisticsUiState,
+                            onGroupingSelected = statisticsViewModel::updateGrouping,
+                            onPeriodSelected = statisticsViewModel::toggleSelectedPeriod,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
+                    }
+
+                    composable(DrawerDestination.EXPORT.route!!) {
                         FunctionsScreen(
                             uiState = dashboardUiState.toFunctionsUiState(),
                             onExportActivitiesCsv = dashboardViewModel::exportAllActivitiesCsv,
@@ -310,7 +323,8 @@ internal fun String?.toMainDestination(): MainDestination? =
 internal fun String?.toTopBarTitleRes(): Int = when {
     this == MainDestination.ACTIVITIES.route -> MainDestination.ACTIVITIES.labelRes
     this == MainDestination.BIKE.route -> MainDestination.BIKE.labelRes
-    this == MainDestination.FUNCTIONS.route -> MainDestination.FUNCTIONS.labelRes
+    this == MainDestination.STATISTICS.route -> MainDestination.STATISTICS.labelRes
+    this == DrawerDestination.EXPORT.route -> DrawerDestination.EXPORT.labelRes
     this == DrawerDestination.SETUP.route -> DrawerDestination.SETUP.labelRes
     this == DrawerDestination.HELP.route -> DrawerDestination.HELP.labelRes
     this == DrawerDestination.INFO.route -> DrawerDestination.INFO.labelRes
@@ -331,6 +345,7 @@ internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
     MainDestination.HOME.route,
     MainDestination.ACTIVITIES.route,
     MainDestination.BIKE.route,
+    MainDestination.STATISTICS.route,
     -> true
 
     else -> false

@@ -11,7 +11,6 @@ class ApiTestRunAllRequestsTest {
         val requests = buildRunAllRequests(
             activityId = "activity-id",
             bikeId = "bike-id",
-            activitiesResponse = null,
         )
 
         assertEquals(

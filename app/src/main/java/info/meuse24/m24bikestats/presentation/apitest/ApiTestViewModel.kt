@@ -51,11 +51,7 @@ class ApiTestViewModel(
             val bikesResponse = fetchBoschData(BoschEndpoint.SMART_BIKES)
             val activityId = extractFirstActivityId(activitiesResponse.getOrNull())
             val bikeId = extractFirstBikeId(bikesResponse.getOrNull())
-            val requests = buildRunAllRequests(
-                activityId = activityId,
-                bikeId = bikeId,
-                activitiesResponse = activitiesResponse.getOrNull(),
-            ).toMutableList()
+            val requests = buildRunAllRequests(activityId = activityId, bikeId = bikeId).toMutableList()
             val seenUrls = requests.map { it.url }.toMutableSet()
             val seededResults = mapOf(
                 BoschEndpoint.SMART_ACTIVITIES.name to activitiesResponse,

@@ -6,7 +6,6 @@ import info.meuse24.m24bikestats.api.BoschRequest
 internal fun buildRunAllRequests(
     activityId: String?,
     bikeId: String?,
-    activitiesResponse: String?,
 ): List<BoschRequest> = buildList {
     addAll(
         BoschEndpoint.entries
@@ -14,7 +13,6 @@ internal fun buildRunAllRequests(
                 endpoint.toRequest(activityId = activityId, bikeId = bikeId)
             }
     )
-    addAll(buildAdditionalActivityRequests(activitiesResponse))
 }
 
 internal fun buildAdditionalActivityRequests(activitiesResponse: String?): List<BoschRequest> {

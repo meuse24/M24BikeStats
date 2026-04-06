@@ -4,7 +4,9 @@
     <string name="nav_home">Home</string>
     <string name="nav_activities">Activities</string>
     <string name="nav_bike">Account</string>
+    <string name="nav_statistics">Statistics</string>
     <string name="nav_functions">Functions</string>
+    <string name="nav_export">Export</string>
     <string name="nav_setup">Setup</string>
     <string name="nav_help">Help</string>
     <string name="nav_info">Info</string>
@@ -12,7 +14,7 @@
     <string name="nav_logout">Logout</string>
 
     <string name="drawer_title">M24 Bike Stats</string>
-    <string name="drawer_subtitle">Setup, help, info and diagnostic tools</string>
+    <string name="drawer_subtitle">Export, setup, help, info and diagnostic tools</string>
     <string name="cd_open_menu">Open menu</string>
     <string name="cd_navigate_overview">Back to overview</string>
     <string name="cd_more_destinations">More destinations</string>
@@ -63,6 +65,8 @@
     <string name="help_bike_text">The account area shows linked Bosch Smart System bikes together with Bosch account and OIDC details such as UserInfo, discovery metadata and signing certificate information. Bike data remains cache-first from Room. Bosch eBike System 2 and eBike Connect are not supported.</string>
     <string name="help_functions_label">Functions</string>
     <string name="help_functions_text">CSV exports use only the activities and detail data already stored in the local cache, then open the Android share sheet. The CSV format preset from Setup controls separators, decimal numbers and date formatting.</string>
+    <string name="help_statistics_label">Statistics</string>
+    <string name="help_statistics_text">The statistics screen aggregates all locally cached activities into weekly or monthly totals for distance, ride time and tour count. Tour counts appear as labels directly on each bar. Tap any period to expand the aggregated values below the chart. The refresh button in the top bar triggers a cloud sync that automatically updates the chart once new data arrives.</string>
     <string name="help_diagnostics_label">Diagnostics</string>
     <string name="help_diagnostics_text">The API test screen remains available as a diagnostic tool and is intentionally not part of the primary navigation.</string>
 
@@ -138,6 +142,24 @@
     <string name="home_export_details_csv">Details CSV</string>
     <string name="home_export_last_time">Last exported</string>
     <string name="home_export_none">No export yet</string>
+    <string name="statistics_summary_tours">Tours</string>
+    <string name="statistics_summary_distance">Distance</string>
+    <string name="statistics_summary_duration">Hours</string>
+    <string name="statistics_group_week">Weeks</string>
+    <string name="statistics_group_month">Months</string>
+    <string name="statistics_legend_distance">Distance</string>
+    <string name="statistics_legend_duration">Ride time</string>
+    <string name="statistics_axis_distance">km</string>
+    <string name="statistics_axis_secondary">h</string>
+    <string name="statistics_empty_title">No chart data yet</string>
+    <string name="statistics_empty_subtitle">After the first successful sync, weekly and monthly usage appears here.</string>
+    <string name="statistics_section_overview">Usage overview</string>
+    <string name="statistics_chart_subtitle">Tap a period to inspect the aggregated values.</string>
+    <string name="statistics_detail_title">Selected period</string>
+    <string name="statistics_label_period">Period</string>
+    <string name="statistics_label_tours">Tours</string>
+    <string name="statistics_label_distance">Distance</string>
+    <string name="statistics_label_duration">Ride time</string>
 
     <string name="api_test_title">API Test</string>
     <string name="api_test_fetch">Fetch</string>

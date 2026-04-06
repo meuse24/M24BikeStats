@@ -28,6 +28,7 @@ fun HelpScreen(modifier: Modifier = Modifier) {
         stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text),
         stringResource(R.string.help_bike_label) to stringResource(R.string.help_bike_text),
         stringResource(R.string.help_functions_label) to stringResource(R.string.help_functions_text),
+        stringResource(R.string.help_statistics_label) to stringResource(R.string.help_statistics_text),
         stringResource(R.string.help_diagnostics_label) to stringResource(R.string.help_diagnostics_text),
     )
     InfoListScreen(
@@ -75,6 +76,7 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         "AndroidX Security Crypto" to "1.1.0-alpha06 • Google AndroidX team",
         "AndroidX Window" to "1.4.0 • Google AndroidX team",
         "MapLibre Compose" to "0.12.1 • MapLibre community",
+        "Vico" to "2.3.6 • Patryk Michalik and contributors",
     )
     val credits = listOf(
         "BOSCH" to stringResource(R.string.info_credit_bosch),

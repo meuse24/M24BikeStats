@@ -2,8 +2,8 @@ package info.meuse24.m24bikestats.presentation.navigation.model
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsBike
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ElectricBike
-import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Home
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
@@ -29,10 +29,10 @@ enum class MainDestination(
         labelRes = R.string.nav_bike,
         icon = Icons.Default.ElectricBike,
     ),
-    FUNCTIONS(
-        route = "functions",
-        labelRes = R.string.nav_functions,
-        icon = Icons.Default.FileDownload,
+    STATISTICS(
+        route = "statistics",
+        labelRes = R.string.nav_statistics,
+        icon = Icons.Default.BarChart,
     ),
     ;
 
@@ -43,7 +43,7 @@ enum class MainDestination(
                 route == HOME.route -> HOME
                 route == ACTIVITIES.route || route.startsWith("activity/") -> ACTIVITIES
                 route == BIKE.route || route.startsWith("bike/") -> BIKE
-                route == FUNCTIONS.route -> FUNCTIONS
+                route == STATISTICS.route -> STATISTICS
                 else -> null
             }
     }

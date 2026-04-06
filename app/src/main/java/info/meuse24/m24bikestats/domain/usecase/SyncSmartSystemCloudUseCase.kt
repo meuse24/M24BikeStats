@@ -99,7 +99,7 @@ class SyncSmartSystemCloudUseCase(
 
         Result.success(
             SmartSystemCloudSyncSummary(
-                activityCount = repository.getCachedActivities().size,
+                activityCount = knownActivityIds.size,
                 bikeCount = bikes.size,
             ),
         )

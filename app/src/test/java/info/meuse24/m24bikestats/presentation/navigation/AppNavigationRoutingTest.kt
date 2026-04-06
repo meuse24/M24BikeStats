@@ -40,6 +40,14 @@ class AppNavigationRoutingTest {
     fun `drawer routes expose matching top bar title`() {
         assertEquals(
             null,
+            DrawerDestination.EXPORT.route.toMainDestination(),
+        )
+        assertEquals(
+            DrawerDestination.EXPORT.labelRes,
+            DrawerDestination.EXPORT.route.toTopBarTitleRes(),
+        )
+        assertEquals(
+            null,
             DrawerDestination.SETUP.route.toMainDestination(),
         )
         assertEquals(
@@ -78,7 +86,8 @@ class AppNavigationRoutingTest {
         assertTrue(MainDestination.HOME.route.shouldShowRefreshAction())
         assertTrue(MainDestination.ACTIVITIES.route.shouldShowRefreshAction())
         assertTrue(MainDestination.BIKE.route.shouldShowRefreshAction())
-        assertFalse(MainDestination.FUNCTIONS.route.shouldShowRefreshAction())
+        assertTrue(MainDestination.STATISTICS.route.shouldShowRefreshAction())
+        assertFalse(DrawerDestination.EXPORT.route.shouldShowRefreshAction())
         assertFalse(DrawerDestination.INFO.route.shouldShowRefreshAction())
     }
 
@@ -99,7 +108,7 @@ class AppNavigationRoutingTest {
         assertFalse(MainDestination.HOME.route.canNavigateToOverview())
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
         assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
-        assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
+        assertTrue(MainDestination.STATISTICS.route.canNavigateToOverview())
     }
 
     @Test
@@ -107,10 +116,26 @@ class AppNavigationRoutingTest {
         assertFalse(MainDestination.HOME.route.canNavigateToOverview())
         assertTrue(MainDestination.ACTIVITIES.route.canNavigateToOverview())
         assertTrue(MainDestination.BIKE.route.canNavigateToOverview())
-        assertTrue(MainDestination.FUNCTIONS.route.canNavigateToOverview())
+        assertTrue(MainDestination.STATISTICS.route.canNavigateToOverview())
+        assertFalse(DrawerDestination.EXPORT.route.canNavigateToOverview())
         assertFalse(DrawerDestination.SETUP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.HELP.route.canNavigateToOverview())
         assertFalse(DrawerDestination.INFO.route.canNavigateToOverview())
         assertFalse(DrawerDestination.API_TEST.route.canNavigateToOverview())
+    }
+
+    @Test
+    fun `drawer destinations are ordered by utility support diagnostics and logout`() {
+        assertEquals(
+            listOf(
+                DrawerDestination.EXPORT,
+                DrawerDestination.SETUP,
+                DrawerDestination.HELP,
+                DrawerDestination.INFO,
+                DrawerDestination.API_TEST,
+                DrawerDestination.LOGOUT,
+            ),
+            DrawerDestination.availableEntries(includeDebugTools = true),
+        )
     }
 }

@@ -5,7 +5,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 ## Überblick
 
 - OAuth2 + PKCE Login gegen Bosch SingleKey ID
-- adaptives Compose-UI mit `home`, `activities`, `account` und `functions`
+- adaptives Compose-UI mit `home`, `activities`, `account`, `statistics` und `functions`
 - sekundäre Navigation für `setup`, `hilfe`, `info`, `api-test` und `logout`
 - Home-Top-Bar mit App-Branding statt generischem Bereichstitel
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
@@ -18,6 +18,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
 - API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
+- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monatsaggregation und aufklappbarer Period-Detail-Card
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
@@ -60,6 +61,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
 - `Funktionen`: CSV-Exporte
+- `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
@@ -106,6 +108,7 @@ Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
 - `presentation/dashboard`: Home, Aktivitäten, Konto, Funktionen sowie Detail- und Track-Screens
+- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState`
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
 - `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen
@@ -152,7 +155,7 @@ Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 
 ## Testabdeckung
 
-- Unit-Tests für Mapper, UseCases und ViewModels
+- Unit-Tests für Mapper, UseCases und ViewModels (inkl. Statistik-Mapper und -ViewModel)
 - Navigation- und Routing-Tests
 - Repository- und Cache-Tests
 - Room- und Migrations-Tests auf Android

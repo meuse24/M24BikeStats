@@ -1,7 +1,7 @@
 package info.meuse24.m24bikestats.data.remote
 
-import android.util.Base64
 import info.meuse24.m24bikestats.shared.TokenInfoFormat
+import info.meuse24.m24bikestats.shared.decodeJwtParts
 import info.meuse24.m24bikestats.api.BoschRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -41,13 +41,10 @@ class BoschApiClient : BoschApiDataSource {
      */
     private fun decodeJwt(token: String): String {
         return try {
-            val parts = token.split(".")
-            if (parts.size < 2) return "Kein gültiges JWT (Segmente: ${parts.size})"
+            val parts = decodeJwtParts(token)
+                ?: return "Kein gültiges JWT"
 
-            val header  = String(Base64.decode(parts[0], Base64.URL_SAFE or Base64.NO_PADDING))
-            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING))
-
-            TokenInfoFormat.format(header = header, payload = payload)
+            TokenInfoFormat.format(header = parts.header, payload = parts.payload)
         } catch (e: Exception) {
             "JWT-Decodierung fehlgeschlagen: ${e.message}"
         }

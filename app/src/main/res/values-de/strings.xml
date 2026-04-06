@@ -4,7 +4,9 @@
     <string name="nav_home">Home</string>
     <string name="nav_activities">Aktivitäten</string>
     <string name="nav_bike">Konto</string>
+    <string name="nav_statistics">Statistiken</string>
     <string name="nav_functions">Funktionen</string>
+    <string name="nav_export">Export</string>
     <string name="nav_setup">Setup</string>
     <string name="nav_help">Hilfe</string>
     <string name="nav_info">Info</string>
@@ -12,7 +14,7 @@
     <string name="nav_logout">Logout</string>
 
     <string name="drawer_title">M24 Bike Stats</string>
-    <string name="drawer_subtitle">Setup, Hilfe, Info und Diagnosewerkzeuge</string>
+    <string name="drawer_subtitle">Export, Setup, Hilfe, Info und Diagnosewerkzeuge</string>
     <string name="cd_open_menu">Menü öffnen</string>
     <string name="cd_navigate_overview">Zur Übersicht</string>
     <string name="cd_more_destinations">Weitere Ziele</string>
@@ -63,6 +65,8 @@
     <string name="help_bike_text">Der Kontobereich zeigt verknüpfte Bosch Smart System Bikes zusammen mit Bosch-Konto- und OIDC-Details wie UserInfo, Discovery-Metadaten und Signaturzertifikatsinformationen. Bike-Daten bleiben cache-first aus Room. Bosch eBike System 2 und eBike Connect werden nicht unterstützt.</string>
     <string name="help_functions_label">Funktionen</string>
     <string name="help_functions_text">CSV-Exporte verwenden nur die bereits im lokalen Cache gespeicherten Aktivitäten und Detaildaten und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
+    <string name="help_statistics_label">Statistiken</string>
+    <string name="help_statistics_text">Der Statistikscreen aggregiert alle lokal gecachten Aktivitäten zu Wochen- oder Monatstotalen für Distanz, Fahrtzeit und Tourenzahl. Die Tourenzahl erscheint als Label direkt auf dem jeweiligen Balken. Durch Antippen eines Zeitraums werden die aggregierten Werte darunter aufgeklappt. Der Aktualisieren-Button in der Top-Bar löst einen Cloud-Sync aus, der das Diagramm automatisch aktualisiert, sobald neue Daten vorliegen.</string>
     <string name="help_diagnostics_label">Diagnose</string>
     <string name="help_diagnostics_text">Der API-Test-Screen bleibt als Diagnosewerkzeug verfügbar und ist bewusst nicht Teil der primären Navigation.</string>
 
@@ -138,6 +142,24 @@
     <string name="home_export_details_csv">Details-CSV</string>
     <string name="home_export_last_time">Zuletzt exportiert</string>
     <string name="home_export_none">Noch kein Export</string>
+    <string name="statistics_summary_tours">Touren</string>
+    <string name="statistics_summary_distance">Distanz</string>
+    <string name="statistics_summary_duration">Stunden</string>
+    <string name="statistics_group_week">Wochen</string>
+    <string name="statistics_group_month">Monate</string>
+    <string name="statistics_legend_distance">Distanz</string>
+    <string name="statistics_legend_duration">Fahrtzeit</string>
+    <string name="statistics_axis_distance">km</string>
+    <string name="statistics_axis_secondary">h</string>
+    <string name="statistics_empty_title">Noch keine Chart-Daten</string>
+    <string name="statistics_empty_subtitle">Nach dem ersten erfolgreichen Sync erscheinen hier die aggregierten Wochen- und Monatswerte.</string>
+    <string name="statistics_section_overview">Nutzungsübersicht</string>
+    <string name="statistics_chart_subtitle">Tippe auf einen Zeitraum, um die aggregierten Werte darunter zu sehen.</string>
+    <string name="statistics_detail_title">Ausgewählter Zeitraum</string>
+    <string name="statistics_label_period">Zeitraum</string>
+    <string name="statistics_label_tours">Touren</string>
+    <string name="statistics_label_distance">Distanz</string>
+    <string name="statistics_label_duration">Fahrtzeit</string>
 
     <string name="api_test_title">API-Test</string>
     <string name="api_test_fetch">Abrufen</string>

@@ -4,6 +4,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Info
 import androidx.annotation.StringRes
@@ -17,6 +18,11 @@ enum class DrawerDestination(
     val icon: ImageVector,
     val debugOnly: Boolean = false,
 ) {
+    EXPORT(
+        route = "export",
+        labelRes = R.string.nav_export,
+        icon = Icons.Default.FileDownload,
+    ),
     SETUP(
         route = "setup",
         labelRes = R.string.nav_setup,

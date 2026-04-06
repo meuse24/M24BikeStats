@@ -31,6 +31,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseC
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetStatisticsUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseCase
@@ -61,6 +62,8 @@ import info.meuse24.m24bikestats.presentation.dashboard.DashboardViewModel
 import info.meuse24.m24bikestats.presentation.login.AndroidLoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginStringResolver
 import info.meuse24.m24bikestats.presentation.login.LoginViewModel
+import info.meuse24.m24bikestats.presentation.statistics.StatisticsUiModelMapper
+import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
 import info.meuse24.m24bikestats.api.BoschRepository
 import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
 import org.koin.android.ext.koin.androidContext
@@ -88,7 +91,16 @@ val appModule = module {
     single { get<BoschDatabase>().activityDetailDao() }
     single { get<BoschDatabase>().bikeDao() }
     single<BoschRepository> { BoschRepositoryImpl(get()) }
-    single { BoschSmartSystemRepositoryImpl(get(), get(), get(), get(), get(), get()) }
+    single {
+        BoschSmartSystemRepositoryImpl(
+            parser = get(),
+            activityDao = get(),
+            activityDetailDao = get(),
+            bikeDao = get(),
+            apiClient = get(),
+            jsonBodyExtractor = get(),
+        )
+    }
     single<BoschSmartSystemRepository> { get<BoschSmartSystemRepositoryImpl>() }
     single<BoschSmartSystemCacheStatusRepository> { get<BoschSmartSystemRepositoryImpl>() }
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
@@ -99,6 +111,7 @@ val appModule = module {
     single { BackgroundSyncSettingsObserver(get(), get()) }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
     single { DashboardUiModelMapper(get()) }
+    single { StatisticsUiModelMapper() }
     single<OidcCertificateInfoProvider> { LiveOidcCertificateInfoProvider(get(), get()) }
     single<OidcUserInfoProvider> { LiveOidcUserInfoProvider(get()) }
     single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get()) }
@@ -117,6 +130,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
     factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
+    factory { GetStatisticsUseCase(get()) }
     factory { ObserveAppSettingsUseCase(get()) }
     factory { UpdateBackgroundSyncModeUseCase(get()) }
     factory { UpdateCloudSyncDetailModeUseCase(get()) }
@@ -133,10 +147,50 @@ val appModule = module {
     factory { SyncSmartSystemCloudUseCase(get(), get(), get()) }
 
     // --- Presentation ---
-    factory { DashboardFeedHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
-    factory { DashboardOperationsHandler(get(), get(), get(), get()) }
-    factory { DashboardDetailActionHandler(get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    factory {
+        DashboardFeedHandler(
+            observeCachedActivities = get(),
+            observeCachedBikes = get(),
+            observeCachedActivityDetailCacheOverview = get(),
+            observeAppSettings = get(),
+            getCachedActivityTotalCount = get(),
+            getActivities = get(),
+            refreshActivitiesUseCase = get(),
+            refreshBikesUseCase = get(),
+            updateCloudSyncDetailModeUseCase = get(),
+            updateBackgroundSyncModeUseCase = get(),
+            updateCsvExportFormatUseCase = get(),
+            oidcCertificateInfoProvider = get(),
+            uiModelMapper = get(),
+            stringResolver = get(),
+        )
+    }
+    factory {
+        DashboardOperationsHandler(
+            exportActivitiesCsv = get(),
+            exportActivityDetailsCsv = get(),
+            syncSmartSystemCloudUseCase = get(),
+            stringResolver = get(),
+        )
+    }
+    factory {
+        DashboardDetailActionHandler(
+            observeCachedActivityDetail = get(),
+            observeCachedBikeDetail = get(),
+            getCachedActivity = get(),
+            getCachedActivityDetail = get(),
+            getCachedBike = get(),
+            refreshActivityDetailUseCase = get(),
+            refreshBikeDetailUseCase = get(),
+            oidcCertificateInfoProvider = get(),
+            oidcUserInfoProvider = get(),
+            oidcDiscoveryInfoProvider = get(),
+            uiModelMapper = get(),
+            stringResolver = get(),
+        )
+    }
     viewModelOf(::LoginViewModel)
     viewModelOf(::ApiTestViewModel)
     viewModelOf(::DashboardViewModel)
+    viewModelOf(::StatisticsViewModel)
 }

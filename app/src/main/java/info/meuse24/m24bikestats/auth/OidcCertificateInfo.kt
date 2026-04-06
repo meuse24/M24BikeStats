@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.auth
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.api.BoschEndpoint
 import info.meuse24.m24bikestats.api.FetchBoschDataUseCase
+import info.meuse24.m24bikestats.shared.decodeJwtBase64UrlSegment
 import org.json.JSONObject
 import java.security.cert.CertificateFactory
 import java.security.cert.X509Certificate
@@ -91,10 +92,7 @@ private fun decodeX509Certificate(encodedCertificate: String): X509Certificate? 
 
 internal fun extractJwtKeyId(accessToken: String?): String? {
     val headerPart = accessToken?.split('.')?.getOrNull(0) ?: return null
-    val decodedHeader = runCatching {
-        val paddedHeader = headerPart.padEnd((headerPart.length + 3) / 4 * 4, '=')
-        String(Base64.getUrlDecoder().decode(paddedHeader))
-    }.getOrNull() ?: return null
+    val decodedHeader = decodeJwtBase64UrlSegment(headerPart) ?: return null
 
     return Regex(""""kid"\s*:\s*"([^"]+)"""")
         .find(decodedHeader)

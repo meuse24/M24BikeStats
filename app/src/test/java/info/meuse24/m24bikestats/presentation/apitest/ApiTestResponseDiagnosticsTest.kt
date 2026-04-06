@@ -1,6 +1,7 @@
 package info.meuse24.m24bikestats.presentation.apitest
 
 import info.meuse24.m24bikestats.api.BoschEndpoint
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,5 +46,33 @@ class ApiTestResponseDiagnosticsTest {
         val jsonBody = extractJsonBody("HTTP 200 OK\r\n\r\n{\r\n  \"email\": \"rider@example.com\"\r\n}")
 
         assertTrue(jsonBody?.contains("\"email\": \"rider@example.com\"") == true)
+    }
+
+    @Test
+    fun `oidc discovery diagnostics do not flag actively mapped endpoints as unused`() {
+        val diagnostics = buildApiTestResponseDiagnostics(
+            endpoint = BoschEndpoint.OIDC_DISCOVERY,
+            response = """
+                HTTP 200 OK
+
+                {
+                  "issuer": "https://issuer.example.com",
+                  "authorization_endpoint": "https://issuer.example.com/auth",
+                  "token_endpoint": "https://issuer.example.com/token",
+                  "userinfo_endpoint": "https://issuer.example.com/userinfo",
+                  "jwks_uri": "https://issuer.example.com/jwks",
+                  "revocation_endpoint": "https://issuer.example.com/revoke",
+                  "introspection_endpoint": "https://issuer.example.com/introspect",
+                  "end_session_endpoint": "https://issuer.example.com/logout",
+                  "grant_types_supported": ["authorization_code"]
+                }
+            """.trimIndent(),
+        )
+
+        val unusedLines = diagnostics?.unusedFieldLines.orEmpty()
+        assertFalse(unusedLines.any { it.contains("jwks_uri") })
+        assertFalse(unusedLines.any { it.contains("revocation_endpoint") })
+        assertFalse(unusedLines.any { it.contains("introspection_endpoint") })
+        assertFalse(unusedLines.any { it.contains("end_session_endpoint") })
     }
 }

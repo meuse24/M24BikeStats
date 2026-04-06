@@ -62,6 +62,7 @@ presentation/
   login/
   apitest/
   dashboard/
+  statistics/
   navigation/
 
 shared/
@@ -86,12 +87,17 @@ Regeln:
   - `DashboardDetailScreens.kt` = Activity-/Bike-Details
   - `DashboardTrackScreen.kt` = Track-Vollbild + Export
   - `DashboardSharedUi.kt` = gemeinsame Compose-Bausteine
+- Statistik-UI liegt separat in `presentation/statistics/`:
+  - `StatisticsScreen.kt` = Compose-Screen (stateless)
+  - `StatisticsViewModel.kt` = Grouping-State, Period-Selektion, `combine`-Pipeline
+  - `StatisticsUiModelMapper.kt` = `List<BoschActivity>` → `List<PeriodStats>`, Android-frei
+  - `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsGrouping`
 
 ## Navigation
 
 - Root-Level: `login` und `main`
 - Authentifizierter Bereich läuft in `MainShell`
-- Primärnavigation: `home`, `activities`, `bike_list` als Konto-Ansicht und `functions`
+- Primärnavigation: `home`, `activities`, `bike_list` als Konto-Ansicht, `statistics` und `functions`
 - Sekundärnavigation: `setup`, `help`, `info`, `api_test`, `logout`
 - Compact: `ModalNavigationDrawer`
 - größere Breiten: Overflow-Menü in der `TopAppBar`
@@ -113,7 +119,8 @@ Regeln:
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
 - Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
-- aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen und die sichtbaren Detail-/Track-Flows
+- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monatsaggregation, interaktiver Period-Selektion und Summary-Tiles; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
+- aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
 - `API_TEST` bleibt ein Debug-/Diagnosewerkzeug und wird in Release-Builds nicht in die Endnutzer-Navigation aufgenommen
@@ -150,11 +157,13 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
 - `LoginViewModel`, `ApiTestViewModel`, `DashboardViewModel`
+- `GetStatisticsUseCase`, `StatisticsUiModelMapper`, `StatisticsViewModel`
 
 ## Hinweise für Änderungen
 
 - Für Navigation nur `AppNavigation` und `MainShell` als zentrale Stellen ändern
 - Bei Dashboard-UI-Änderungen zuerst prüfen, in welche der Dashboard-Dateien die Änderung fachlich gehört; neue große Blöcke nicht wieder in `DashboardScreen.kt` zurückziehen
+- Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) für alle Daten nutzen, die nicht als Serien-Y-Wert modelliert sind
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
@@ -176,6 +185,8 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - UseCases mit Fakes
 - Dashboard-ViewModel
 - Dashboard-UI-Mapper
+- Statistik-Mapper (`StatisticsUiModelMapperTest`): Gruppierung, Timezone-Grenzfälle
+- Statistik-ViewModel (`StatisticsViewModelTest`): Toggle, Grouping-Wechsel, Stale-Reference
 - Routing/Navigations-Mapping
 - Repository/Cache-Verhalten
 - GPX-/CSV-Exportpfade

@@ -211,6 +211,10 @@ private fun knownUsedPaths(endpoint: BoschEndpoint): Set<String> =
             "authorization_endpoint",
             "token_endpoint",
             "userinfo_endpoint",
+            "jwks_uri",
+            "revocation_endpoint",
+            "introspection_endpoint",
+            "end_session_endpoint",
             "grant_types_supported[]",
         )
 
