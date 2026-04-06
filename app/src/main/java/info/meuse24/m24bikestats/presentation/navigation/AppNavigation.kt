@@ -2,7 +2,12 @@ package info.meuse24.m24bikestats.presentation.navigation
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
@@ -397,22 +402,10 @@ fun AppNavigation() {
                     title = { Text(stringResource(R.string.home_pdf_dialog_title)) },
                     text = { Text(stringResource(R.string.home_pdf_dialog_text, export.fileName)) },
                     confirmButton = {
-                        TextButton(
-                            onClick = {
-                                context.startActivity(
-                                    android.content.Intent.createChooser(
-                                        createPdfShareIntent(context, export),
-                                        context.getString(R.string.functions_share_chooser_pdf),
-                                    ),
-                                )
-                                pendingPdfDialogExport = null
-                            },
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End,
                         ) {
-                            Text(stringResource(R.string.home_pdf_action_share))
-                        }
-                    },
-                    dismissButton = {
-                        androidx.compose.foundation.layout.Row {
                             TextButton(
                                 onClick = {
                                     pendingPdfSaveExport = export
@@ -420,6 +413,19 @@ fun AppNavigation() {
                                 },
                             ) {
                                 Text(stringResource(R.string.home_pdf_action_save))
+                            }
+                            TextButton(
+                                onClick = {
+                                    context.startActivity(
+                                        android.content.Intent.createChooser(
+                                            createPdfShareIntent(context, export),
+                                            context.getString(R.string.functions_share_chooser_pdf),
+                                        ),
+                                    )
+                                    pendingPdfDialogExport = null
+                                },
+                            ) {
+                                Text(stringResource(R.string.home_pdf_action_share))
                             }
                             TextButton(onClick = { pendingPdfDialogExport = null }) {
                                 Text(stringResource(R.string.common_cancel))

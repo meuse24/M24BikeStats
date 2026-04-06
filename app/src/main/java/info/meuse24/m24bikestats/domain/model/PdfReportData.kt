@@ -10,6 +10,7 @@ data class PdfReportData(
     val bikes: List<BoschBike>,
     val activitySummary: PdfReportActivitySummary,
     val statistics: PdfReportStatistics,
+    val mapPoints: List<Pair<Double, Double>> = emptyList(),
 )
 
 data class PdfReportUserInfo(

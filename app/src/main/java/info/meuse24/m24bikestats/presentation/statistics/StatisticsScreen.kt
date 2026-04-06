@@ -85,6 +85,8 @@ private const val STATISTICS_COLUMN_COLLECTION_SPACING_DP = 8f
 private const val STATISTICS_BOTTOM_AXIS_ROTATION_THRESHOLD = 12
 
 private val statisticsTourCountsKey = ExtraStore.Key<List<Int>>()
+private val statisticsPeriodLabelsKey = ExtraStore.Key<List<String>>()
+private val statisticsDistanceValueIndicesKey = ExtraStore.Key<Map<Double, Int>>()
 
 @Composable
 fun StatisticsScreen(
@@ -215,9 +217,6 @@ private fun StatisticsChartCard(
     val tourCountOutlineColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
     // Vico's column data-label formatter receives only the plotted Y value, not the bar index.
     val chartDistanceValues = remember(periods) { periods.toChartDistanceValues() }
-    val chartDistanceValueIndices = remember(chartDistanceValues) {
-        chartDistanceValues.withIndex().associate { it.value to it.index }
-    }
     val marker = rememberStatisticsMarker(
         periods = periods,
         distanceColor = distanceColor,
@@ -345,6 +344,11 @@ private fun StatisticsChartCard(
             lineSeries { series(periods.map { it.durationHours }) }
             extras { store ->
                 store.set(statisticsTourCountsKey, periods.map { it.tourCount })
+                store.set(statisticsPeriodLabelsKey, periods.map(PeriodStats::label))
+                store.set(
+                    statisticsDistanceValueIndicesKey,
+                    chartDistanceValues.withIndex().associate { it.value to it.index },
+                )
             }
         }
     }
@@ -412,14 +416,13 @@ private fun StatisticsChartCard(
                                     strokeThickness = 1.dp,
                                 ),
                             ),
-                            dataLabelValueFormatter = remember(chartDistanceValueIndices) {
+                            dataLabelValueFormatter = remember {
                                 CartesianValueFormatter { context, value, _ ->
                                     val tourCounts = context.model.extraStore.getOrNull(statisticsTourCountsKey)
+                                    val distanceValueIndices = context.model.extraStore.getOrNull(statisticsDistanceValueIndicesKey)
                                         ?: return@CartesianValueFormatter ""
-                                    chartDistanceValueIndices[value]
-                                        ?.let(tourCounts::getOrNull)
-                                        ?.toString()
-                                        .orEmpty()
+                                    val periodIndex = distanceValueIndices[value] ?: return@CartesianValueFormatter ""
+                                    tourCounts?.getOrNull(periodIndex)?.toString().orEmpty()
                                 }
                             },
                             verticalAxisPosition = Axis.Position.Vertical.Start,
@@ -442,9 +445,12 @@ private fun StatisticsChartCard(
                         ),
                         bottomAxis = HorizontalAxis.rememberBottom(
                             labelRotationDegrees = if (periods.size > STATISTICS_BOTTOM_AXIS_ROTATION_THRESHOLD) 45f else 0f,
-                            valueFormatter = remember(periods) {
-                                CartesianValueFormatter { _, value, _ ->
-                                    periods.getOrNull(value.roundToInt())?.label.orEmpty()
+                            valueFormatter = remember {
+                                CartesianValueFormatter { context, value, _ ->
+                                    val labels = context.model.extraStore.getOrNull(statisticsPeriodLabelsKey)
+                                    labels
+                                        ?.getOrNull(value.roundToInt())
+                                        ?: value.roundToInt().toString()
                                 }
                             },
                         ),
