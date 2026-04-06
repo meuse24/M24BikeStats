@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -65,7 +66,6 @@ import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerVisibilityListener
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.core.common.Position
 import info.meuse24.m24bikestats.R
 import kotlin.math.roundToInt
 
@@ -194,6 +194,7 @@ private fun StatisticsChartCard(
     val modelProducer = remember { CartesianChartModelProducer() }
     val distanceColor = MaterialTheme.colorScheme.primary
     val durationColor = MaterialTheme.colorScheme.tertiary
+    val tourCountOutlineColor = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
     // Vico's column data-label formatter receives only the plotted Y value, not the bar index.
     val chartDistanceValues = remember(periods) { periods.toChartDistanceValues() }
     val chartDistanceValueIndices = remember(chartDistanceValues) {
@@ -287,38 +288,16 @@ private fun StatisticsChartCard(
         thickness = 1.dp,
         shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
     )
-    val averageDistanceLabelComponent = rememberTextComponent(
-        color = MaterialTheme.colorScheme.primary,
-        textSize = 10.sp,
-        padding = Insets(8f, 4f, 8f, 4f),
-        background = rememberShapeComponent(
-            shape = CorneredShape.rounded(allDp = 8f),
-            fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ),
-    )
     val averageDurationLine = rememberLineComponent(
         fill = fill(durationColor.copy(alpha = 0.35f)),
         thickness = 1.dp,
         shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
     )
-    val averageDurationLabelComponent = rememberTextComponent(
-        color = MaterialTheme.colorScheme.tertiary,
-        textSize = 10.sp,
-        padding = Insets(8f, 4f, 8f, 4f),
-        background = rememberShapeComponent(
-            shape = CorneredShape.rounded(allDp = 8f),
-            fill = fill(MaterialTheme.colorScheme.surfaceContainerHigh),
-        ),
-    )
     val decorations = remember(
         averageDistanceKm,
         averageDurationHours,
-        averageDistanceLabel,
-        averageDurationLabel,
         averageDistanceLine,
-        averageDistanceLabelComponent,
         averageDurationLine,
-        averageDurationLabelComponent,
     ) {
         buildList {
             averageDistanceKm?.let { averageDistance ->
@@ -326,10 +305,6 @@ private fun StatisticsChartCard(
                     HorizontalLine(
                         y = { averageDistance },
                         line = averageDistanceLine,
-                        labelComponent = averageDistanceLabelComponent,
-                        label = { averageDistanceLabel },
-                        horizontalLabelPosition = Position.Horizontal.End,
-                        verticalLabelPosition = Position.Vertical.Top,
                         verticalAxisPosition = Axis.Position.Vertical.Start,
                     ),
                 )
@@ -339,10 +314,6 @@ private fun StatisticsChartCard(
                     HorizontalLine(
                         y = { averageDuration },
                         line = averageDurationLine,
-                        labelComponent = averageDurationLabelComponent,
-                        label = { averageDurationLabel },
-                        horizontalLabelPosition = Position.Horizontal.Start,
-                        verticalLabelPosition = Position.Vertical.Top,
                         verticalAxisPosition = Axis.Position.Vertical.End,
                     ),
                 )
@@ -382,6 +353,13 @@ private fun StatisticsChartCard(
             StatisticsLegendRow(
                 distanceColor = distanceColor,
                 durationColor = durationColor,
+                tourCountOutlineColor = tourCountOutlineColor,
+            )
+            StatisticsAverageHintColumn(
+                averageDistanceLabel = averageDistanceKm?.let { averageDistanceLabel },
+                averageDurationLabel = averageDurationHours?.let { averageDurationLabel },
+                distanceColor = distanceColor,
+                durationColor = durationColor,
             )
             if (periods.isEmpty()) {
                 EmptyStatisticsCard()
@@ -412,6 +390,8 @@ private fun StatisticsChartCard(
                                 background = rememberShapeComponent(
                                     shape = CorneredShape.rounded(allPercent = 50),
                                     fill = fill(MaterialTheme.colorScheme.surfaceContainer),
+                                    strokeFill = fill(tourCountOutlineColor),
+                                    strokeThickness = 1.dp,
                                 ),
                             ),
                             dataLabelValueFormatter = remember(chartDistanceValueIndices) {
@@ -428,6 +408,7 @@ private fun StatisticsChartCard(
                         ),
                         startAxis = VerticalAxis.rememberStart(
                             title = stringResource(R.string.statistics_axis_distance),
+                            labelRotationDegrees = -90f,
                             guideline = startAxisGuideline,
                             valueFormatter = remember {
                                 CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} km" }
@@ -435,6 +416,7 @@ private fun StatisticsChartCard(
                         ),
                         endAxis = VerticalAxis.rememberEnd(
                             title = stringResource(R.string.statistics_axis_secondary),
+                            labelRotationDegrees = 90f,
                             guideline = null,
                             valueFormatter = remember {
                                 CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} h" }
@@ -463,6 +445,55 @@ private fun StatisticsChartCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun StatisticsAverageHintColumn(
+    averageDistanceLabel: String?,
+    averageDurationLabel: String?,
+    distanceColor: Color,
+    durationColor: Color,
+) {
+    if (averageDistanceLabel == null && averageDurationLabel == null) return
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        averageDistanceLabel?.let {
+            AverageHintItem(
+                color = distanceColor.copy(alpha = 0.55f),
+                label = it,
+            )
+        }
+        averageDurationLabel?.let {
+            AverageHintItem(
+                color = durationColor.copy(alpha = 0.55f),
+                label = it,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AverageHintItem(
+    color: Color,
+    label: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Surface(
+            color = color,
+            shape = MaterialTheme.shapes.extraSmall,
+            modifier = Modifier
+                .width(18.dp)
+                .height(3.dp),
+        ) {}
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -572,6 +603,7 @@ private fun StatisticsDetailCard(
 private fun StatisticsLegendRow(
     distanceColor: Color,
     durationColor: Color,
+    tourCountOutlineColor: Color,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -580,12 +612,18 @@ private fun StatisticsLegendRow(
     ) {
         LegendItem(distanceColor, "${stringResource(R.string.statistics_legend_distance)} km")
         LegendItem(durationColor, "${stringResource(R.string.statistics_legend_duration)} h")
-        TourCountLegendItem(label = stringResource(R.string.statistics_label_tours))
+        TourCountLegendItem(
+            label = stringResource(R.string.statistics_label_tours),
+            outlineColor = tourCountOutlineColor,
+        )
     }
 }
 
 @Composable
-private fun TourCountLegendItem(label: String) {
+private fun TourCountLegendItem(
+    label: String,
+    outlineColor: Color,
+) {
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -593,6 +631,7 @@ private fun TourCountLegendItem(label: String) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
             shape = MaterialTheme.shapes.extraLarge,
+            border = BorderStroke(1.dp, outlineColor),
         ) {
             Text(
                 text = "n",
