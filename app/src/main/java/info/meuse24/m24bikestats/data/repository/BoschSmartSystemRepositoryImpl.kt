@@ -160,6 +160,8 @@ class BoschSmartSystemRepositoryImpl(
                 val center = ActivityCenterCalculator.calculate(gpsCoords)
                 if (center != null) {
                     activityDao.updateCenter(activityId, center.first, center.second)
+                } else {
+                    activityDao.clearCenter(activityId)
                 }
             }
         }

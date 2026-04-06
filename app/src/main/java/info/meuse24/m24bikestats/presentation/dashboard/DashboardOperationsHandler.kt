@@ -10,9 +10,12 @@ import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetails
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -23,6 +26,7 @@ class DashboardOperationsHandler(
     private val pdfReportFileExporter: PdfReportFileExporter,
     private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val stringResolver: DashboardStringResolver,
+    private val pdfExportDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private var activitiesExportJob: Job? = null
     private var activityDetailsExportJob: Job? = null
@@ -222,7 +226,9 @@ class DashboardOperationsHandler(
 
             val fileName = buildPdfFileName()
             val file = runCatching {
-                pdfReportFileExporter.generate(reportData, fileName)
+                withContext(pdfExportDispatcher) {
+                    pdfReportFileExporter.generate(reportData, fileName)
+                }
             }.getOrElse { error ->
                 updateState {
                     it.copy(

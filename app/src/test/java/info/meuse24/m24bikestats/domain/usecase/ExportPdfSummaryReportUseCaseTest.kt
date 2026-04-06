@@ -47,6 +47,8 @@ class ExportPdfSummaryReportUseCaseTest {
                     maxRiderPowerWatts = 412.0,
                     elevationGainMeters = 640,
                     caloriesBurned = 820.0,
+                    centerLatitude = 48.2082,
+                    centerLongitude = 16.3738,
                 ),
                 activity(
                     id = "a2",
@@ -58,6 +60,8 @@ class ExportPdfSummaryReportUseCaseTest {
                     maxRiderPowerWatts = 290.0,
                     elevationGainMeters = 280,
                     caloriesBurned = 410.0,
+                    centerLatitude = 47.0707,
+                    centerLongitude = 15.4395,
                 ),
             ),
         )
@@ -88,6 +92,7 @@ class ExportPdfSummaryReportUseCaseTest {
         assertEquals(38.2, report.statistics.highlights.maxSpeedKmh ?: 0.0, 0.001)
         assertEquals(412.0, report.statistics.highlights.maxRiderPowerWatts ?: 0.0, 0.001)
         assertNull(report.statistics.activeWeeksRatio)
+        assertEquals(listOf(48.2082 to 16.3738, 47.0707 to 15.4395), report.mapPoints)
     }
 
     @Test
@@ -139,6 +144,8 @@ class ExportPdfSummaryReportUseCaseTest {
         maxRiderPowerWatts: Double? = null,
         elevationGainMeters: Int? = null,
         caloriesBurned: Double? = null,
+        centerLatitude: Double? = null,
+        centerLongitude: Double? = null,
     ) = BoschActivity(
         id = id,
         title = title,
@@ -158,6 +165,8 @@ class ExportPdfSummaryReportUseCaseTest {
         elevationGainMeters = elevationGainMeters,
         elevationLossMeters = null,
         caloriesBurned = caloriesBurned,
+        centerLatitude = centerLatitude,
+        centerLongitude = centerLongitude,
     )
 }
 

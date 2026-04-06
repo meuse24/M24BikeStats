@@ -39,6 +39,7 @@ class ExportPdfSummaryReportUseCase(
             bikes = bikes,
             activitySummary = activities.toActivitySummary(),
             statistics = activities.toStatistics(locale, zoneId),
+            mapPoints = activities.toMapPoints(),
         )
     }
 
@@ -103,6 +104,13 @@ class ExportPdfSummaryReportUseCase(
             activeWeeksRatio = if (allWeeks.size >= 2) toursPerWeek.size.toDouble() / allWeeks.size else null,
         )
     }
+
+    private fun List<BoschActivity>.toMapPoints(): List<Pair<Double, Double>> =
+        mapNotNull { activity ->
+            val latitude = activity.centerLatitude ?: return@mapNotNull null
+            val longitude = activity.centerLongitude ?: return@mapNotNull null
+            latitude to longitude
+        }
 
     private fun List<BoschActivity>.buildMonthlyPeriods(
         locale: Locale,

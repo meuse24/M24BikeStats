@@ -64,6 +64,13 @@ interface ActivityDao {
     suspend fun updateCenter(activityId: String, lat: Double, lng: Double)
 
     @Query("""
+        UPDATE activities
+        SET centerLatitude = NULL, centerLongitude = NULL
+        WHERE id = :activityId
+    """)
+    suspend fun clearCenter(activityId: String)
+
+    @Query("""
         SELECT id
         FROM activities
         WHERE centerLatitude IS NULL

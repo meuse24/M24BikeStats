@@ -26,6 +26,7 @@ class PdfReportGenerator(
     private val context: Context,
     private val stringResolver: PdfStringResolver,
     private val appVersion: String,
+    private val mapTileProvider: PdfMapTileProvider? = null,
     private val localeProvider: () -> Locale = Locale::getDefault,
     private val zoneIdProvider: () -> ZoneId = ZoneId::systemDefault,
 ) : PdfReportFileExporter {
@@ -64,14 +65,12 @@ class PdfReportGenerator(
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_email), reportData.userInfo?.email.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_username), reportData.userInfo?.username.orDash())
 
-        builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_account))
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_email), reportData.userInfo?.email.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_username), reportData.userInfo?.username.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_subject), reportData.userInfo?.subject.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_discovery_issuer), reportData.discoveryInfo?.issuer.orDash())
 
-        builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_bikes))
         if (reportData.bikes.isEmpty()) {
             builder.drawBodyText(s(R.string.pdf_value_not_available))
@@ -82,7 +81,6 @@ class PdfReportGenerator(
             }
         }
 
-        builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_activities))
         builder.drawMetricTiles(
             items = listOf(
@@ -108,7 +106,19 @@ class PdfReportGenerator(
             columns = 3,
         )
 
-        builder.startPage()
+        builder.drawSectionHeader(s(R.string.pdf_section_map))
+        if (reportData.mapPoints.isEmpty()) {
+            builder.drawBodyText(s(R.string.pdf_map_no_points))
+        } else {
+            builder.drawRoutePointMap(
+                points = reportData.mapPoints,
+                legend = s(R.string.pdf_map_legend, arrayOf(reportData.mapPoints.size)),
+                tileProvider = mapTileProvider?.let { provider ->
+                    { zoom, x, y -> provider.getTileBitmap(zoom, x, y) }
+                },
+            )
+        }
+
         builder.drawSectionHeader(s(R.string.pdf_section_statistics))
         builder.drawBarLineChart(
             periods = reportData.statistics.monthlyPeriods,
@@ -132,7 +142,6 @@ class PdfReportGenerator(
         )
 
         if (reportData.statistics.yearlyPeriods.isNotEmpty()) {
-            builder.startPage()
             builder.drawSectionHeader(s(R.string.pdf_section_statistics_yearly))
             builder.drawBarLineChart(
                 periods = reportData.statistics.yearlyPeriods,
@@ -143,7 +152,6 @@ class PdfReportGenerator(
             )
         }
 
-        builder.startPage()
         builder.drawSectionHeader(s(R.string.pdf_section_rhythm))
         builder.drawHorizontalBarChart(
             rows = DayOfWeek.entries.map { it.toLocalizedDay(locale) to (reportData.statistics.dayOfWeekDistribution[it] ?: 0) },

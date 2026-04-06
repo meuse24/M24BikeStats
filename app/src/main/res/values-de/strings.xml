@@ -64,7 +64,7 @@
     <string name="help_login_label">Login</string>
     <string name="help_login_text">Die Anmeldung nutzt Bosch SingleKey ID und den Bosch eBike Data Act Zugriff. Nach erfolgreichem Login landet die App in der Hauptnavigation.</string>
     <string name="help_activities_label">Aktivitäten</string>
-    <string name="help_activities_text">Die Tourenliste lädt lokal gecachte Aktivitäten zuerst und aktualisiert danach bei Bedarf im Hintergrund. Filter, Sortierung und Suche wirken direkt auf die geladene Liste. Der Button „Alle Touren auf der Karte" öffnet eine Weltkarte mit je einem repräsentativen GPS-Punkt pro Tour. Antippen eines Punkts öffnet die Aktivitätsdetailseite. Die Karte merkt sich Zoom-Stufe und Position, wenn man zurücknavigiert.</string>
+    <string name="help_activities_text">Die Tourenliste lädt lokal gecachte Aktivitäten zuerst und aktualisiert danach bei Bedarf im Hintergrund. Filter, Sortierung und Suche wirken direkt auf die geladene Liste. Der Button „Alle Touren auf der Karte" öffnet eine Karte mit genau einem Zielpunkt pro Tour (dem Punkt mit dem weitesten Abstand vom Start). Antippen eines Punkts öffnet die Aktivitätsdetailseite. Die Karte merkt sich Zoom-Stufe und Position, wenn man zurücknavigiert.</string>
     <string name="help_bike_label">Konto</string>
     <string name="help_bike_text">Der Kontobereich zeigt verknüpfte Bosch Smart System Bikes zusammen mit Bosch-Konto- und OIDC-Details wie UserInfo, Discovery-Metadaten und Signaturzertifikatsinformationen. Bike-Daten bleiben cache-first aus Room. Bosch eBike System 2 und eBike Connect werden nicht unterstützt.</string>
     <string name="help_functions_label">Funktionen</string>
@@ -200,9 +200,12 @@
     <string name="pdf_section_account">Konto &amp; Profil</string>
     <string name="pdf_section_bikes">Fahrräder &amp; Komponenten</string>
     <string name="pdf_section_activities">Aktivitäten-Übersicht</string>
+    <string name="pdf_section_map">Tourenkarte</string>
     <string name="pdf_section_statistics">Statistik &amp; Diagramm</string>
     <string name="pdf_section_statistics_yearly">Jahresübersicht</string>
     <string name="pdf_section_rhythm">Rhythmus &amp; Frequenz</string>
+    <string name="pdf_map_no_points">Noch keine Kartenpunkte verfügbar</string>
+    <string name="pdf_map_legend">%1$d Touren mit Zielpunkt (weitester Abstand vom Start)</string>
     <string name="pdf_label_generated">Erstellt</string>
     <string name="pdf_label_period">Zeitraum</string>
     <string name="pdf_label_oauth_endpoints">OAuth-Endpunkte</string>
@@ -295,7 +298,7 @@
     <string name="functions_scope_full_summary">Vollständige Zusammenfassung</string>
     <string name="functions_scope_all_activities">Alle Fahrten</string>
     <string name="functions_scope_visible_activities">Sichtbare Fahrten</string>
-    <string name="functions_rows_pdf_sections">6 Abschnitte</string>
+    <string name="functions_rows_pdf_sections">7 Abschnitte</string>
     <string name="functions_rows_one_per_activity">1 pro Fahrt</string>
     <string name="functions_rows_detail_points">Punkte</string>
     <string name="functions_label_file">Datei</string>

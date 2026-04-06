@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.data.export
 
+import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.DashPathEffect
 import android.graphics.Paint
@@ -10,7 +11,13 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import info.meuse24.m24bikestats.domain.model.PdfReportPeriod
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.ln
 import kotlin.math.max
+import kotlin.math.pow
+import kotlin.math.tan
 
 class PdfPageBuilder(
     private val document: PdfDocument,
@@ -45,7 +52,8 @@ class PdfPageBuilder(
     }
 
     fun drawSectionHeader(text: String) {
-        ensureSpace(34f)
+        // Keep a small minimum content area below a section heading to avoid orphan headers at page bottom.
+        ensureSpace(56f)
         drawMultilineText(text, typography.sectionTitle, CONTENT_LEFT, yCursor, CONTENT_WIDTH)
         yCursor += 24f
         requireCanvas().drawLine(CONTENT_LEFT, yCursor, CONTENT_RIGHT, yCursor, dividerPaint())
@@ -251,6 +259,29 @@ class PdfPageBuilder(
         yCursor += 20f
     }
 
+    fun drawRoutePointMap(
+        points: List<Pair<Double, Double>>,
+        legend: String,
+        tileProvider: ((zoom: Int, x: Int, y: Int) -> Bitmap?)? = null,
+    ) {
+        ensureSpace(320f)
+        val localCanvas = requireCanvas()
+        val mapTop = yCursor + 8f
+        val mapHeight = 238f
+        val mapBottom = mapTop + mapHeight
+        val mapRect = RectF(CONTENT_LEFT, mapTop, CONTENT_RIGHT, mapBottom)
+        val viewport = points.toMapViewport(mapRect.width().toDouble(), mapRect.height().toDouble())
+
+        localCanvas.drawRoundRect(mapRect, 12f, 12f, fillPaint(colors.surfaceMuted))
+        localCanvas.drawRoundRect(mapRect, 12f, 12f, strokePaint(colors.border, 1f))
+        drawTileBackground(localCanvas, mapRect, viewport, tileProvider)
+        drawOverlayGrid(localCanvas, mapRect)
+        drawRoutePoints(localCanvas, mapRect, viewport, points)
+
+        drawMultilineText(legend, typography.bodyMuted, CONTENT_LEFT, mapBottom + 12f, CONTENT_WIDTH)
+        yCursor = mapBottom + 36f
+    }
+
     fun space(height: Float) {
         ensureSpace(height)
         yCursor += height
@@ -313,6 +344,136 @@ class PdfPageBuilder(
         return layout.height.toFloat()
     }
 
+    private fun drawTileBackground(
+        canvas: Canvas,
+        mapRect: RectF,
+        viewport: MapViewport,
+        tileProvider: ((zoom: Int, x: Int, y: Int) -> Bitmap?)?,
+    ) {
+        if (tileProvider == null) return
+        val tilesPerAxis = 2.0.pow(viewport.zoom).toInt().coerceAtLeast(1)
+        val tileSize = 256.0
+        val startTileX = floor(viewport.topLeftWorldX / tileSize).toInt()
+        val endTileX = floor((viewport.topLeftWorldX + mapRect.width()) / tileSize).toInt()
+        val startTileY = floor(viewport.topLeftWorldY / tileSize).toInt()
+        val endTileY = floor((viewport.topLeftWorldY + mapRect.height()) / tileSize).toInt()
+
+        canvas.save()
+        canvas.clipRect(mapRect)
+        for (tileY in startTileY..endTileY) {
+            if (tileY !in 0 until tilesPerAxis) continue
+            for (tileX in startTileX..endTileX) {
+                val wrappedX = ((tileX % tilesPerAxis) + tilesPerAxis) % tilesPerAxis
+                val tile = tileProvider(viewport.zoom, wrappedX, tileY) ?: continue
+                val left = mapRect.left + ((tileX * tileSize) - viewport.topLeftWorldX).toFloat()
+                val top = mapRect.top + ((tileY * tileSize) - viewport.topLeftWorldY).toFloat()
+                val dest = RectF(left, top, left + 256f, top + 256f)
+                canvas.drawBitmap(tile, null, dest, null)
+            }
+        }
+        canvas.restore()
+    }
+
+    private fun drawOverlayGrid(
+        canvas: Canvas,
+        mapRect: RectF,
+    ) {
+        canvas.save()
+        canvas.clipRect(mapRect)
+        repeat(7) { step ->
+            val x = mapRect.left + (mapRect.width() * step / 6f)
+            canvas.drawLine(x, mapRect.top, x, mapRect.bottom, faintDividerPaint())
+        }
+        repeat(5) { step ->
+            val y = mapRect.top + (mapRect.height() * step / 4f)
+            canvas.drawLine(mapRect.left, y, mapRect.right, y, faintDividerPaint())
+        }
+        canvas.restore()
+    }
+
+    private fun drawRoutePoints(
+        canvas: Canvas,
+        mapRect: RectF,
+        viewport: MapViewport,
+        points: List<Pair<Double, Double>>,
+    ) {
+        canvas.save()
+        canvas.clipRect(mapRect)
+        points.forEach { (latitude, longitude) ->
+            val x = mapRect.left + (longitudeToWorldX(longitude, viewport.zoom) - viewport.topLeftWorldX).toFloat()
+            val y = mapRect.top + (latitudeToWorldY(latitude, viewport.zoom) - viewport.topLeftWorldY).toFloat()
+            canvas.drawCircle(x, y, 4.6f, fillPaint(colors.primary))
+            canvas.drawCircle(x, y, 5.8f, strokePaint(colors.surface, 1.3f))
+        }
+        canvas.restore()
+    }
+
+    private fun longitudeToWorldX(
+        longitude: Double,
+        zoom: Int,
+    ): Double {
+        val worldSize = 256.0 * 2.0.pow(zoom)
+        return ((longitude.coerceIn(-180.0, 180.0) + 180.0) / 360.0) * worldSize
+    }
+
+    private fun latitudeToWorldY(
+        latitude: Double,
+        zoom: Int,
+    ): Double {
+        val worldSize = 256.0 * 2.0.pow(zoom)
+        val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
+        val radians = Math.toRadians(clamped)
+        val mercatorN = ln(tan((PI / 4.0) + (radians / 2.0)))
+        val normalized = (1.0 - (mercatorN / PI)) / 2.0
+        return normalized * worldSize
+    }
+
+    private fun mercatorFraction(latitude: Double): Double {
+        val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
+        val radians = Math.toRadians(clamped)
+        return (1.0 - ln(tan(radians) + (1.0 / kotlin.math.cos(radians))) / PI) / 2.0
+    }
+
+    private fun List<Pair<Double, Double>>.toMapViewport(
+        mapWidthPx: Double,
+        mapHeightPx: Double,
+    ): MapViewport {
+        val bounds = toPaddedBounds()
+        val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0002)
+        val latitudeFraction = abs(mercatorFraction(bounds.maxLatitude) - mercatorFraction(bounds.minLatitude)).coerceAtLeast(0.0002)
+        val zoomLon = ln((mapWidthPx * 360.0) / (longitudeDelta * 256.0)) / ln(2.0)
+        val zoomLat = ln(mapHeightPx / (latitudeFraction * 256.0)) / ln(2.0)
+        val zoom = floor((minOf(zoomLon, zoomLat) - 0.15).coerceIn(2.5, 15.0)).toInt()
+        val centerWorldX = longitudeToWorldX(bounds.centerLongitude, zoom)
+        val centerWorldY = latitudeToWorldY(bounds.centerLatitude, zoom)
+        return MapViewport(
+            zoom = zoom,
+            topLeftWorldX = centerWorldX - (mapWidthPx / 2.0),
+            topLeftWorldY = centerWorldY - (mapHeightPx / 2.0),
+        )
+    }
+
+    private fun List<Pair<Double, Double>>.toPaddedBounds(): MapBounds {
+        val minLatitude = minOf { it.first }
+        val maxLatitude = maxOf { it.first }
+        val minLongitude = minOf { it.second }
+        val maxLongitude = maxOf { it.second }
+        val latitudeSpan = (maxLatitude - minLatitude).coerceAtLeast(0.001)
+        val longitudeSpan = (maxLongitude - minLongitude).coerceAtLeast(0.001)
+        val paddedLatitudeSpan = (latitudeSpan * 1.25).coerceAtLeast(0.02)
+        val paddedLongitudeSpan = (longitudeSpan * 1.25).coerceAtLeast(0.02)
+        val centerLatitude = (minLatitude + maxLatitude) / 2.0
+        val centerLongitude = (minLongitude + maxLongitude) / 2.0
+        return MapBounds(
+            minLatitude = (centerLatitude - paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878),
+            maxLatitude = (centerLatitude + paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878),
+            minLongitude = (centerLongitude - paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0),
+            maxLongitude = (centerLongitude + paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0),
+            centerLatitude = centerLatitude,
+            centerLongitude = centerLongitude,
+        )
+    }
+
     private fun requireCanvas(): Canvas =
         canvas ?: error("No active PDF page. Call startPage() before drawing.")
 
@@ -347,4 +508,19 @@ class PdfPageBuilder(
         const val CONTENT_WIDTH = (CONTENT_RIGHT - CONTENT_LEFT).toInt()
         const val BOTTOM_MARGIN = 40f
     }
+
+    private data class MapBounds(
+        val minLatitude: Double,
+        val maxLatitude: Double,
+        val minLongitude: Double,
+        val maxLongitude: Double,
+        val centerLatitude: Double,
+        val centerLongitude: Double,
+    )
+
+    private data class MapViewport(
+        val zoom: Int,
+        val topLeftWorldX: Double,
+        val topLeftWorldY: Double,
+    )
 }

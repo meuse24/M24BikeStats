@@ -110,5 +110,11 @@ class PdfReportGeneratorAndroidTest {
             weeklyFrequencyHistogram = mapOf(0 to 2, 1 to 4, 2 to 3, 3 to 1),
             activeWeeksRatio = 0.73,
         ),
+        mapPoints = listOf(
+            48.2082 to 16.3738,
+            47.0707 to 15.4395,
+            48.3069 to 14.2858,
+            47.8095 to 13.0550,
+        ),
     )
 }

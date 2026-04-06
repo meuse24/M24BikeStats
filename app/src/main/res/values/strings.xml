@@ -64,7 +64,7 @@
     <string name="help_login_label">Login</string>
     <string name="help_login_text">Sign-in uses Bosch SingleKey ID and Bosch eBike Data Act access. After successful sign-in, the app opens the main navigation.</string>
     <string name="help_activities_label">Activities</string>
-    <string name="help_activities_text">The tour list loads locally cached activities first and refreshes in the background when needed. Filters, sorting and search operate directly on the loaded list. The "All tours on map" button opens a world map showing a representative GPS point for each tour. Tap a point to jump to the activity detail. The map remembers its last zoom level and position when you navigate back.</string>
+    <string name="help_activities_text">The tour list loads locally cached activities first and refreshes in the background when needed. Filters, sorting and search operate directly on the loaded list. The "All tours on map" button opens a map showing one target point per tour (the point farthest from the start). Tap a point to jump to the activity detail. The map remembers its last zoom level and position when you navigate back.</string>
     <string name="help_bike_label">Account</string>
     <string name="help_bike_text">The account area shows linked Bosch Smart System bikes together with Bosch account and OIDC details such as UserInfo, discovery metadata and signing certificate information. Bike data remains cache-first from Room. Bosch eBike System 2 and eBike Connect are not supported.</string>
     <string name="help_functions_label">Functions</string>
@@ -200,9 +200,12 @@
     <string name="pdf_section_account">Account &amp; profile</string>
     <string name="pdf_section_bikes">Bikes &amp; components</string>
     <string name="pdf_section_activities">Activity overview</string>
+    <string name="pdf_section_map">Tour map</string>
     <string name="pdf_section_statistics">Statistics &amp; chart</string>
     <string name="pdf_section_statistics_yearly">Yearly overview</string>
     <string name="pdf_section_rhythm">Rhythm &amp; frequency</string>
+    <string name="pdf_map_no_points">No map points available yet</string>
+    <string name="pdf_map_legend">%1$d tours with target point (farthest from start)</string>
     <string name="pdf_label_generated">Generated</string>
     <string name="pdf_label_period">Period</string>
     <string name="pdf_label_oauth_endpoints">OAuth endpoints</string>
@@ -295,7 +298,7 @@
     <string name="functions_scope_full_summary">Full summary</string>
     <string name="functions_scope_all_activities">All rides</string>
     <string name="functions_scope_visible_activities">Visible rides</string>
-    <string name="functions_rows_pdf_sections">6 sections</string>
+    <string name="functions_rows_pdf_sections">7 sections</string>
     <string name="functions_rows_one_per_activity">1 per ride</string>
     <string name="functions_rows_detail_points">Points</string>
     <string name="functions_label_file">File</string>

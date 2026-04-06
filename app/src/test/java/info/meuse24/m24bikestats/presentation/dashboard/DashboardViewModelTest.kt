@@ -43,6 +43,7 @@ import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -396,6 +397,7 @@ class DashboardViewModelTest {
                 pdfReportFileExporter = FakePdfReportFileExporter(),
                 syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
                 stringResolver = TestStringResolver(),
+                pdfExportDispatcher = Dispatchers.Main,
             ),
             detailActionHandler = DashboardDetailActionHandler(
                 observeCachedActivityDetail = ObserveCachedSmartSystemActivityDetailUseCase(repository),

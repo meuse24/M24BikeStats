@@ -13,6 +13,7 @@ import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
 import info.meuse24.m24bikestats.background.ComputeActivityCentersWorker
 import info.meuse24.m24bikestats.data.auth.AuthManager
 import info.meuse24.m24bikestats.data.export.AndroidPdfStringResolver
+import info.meuse24.m24bikestats.data.export.PdfMapTileProvider
 import info.meuse24.m24bikestats.data.export.PdfReportGenerator
 import info.meuse24.m24bikestats.data.export.PdfReportMetadataRepositoryImpl
 import info.meuse24.m24bikestats.data.export.PdfStringResolver
@@ -129,8 +130,14 @@ val appModule = module {
     single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get()) }
     single<PdfReportMetadataRepository> { PdfReportMetadataRepositoryImpl(get(), get()) }
     single<PdfStringResolver> { AndroidPdfStringResolver(androidContext()) }
+    single { PdfMapTileProvider() }
     single<PdfReportFileExporter> {
-        PdfReportGenerator(androidContext(), get(), info.meuse24.m24bikestats.BuildConfig.VERSION_NAME)
+        PdfReportGenerator(
+            context = androidContext(),
+            stringResolver = get(),
+            appVersion = info.meuse24.m24bikestats.BuildConfig.VERSION_NAME,
+            mapTileProvider = get(),
+        )
     }
 
     // --- Domain ---

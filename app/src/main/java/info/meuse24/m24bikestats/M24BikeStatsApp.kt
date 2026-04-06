@@ -7,7 +7,6 @@ import info.meuse24.m24bikestats.di.appModule
 import androidx.work.WorkManager
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.Constraints
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -31,9 +30,7 @@ class M24BikeStatsApp : Application() {
         WorkManager.getInstance(this).enqueueUniqueWork(
             ComputeActivityCentersWorker.WORK_NAME,
             ExistingWorkPolicy.KEEP,
-            OneTimeWorkRequestBuilder<ComputeActivityCentersWorker>()
-                .setConstraints(Constraints.Builder().setRequiresBatteryNotLow(true).build())
-                .build()
+            OneTimeWorkRequestBuilder<ComputeActivityCentersWorker>().build()
         )
     }
 }

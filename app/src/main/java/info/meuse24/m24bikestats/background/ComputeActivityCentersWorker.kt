@@ -18,19 +18,23 @@ class ComputeActivityCentersWorker(
     private val activityDetailDao: ActivityDetailDao by inject()
 
     override suspend fun doWork(): Result {
-        val ids = activityDao.getIdsWithoutCenter()
+        val ids = activityDetailDao.getAllMetadata()
+            .map { it.activityId }
+            .distinct()
         for (id in ids) {
             val points = activityDetailDao.getGpsPointsForActivity(id)
                 .map { it.latitude to it.longitude }
             val center = ActivityCenterCalculator.calculate(points)
             if (center != null) {
                 activityDao.updateCenter(id, center.first, center.second)
+            } else {
+                activityDao.clearCenter(id)
             }
         }
         return Result.success()
     }
 
     companion object {
-        const val WORK_NAME = "compute_activity_centers_once"
+        const val WORK_NAME = "compute_activity_representative_points_v2_once"
     }
 }
