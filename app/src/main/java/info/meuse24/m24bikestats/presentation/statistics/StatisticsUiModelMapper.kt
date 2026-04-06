@@ -2,6 +2,7 @@ package info.meuse24.m24bikestats.presentation.statistics
 
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import java.time.Instant
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -14,6 +15,66 @@ class StatisticsUiModelMapper(
     private val zoneId: ZoneId = ZoneId.systemDefault(),
     private val locale: Locale = Locale.getDefault(),
 ) {
+    fun mapHighlights(activities: List<BoschActivity>): StatisticsHighlights? {
+        if (activities.isEmpty()) return null
+
+        val longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0
+        val totalElevationGainM = activities.sumOf { it.elevationGainMeters ?: 0 }
+        val maxSpeedKmh = activities.mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull()
+        val maxRiderPowerWatts = activities.mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull()
+        val totalCaloriesValues = activities.mapNotNull(BoschActivity::caloriesBurned)
+        val totalCaloriesBurned = totalCaloriesValues.takeIf { it.isNotEmpty() }?.sum()
+
+        val totalDistanceKm = activities.sumOf { it.distanceMeters } / 1000.0
+        val totalDurationHours = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0
+        val avgTravelSpeedKmh = if (totalDurationHours > 0.0) totalDistanceKm / totalDurationHours else null
+
+        val dayOfWeekDistribution = activities
+            .mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
+            .groupingBy { it }
+            .eachCount()
+        val favoriteDayOfWeek = dayOfWeekDistribution.maxByOrNull(Map.Entry<DayOfWeek, Int>::value)?.key
+
+        val toursPerWeek = activities
+            .mapNotNull { it.startTime.toLocalDate(zoneId)?.toPeriodStart(StatisticsGrouping.WEEK, locale) }
+            .groupingBy { it }
+            .eachCount()
+
+        val allWeeks = toursPerWeek.keys.minOrNull()
+            ?.let { firstWeek ->
+                val lastWeek = toursPerWeek.keys.maxOrNull() ?: firstWeek
+                generateSequence(firstWeek) { current ->
+                    current.plusWeeks(1).takeUnless { it.isAfter(lastWeek) }
+                }.toList()
+            }
+            .orEmpty()
+
+        val weeklyFrequencyHistogram = allWeeks
+            .map { weekStart -> toursPerWeek[weekStart] ?: 0 }
+            .groupingBy { it }
+            .eachCount()
+            .toSortedMap()
+
+        val activeWeeksRatio = if (allWeeks.size >= 2) {
+            toursPerWeek.size.toDouble() / allWeeks.size
+        } else {
+            null
+        }
+
+        return StatisticsHighlights(
+            longestTourKm = longestTourKm,
+            totalElevationGainM = totalElevationGainM,
+            maxSpeedKmh = maxSpeedKmh,
+            maxRiderPowerWatts = maxRiderPowerWatts,
+            totalCaloriesBurned = totalCaloriesBurned,
+            avgTravelSpeedKmh = avgTravelSpeedKmh,
+            favoriteDayOfWeek = favoriteDayOfWeek,
+            dayOfWeekDistribution = dayOfWeekDistribution,
+            weeklyFrequencyHistogram = weeklyFrequencyHistogram,
+            activeWeeksRatio = activeWeeksRatio,
+        )
+    }
+
     fun mapPeriods(
         activities: List<BoschActivity>,
         grouping: StatisticsGrouping,

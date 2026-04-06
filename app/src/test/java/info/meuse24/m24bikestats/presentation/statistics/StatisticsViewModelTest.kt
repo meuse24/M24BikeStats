@@ -123,6 +123,26 @@ class StatisticsViewModelTest {
         collector.cancel()
     }
 
+    @Test
+    fun `ui state exposes computed highlights`() = runTest {
+        val viewModel = createViewModel(
+            listOf(
+                activity("2026-04-04T08:00:00Z", distanceMeters = 42000, durationSeconds = 7200),
+                activity("2026-04-11T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+            ),
+        )
+        val collector = backgroundScope.launch { viewModel.uiState.collect { } }
+        advanceUntilIdle()
+
+        val highlights = viewModel.uiState.value.highlights
+        assertNotNull(highlights)
+        assertEquals(42.0, highlights!!.longestTourKm, 0.0)
+        assertEquals(20.8, highlights.avgTravelSpeedKmh!!, 0.0)
+        assertEquals(1.0, highlights.activeWeeksRatio!!, 0.0)
+
+        collector.cancel()
+    }
+
     private fun createViewModel(
         activities: List<BoschActivity>,
     ): StatisticsViewModel {

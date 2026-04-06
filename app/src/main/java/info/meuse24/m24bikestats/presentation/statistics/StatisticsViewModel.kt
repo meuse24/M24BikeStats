@@ -29,11 +29,13 @@ class StatisticsViewModel(
             activities = activities,
             grouping = grouping,
         )
+        val highlights = uiModelMapper.mapHighlights(activities)
         val selectedPeriod = periods.firstOrNull { it.startEpochMillis == selectedPeriodStart }
         activities.toUiState(
             grouping = grouping,
             periods = periods,
             selectedPeriod = selectedPeriod,
+            highlights = highlights,
         )
     }.distinctUntilChanged().stateIn(
         scope = viewModelScope,
@@ -56,6 +58,7 @@ class StatisticsViewModel(
         grouping: StatisticsGrouping,
         periods: List<PeriodStats>,
         selectedPeriod: PeriodStats?,
+        highlights: StatisticsHighlights?,
     ): StatisticsUiState {
         val totalTours = size
         val totalDistanceKm = sumOf { it.distanceMeters } / 1000.0
@@ -70,6 +73,7 @@ class StatisticsViewModel(
             totalDurationHours = totalDurationHours,
             avgDistanceKm = if (totalTours > 0) totalDistanceKm / totalTours else 0.0,
             avgDurationHours = if (totalTours > 0) totalDurationHours / totalTours else 0.0,
+            highlights = highlights,
             isLoading = false,
         )
     }

@@ -66,7 +66,7 @@
     <string name="help_functions_label">Functions</string>
     <string name="help_functions_text">CSV exports use only the activities and detail data already stored in the local cache, then open the Android share sheet. The CSV format preset from Setup controls separators, decimal numbers and date formatting.</string>
     <string name="help_statistics_label">Statistics</string>
-    <string name="help_statistics_text">The statistics screen aggregates all locally cached activities into weekly or monthly totals for distance, ride time and tour count. Tour counts appear as labels directly on each bar, average distance and average ride-time guide lines provide orientation, and the summary tiles also show average values per tour. Tap any period to expand the aggregated values below the chart. The refresh button in the top bar triggers a cloud sync that automatically updates the chart once new data arrives.</string>
+    <string name="help_statistics_text">The statistics screen aggregates all locally cached activities into weekly or monthly totals for distance, ride time and tour count. Tour counts appear as labels directly on each bar, average distance and average ride-time guide lines provide orientation, and the summary tiles also show average values per tour. A separate highlights and rhythm section below the chart surfaces longest tour, elevation gain, speed, rider power, calories, effective travel speed, favorite weekday and weekly riding frequency from the same cached activity set. Tap any period to expand the aggregated values below the chart. The refresh button in the top bar triggers a cloud sync that automatically updates the chart once new data arrives.</string>
     <string name="help_diagnostics_label">Diagnostics</string>
     <string name="help_diagnostics_text">The API test screen remains available as a diagnostic tool and is intentionally not part of the primary navigation.</string>
 
@@ -166,6 +166,25 @@
     <string name="statistics_label_tours">Tours</string>
     <string name="statistics_label_distance">Distance</string>
     <string name="statistics_label_duration">Ride time</string>
+    <string name="statistics_highlights_section">Highlights &amp; Rhythm</string>
+    <string name="statistics_highlights_personal_bests">Personal bests</string>
+    <string name="statistics_highlights_longest_tour">Longest tour</string>
+    <string name="statistics_highlights_total_elevation">Total elevation gain</string>
+    <string name="statistics_highlights_max_speed">Top speed</string>
+    <string name="statistics_highlights_max_power">Max rider power</string>
+    <string name="statistics_highlights_total_calories">Total calories</string>
+    <string name="statistics_highlights_efficiency">Efficiency</string>
+    <string name="statistics_highlights_avg_speed">Effective travel speed</string>
+    <string name="statistics_highlights_avg_speed_hint">Distance ÷ ride time without stops</string>
+    <string name="statistics_highlights_rhythm">Rhythm</string>
+    <string name="statistics_highlights_favorite_day_prefix">Most active day:</string>
+    <string name="statistics_highlights_favorite_day_suffix">(%1$d tours)</string>
+    <string name="statistics_highlights_active_weeks">Active in %1$d %% of all weeks</string>
+    <string name="statistics_highlights_freq_row_zero">0 tours / week</string>
+    <string name="statistics_highlights_freq_row_one">1 tour / week</string>
+    <string name="statistics_highlights_freq_row_n">%1$d tours / week</string>
+    <string name="statistics_highlights_freq_row_overflow">%1$d+ tours / week</string>
+    <string name="statistics_highlights_freq_weeks">%1$d weeks</string>
 
     <string name="api_test_title">API Test</string>
     <string name="api_test_fetch">Fetch</string>

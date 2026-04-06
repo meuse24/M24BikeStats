@@ -2,10 +2,13 @@ package info.meuse24.m24bikestats.presentation.statistics
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -67,6 +71,10 @@ import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.core.cartesian.marker.CartesianMarkerVisibilityListener
 import com.patrykandpatrick.vico.core.cartesian.marker.DefaultCartesianMarker
 import info.meuse24.m24bikestats.R
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 private const val STATISTICS_SCROLL_THRESHOLD = 14
@@ -119,6 +127,11 @@ fun StatisticsScreen(
         item {
             AnimatedVisibility(visible = uiState.selectedPeriod != null) {
                 uiState.selectedPeriod?.let { StatisticsDetailCard(period = it) }
+            }
+        }
+        item {
+            AnimatedVisibility(visible = uiState.highlights != null) {
+                uiState.highlights?.let { StatisticsHighlightsSection(highlights = it) }
             }
         }
     }
@@ -600,6 +613,293 @@ private fun StatisticsDetailCard(
 }
 
 @Composable
+private fun StatisticsHighlightsSection(
+    highlights: StatisticsHighlights,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text(
+            text = stringResource(R.string.statistics_highlights_section),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+        StatisticsPersonalBestsCard(highlights = highlights)
+        StatisticsEfficiencyCard(highlights = highlights)
+        StatisticsRhythmCard(highlights = highlights)
+    }
+}
+
+@Composable
+private fun StatisticsPersonalBestsCard(
+    highlights: StatisticsHighlights,
+) {
+    val locale = Locale.getDefault()
+    val items = buildList {
+        add(
+            StatisticsMetricItem(
+                label = stringResource(R.string.statistics_highlights_longest_tour),
+                value = highlights.longestTourKm.toReadableDistance(locale),
+            ),
+        )
+        add(
+            StatisticsMetricItem(
+                label = stringResource(R.string.statistics_highlights_total_elevation),
+                value = highlights.totalElevationGainM.toReadableMeters(locale),
+            ),
+        )
+        highlights.maxSpeedKmh?.let { maxSpeed ->
+            add(
+                StatisticsMetricItem(
+                    label = stringResource(R.string.statistics_highlights_max_speed),
+                    value = maxSpeed.toReadableSpeed(locale),
+                ),
+            )
+        }
+        highlights.maxRiderPowerWatts?.let { maxPower ->
+            add(
+                StatisticsMetricItem(
+                    label = stringResource(R.string.statistics_highlights_max_power),
+                    value = maxPower.toReadableWatts(locale),
+                ),
+            )
+        }
+        highlights.totalCaloriesBurned?.let { totalCalories ->
+            add(
+                StatisticsMetricItem(
+                    label = stringResource(R.string.statistics_highlights_total_calories),
+                    value = totalCalories.toReadableCalories(locale),
+                ),
+            )
+        }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.statistics_highlights_personal_bests),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            items.chunked(2).forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    rowItems.forEach { item ->
+                        StatisticsMetricTile(
+                            label = item.label,
+                            value = item.value,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    if (rowItems.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsEfficiencyCard(
+    highlights: StatisticsHighlights,
+) {
+    val avgTravelSpeedKmh = highlights.avgTravelSpeedKmh ?: return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.statistics_highlights_efficiency),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = stringResource(R.string.statistics_highlights_avg_speed),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = avgTravelSpeedKmh.toReadableSpeed(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = stringResource(R.string.statistics_highlights_avg_speed_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatisticsRhythmCard(
+    highlights: StatisticsHighlights,
+) {
+    val locale = Locale.getDefault()
+    val favoriteDay = highlights.favoriteDayOfWeek
+    val favoriteCount = favoriteDay?.let { highlights.dayOfWeekDistribution[it] ?: 0 }
+    val frequencyRows = remember(highlights.weeklyFrequencyHistogram) {
+        highlights.weeklyFrequencyHistogram.toFrequencyRows()
+    }
+    val highlightedRowCount = frequencyRows.maxOfOrNull(StatisticsFrequencyRow::weekCount)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.statistics_highlights_rhythm),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (favoriteDay != null && favoriteCount != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(
+                        text = stringResource(R.string.statistics_highlights_favorite_day_prefix),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = favoriteDay.getDisplayName(TextStyle.FULL, locale),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = stringResource(R.string.statistics_highlights_favorite_day_suffix, favoriteCount),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+            StatisticsDayOfWeekBars(
+                distribution = highlights.dayOfWeekDistribution,
+                favoriteDay = favoriteDay,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                frequencyRows.forEach { row ->
+                    val isHighlighted = highlightedRowCount != null && row.weekCount == highlightedRowCount
+                    Surface(
+                        color = if (isHighlighted) {
+                            MaterialTheme.colorScheme.surfaceContainerHigh
+                        } else {
+                            Color.Transparent
+                        },
+                        shape = MaterialTheme.shapes.medium,
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = row.toLabel(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            Text(
+                                text = stringResource(R.string.statistics_highlights_freq_weeks, row.weekCount),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                    }
+                }
+            }
+            highlights.activeWeeksRatio?.let { activeWeeksRatio ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    LinearProgressIndicator(
+                        progress = { activeWeeksRatio.toFloat() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.statistics_highlights_active_weeks,
+                            (activeWeeksRatio * 100).roundToInt(),
+                        ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsDayOfWeekBars(
+    distribution: Map<DayOfWeek, Int>,
+    favoriteDay: DayOfWeek?,
+) {
+    val locale = Locale.getDefault()
+    val maxCount = max(1, distribution.values.maxOrNull() ?: 0)
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        DayOfWeek.entries.forEach { dayOfWeek ->
+            val count = distribution[dayOfWeek] ?: 0
+            val ratio = count.toFloat() / maxCount.toFloat()
+            val alpha = if (dayOfWeek == favoriteDay) 1f else 0.35f + (0.4f * ratio)
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Box(
+                    modifier = Modifier.height(64.dp),
+                    contentAlignment = Alignment.BottomCenter,
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height((16 + (48 * ratio)).dp)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = alpha), MaterialTheme.shapes.small),
+                    )
+                }
+                Text(
+                    text = dayOfWeek.getDisplayName(TextStyle.SHORT, locale),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = count.toString(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun StatisticsLegendRow(
     distanceColor: Color,
     durationColor: Color,
@@ -748,5 +1048,56 @@ private fun List<PeriodStats>.toChartDistanceValues(): List<Double> {
             chartValue = Math.nextUp(chartValue)
         }
         chartValue
+    }
+}
+
+private data class StatisticsMetricItem(
+    val label: String,
+    val value: String,
+)
+
+private data class StatisticsFrequencyRow(
+    val toursPerWeek: Int,
+    val weekCount: Int,
+    val isOverflow: Boolean,
+)
+
+@Composable
+private fun StatisticsFrequencyRow.toLabel(): String = when {
+    isOverflow -> stringResource(R.string.statistics_highlights_freq_row_overflow, toursPerWeek)
+    toursPerWeek == 0 -> stringResource(R.string.statistics_highlights_freq_row_zero)
+    toursPerWeek == 1 -> stringResource(R.string.statistics_highlights_freq_row_one)
+    else -> stringResource(R.string.statistics_highlights_freq_row_n, toursPerWeek)
+}
+
+private fun Map<Int, Int>.toFrequencyRows(): List<StatisticsFrequencyRow> {
+    if (isEmpty()) return emptyList()
+
+    val overflowCount = entries
+        .filter { it.key >= 3 }
+        .sumOf { it.value }
+
+    val visibleRows = entries
+        .filter { it.key < 3 }
+        .sortedBy { it.key }
+        .map { (toursPerWeek, weekCount) ->
+            StatisticsFrequencyRow(
+                toursPerWeek = toursPerWeek,
+                weekCount = weekCount,
+                isOverflow = false,
+            )
+        }
+
+    return buildList {
+        addAll(visibleRows)
+        if (overflowCount > 0) {
+            add(
+                StatisticsFrequencyRow(
+                    toursPerWeek = 3,
+                    weekCount = overflowCount,
+                    isOverflow = true,
+                ),
+            )
+        }
     }
 }

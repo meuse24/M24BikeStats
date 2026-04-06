@@ -1,6 +1,8 @@
 package info.meuse24.m24bikestats.presentation.statistics
 
+import java.time.DayOfWeek
 import java.util.Locale
+import kotlin.math.roundToInt
 
 data class StatisticsUiState(
     val periods: List<PeriodStats> = emptyList(),
@@ -11,7 +13,21 @@ data class StatisticsUiState(
     val totalDurationHours: Double = 0.0,
     val avgDistanceKm: Double = 0.0,
     val avgDurationHours: Double = 0.0,
+    val highlights: StatisticsHighlights? = null,
     val isLoading: Boolean = false,
+)
+
+data class StatisticsHighlights(
+    val longestTourKm: Double,
+    val totalElevationGainM: Int,
+    val maxSpeedKmh: Double?,
+    val maxRiderPowerWatts: Double?,
+    val totalCaloriesBurned: Double?,
+    val avgTravelSpeedKmh: Double?,
+    val favoriteDayOfWeek: DayOfWeek?,
+    val dayOfWeekDistribution: Map<DayOfWeek, Int>,
+    val weeklyFrequencyHistogram: Map<Int, Int>,
+    val activeWeeksRatio: Double?,
 )
 
 data class PeriodStats(
@@ -36,3 +52,15 @@ internal fun Double.toReadableDistance(locale: Locale = Locale.getDefault()): St
 
 internal fun Double.toReadableHours(locale: Locale = Locale.getDefault()): String =
     String.format(locale, "%.1f h", this)
+
+internal fun Double.toReadableSpeed(locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%.1f km/h", this)
+
+internal fun Int.toReadableMeters(locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%,d m", this)
+
+internal fun Double.toReadableWatts(locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%d W", roundToInt())
+
+internal fun Double.toReadableCalories(locale: Locale = Locale.getDefault()): String =
+    String.format(locale, "%,.0f kcal", this)

@@ -18,7 +18,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
 - API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
-- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monatsaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour und aufklappbarer Period-Detail-Card
+- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monatsaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
@@ -61,7 +61,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
 - `Funktionen`: CSV-Exporte
-- `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour
+- `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
@@ -108,7 +108,7 @@ Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
 - `presentation/dashboard`: Home, Aktivitäten, Konto, Funktionen sowie Detail- und Track-Screens
-- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer und Durchschnittskennzahlen
+- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer, Durchschnittskennzahlen und read-only Highlights-/Rhythmus-Metriken aus gecachten `BoschActivity`-Daten
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
 - `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen

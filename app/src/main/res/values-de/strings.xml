@@ -66,7 +66,7 @@
     <string name="help_functions_label">Funktionen</string>
     <string name="help_functions_text">CSV-Exporte verwenden nur die bereits im lokalen Cache gespeicherten Aktivitäten und Detaildaten und öffnen anschließend das Android-Share-Sheet. Das CSV-Format-Preset aus dem Setup steuert Trennzeichen, Dezimalzahlen und Datumsformat.</string>
     <string name="help_statistics_label">Statistiken</string>
-    <string name="help_statistics_text">Der Statistikscreen aggregiert alle lokal gecachten Aktivitäten zu Wochen- oder Monatstotalen für Distanz, Fahrtzeit und Tourenzahl. Die Tourenzahl erscheint als Label direkt auf dem jeweiligen Balken, Durchschnittslinien für Distanz und Fahrtzeit geben Orientierung und die Summary-Tiles zeigen zusätzlich Durchschnittswerte pro Tour. Durch Antippen eines Zeitraums werden die aggregierten Werte darunter aufgeklappt. Der Aktualisieren-Button in der Top-Bar löst einen Cloud-Sync aus, der das Diagramm automatisch aktualisiert, sobald neue Daten vorliegen.</string>
+    <string name="help_statistics_text">Der Statistikscreen aggregiert alle lokal gecachten Aktivitäten zu Wochen- oder Monatstotalen für Distanz, Fahrtzeit und Tourenzahl. Die Tourenzahl erscheint als Label direkt auf dem jeweiligen Balken, Durchschnittslinien für Distanz und Fahrtzeit geben Orientierung und die Summary-Tiles zeigen zusätzlich Durchschnittswerte pro Tour. Eine separate Sektion für Highlights und Rhythmus unter dem Diagramm zeigt zusätzlich längste Tour, Höhenmeter, Geschwindigkeit, Eigenleistung, Kalorien, effektive Reisegeschwindigkeit, aktivsten Wochentag und die wöchentliche Fahrhäufigkeit aus demselben Cache-Datensatz. Durch Antippen eines Zeitraums werden die aggregierten Werte darunter aufgeklappt. Der Aktualisieren-Button in der Top-Bar löst einen Cloud-Sync aus, der das Diagramm automatisch aktualisiert, sobald neue Daten vorliegen.</string>
     <string name="help_diagnostics_label">Diagnose</string>
     <string name="help_diagnostics_text">Der API-Test-Screen bleibt als Diagnosewerkzeug verfügbar und ist bewusst nicht Teil der primären Navigation.</string>
 
@@ -166,6 +166,25 @@
     <string name="statistics_label_tours">Touren</string>
     <string name="statistics_label_distance">Distanz</string>
     <string name="statistics_label_duration">Fahrtzeit</string>
+    <string name="statistics_highlights_section">Highlights &amp; Rhythmus</string>
+    <string name="statistics_highlights_personal_bests">Bestleistungen</string>
+    <string name="statistics_highlights_longest_tour">Längste Tour</string>
+    <string name="statistics_highlights_total_elevation">Gesamthöhenmeter</string>
+    <string name="statistics_highlights_max_speed">Top-Geschwindigkeit</string>
+    <string name="statistics_highlights_max_power">Max. Eigenleistung</string>
+    <string name="statistics_highlights_total_calories">Kalorien gesamt</string>
+    <string name="statistics_highlights_efficiency">Effizienz</string>
+    <string name="statistics_highlights_avg_speed">Effektive Reisegeschwindigkeit</string>
+    <string name="statistics_highlights_avg_speed_hint">Strecke ÷ Fahrzeit ohne Pausen</string>
+    <string name="statistics_highlights_rhythm">Rhythmus</string>
+    <string name="statistics_highlights_favorite_day_prefix">Aktivster Tag:</string>
+    <string name="statistics_highlights_favorite_day_suffix">(%1$d Touren)</string>
+    <string name="statistics_highlights_active_weeks">Aktiv in %1$d %% aller Wochen</string>
+    <string name="statistics_highlights_freq_row_zero">0 Touren / Woche</string>
+    <string name="statistics_highlights_freq_row_one">1 Tour / Woche</string>
+    <string name="statistics_highlights_freq_row_n">%1$d Touren / Woche</string>
+    <string name="statistics_highlights_freq_row_overflow">%1$d+ Touren / Woche</string>
+    <string name="statistics_highlights_freq_weeks">%1$d Wochen</string>
 
     <string name="api_test_title">API-Test</string>
     <string name="api_test_fetch">Abrufen</string>

@@ -1,226 +1,304 @@
-# Implementierungsplan: Statistik-Diagramm verbessern
+# Implementierungsplan: Statistik-Highlights & Rhythmus-Block
 
 Stand: 2026-04-06
 
 ## Ziel
 
-Das bestehende Vico-Kombi-Diagramm (`StatisticsChartCard`) robuster, informativer und sauberer machen.
-Keine neuen Datenspalten oder Serien — nur Verbesserungen an bestehendem Code und sinnvolle UX-Ergänzungen.
+Unter dem bestehenden Vico-Diagramm erscheint eine neue Sektion **"Highlights & Rhythmus"** mit formattierten
+Aha-Werten und Bestleistungen — berechnet aus allen gecachten `BoschActivity`-Einträgen, unabhängig von
+Wochen-/Monatsgruppierung des Charts.
+
+Die Sektion ist rein lesend und nutzt denselben `GetStatisticsUseCase`-Flow wie der Rest des Screens.
+Kein neuer API-Call, kein neuer Room-Query.
 
 ---
 
-## Schritt 1 — Bug: Index-Lookup in `dataLabelValueFormatter` fixieren
+## Neue Datenstrukturen
 
-**Datei:** `StatisticsScreen.kt`  
-**Problem:** `distances.indexOf(value)` sucht den Distanzwert linear per Wert. Bei identischen Distanzwerten (z.B. zwei Perioden mit exakt 42.0 km) gibt `indexOf` immer den ersten Treffer zurück — die Tour-Anzahl wird dann für den falschen Balken angezeigt.  
-**Ursache:** Vico übergibt `value` als Y-Wert der Kolumne, aber `x` trägt den Index.  
-**Fix:** Den `CartesianValueFormatter`-Lambda-Parameter `value` durch den `x`-basierten Index ersetzen.
+### `StatisticsHighlights` — in `StatisticsUiState.kt`
 
 ```kotlin
-// Vorher (fehlerhaft)
-CartesianValueFormatter { context, value, _ ->
-    val distances = extras.getOrNull(statisticsDistanceValuesKey) ?: return@CartesianValueFormatter ""
-    val tourCounts = extras.getOrNull(statisticsTourCountsKey) ?: return@CartesianValueFormatter ""
-    tourCounts.getOrNull(distances.indexOf(value))?.toString().orEmpty()
-}
+data class StatisticsHighlights(
+    // Bestleistungen
+    val longestTourKm: Double,
+    val totalElevationGainM: Int,           // 0 wenn alle Activities null haben
+    val maxSpeedKmh: Double?,               // null wenn kein Wert vorhanden
+    val maxRiderPowerWatts: Double?,
+    val totalCaloriesBurned: Double?,
 
-// Nachher (korrekt)
-CartesianValueFormatter { context, value, _ ->
-    val tourCounts = context.model.extraStore.getOrNull(statisticsTourCountsKey)
-        ?: return@CartesianValueFormatter ""
-    tourCounts.getOrNull(value.toInt())?.toString().orEmpty()
-}
-```
+    // Effizienz
+    val avgTravelSpeedKmh: Double?,         // Gesamtdistanz / Gesamtfahrzeit; null bei 0 Dauer
 
-Damit wird `statisticsDistanceValuesKey` im `ExtraStore` obsolet und kann entfernt werden.
-
-**Betroffene Dateien:** `StatisticsScreen.kt`
-
----
-
-## Schritt 2 — Threshold-Konstanten bereinigen
-
-**Datei:** `StatisticsScreen.kt`  
-**Problem:** Die Konstanten `STATISTICS_SCROLL_THRESHOLD = 7` und `STATISTICS_ZOOM_THRESHOLD = 10` werden im Code jeweils mit `* 2` multipliziert. Der eigentliche Schwellwert steht also nicht in der Konstante. Das ist irreführend.  
-**Fix:** Konstanten auf die tatsächlich genutzten Werte setzen und die Multiplikation entfernen.
-
-```kotlin
-// Vorher
-private const val STATISTICS_SCROLL_THRESHOLD = 7
-private const val STATISTICS_ZOOM_THRESHOLD = 10
-// ...
-val scrollThreshold = STATISTICS_SCROLL_THRESHOLD * 2  // = 14
-val zoomThreshold = STATISTICS_ZOOM_THRESHOLD * 2      // = 20
-
-// Nachher
-private const val STATISTICS_SCROLL_THRESHOLD = 14
-private const val STATISTICS_ZOOM_THRESHOLD = 20
-// ...
-val scrollThreshold = STATISTICS_SCROLL_THRESHOLD
-val zoomThreshold = STATISTICS_ZOOM_THRESHOLD
-```
-
-**Betroffene Dateien:** `StatisticsScreen.kt`
-
----
-
-## Schritt 3 — Y-Achsen mit Einheiten-Suffix
-
-**Datei:** `StatisticsScreen.kt`  
-**Problem:** Start-Achse zeigt `"125"`, End-Achse zeigt `"2"` — ohne Einheit ist die Bedeutung ohne Legende nicht erkennbar.  
-**Fix:** Einheiten-Suffix in den `CartesianValueFormatter` integrieren.
-
-```kotlin
-// Start-Achse (Distanz)
-valueFormatter = remember {
-    CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} km" }
-}
-
-// End-Achse (Fahrtzeit)
-valueFormatter = remember {
-    CartesianValueFormatter { _, value, _ -> "${value.roundToInt()} h" }
-}
-```
-
-**Betroffene Dateien:** `StatisticsScreen.kt`
-
----
-
-## Schritt 4 — DataLabel-Padding für Tour-Anzahl explizit setzen
-
-**Datei:** `StatisticsScreen.kt`  
-**Problem:** Das `rememberTextComponent` für `dataLabel` hat kein `padding`. Das Label sitzt dadurch eng am Hintergrund-Shape.  
-**Fix:** Explizites Padding ergänzen.
-
-```kotlin
-dataLabel = rememberTextComponent(
-    color = MaterialTheme.colorScheme.onSurface,
-    textSize = 11.sp,
-    padding = Insets(4f, 2f, 4f, 2f),
-    background = rememberShapeComponent(
-        shape = CorneredShape.rounded(allPercent = 50),
-        fill = fill(MaterialTheme.colorScheme.surfaceContainer),
-    ),
-),
-```
-
-**Betroffene Dateien:** `StatisticsScreen.kt`
-
----
-
-## Schritt 5 — Format-Extensions und `durationHours` aus dem Screen herauslösen
-
-**Problem:** `toReadableDistance()`, `toReadableHours()` und `durationHours` sind `private` Extensions in `StatisticsScreen.kt`. Sie können daher nicht getestet werden und erzeugen Locale-abhängige Ausgaben ohne Testabdeckung.  
-**Fix:** Die Extensions in `PeriodStats` einarbeiten oder nach `StatisticsUiState.kt` verschieben (package-internal, nicht `private`). `durationHours` wird direkt als Property in `PeriodStats` ergänzt.
-
-```kotlin
-// StatisticsUiState.kt — Ergänzungen
-
-val PeriodStats.durationHours: Double
-    get() = durationMinutes / 60.0
-
-fun Double.toReadableDistance(): String =
-    String.format(Locale.getDefault(), "%.1f km", this)
-
-fun Double.toReadableHours(): String =
-    String.format(Locale.getDefault(), "%.1f h", this)
-```
-
-In `StatisticsScreen.kt` den `private`-Block entfernen; die Extensions sind jetzt aus dem Screen erreichbar, da selbes Package.
-
-**Betroffene Dateien:** `StatisticsUiState.kt`, `StatisticsScreen.kt`
-
----
-
-## Schritt 6 — Durchschnittliche Fahrtdauer als zweite Dekoration
-
-**Datei:** `StatisticsScreen.kt`  
-**Problem:** Es gibt eine `HorizontalLine`-Dekoration für die Durchschnitts-Distanz auf der Start-Achse. Eine symmetrische Linie für die Durchschnitts-Fahrtdauer auf der End-Achse fehlt.  
-**Fix:** Analog zur bestehenden Distanz-Linie eine Dauer-Linie ergänzen.
-
-```kotlin
-val averageDurationHours = remember(periods) {
-    periods.takeIf { it.size > 1 }
-        ?.map { it.durationHours }
-        ?.average()
-        ?.takeIf { it > 0.0 }
-}
-
-// In decorations-Block ergänzen:
-averageDurationHours?.let { avgDuration ->
-    HorizontalLine(
-        y = { avgDuration },
-        line = rememberLineComponent(
-            fill = fill(durationColor.copy(alpha = 0.35f)),
-            thickness = 1.dp,
-            shape = DashedShape(dashLengthDp = 6f, gapLengthDp = 6f),
-        ),
-        labelComponent = averageDurationLabelComponent,
-        label = { stringResource(R.string.statistics_average_duration_label, avgDuration.roundToInt()) },
-        horizontalLabelPosition = Position.Horizontal.Start,
-        verticalLabelPosition = Position.Vertical.Top,
-        verticalAxisPosition = Axis.Position.Vertical.End,
-    )
-}
-```
-
-Neuer String-Ressource: `statistics_average_duration_label` (DE: `"Ø %d h"`, EN: `"avg %d h"`).
-
-**Betroffene Dateien:** `StatisticsScreen.kt`, `res/values/strings.xml`, `res/values-de/strings.xml`
-
----
-
-## Schritt 7 — Durchschnittswerte pro Tour in Summary-Tiles
-
-**Dateien:** `StatisticsUiState.kt`, `StatisticsViewModel.kt`, `StatisticsScreen.kt`, `strings.xml`  
-**Problem:** Die Summary-Tiles zeigen nur Gesamtwerte. Für Fahrer ist der Durchschnitt je Tour (avg km/Tour, avg h/Tour) mindestens genauso relevant.  
-**Fix:** Zwei neue Properties im `StatisticsUiState` ergänzen.
-
-```kotlin
-// StatisticsUiState.kt
-data class StatisticsUiState(
-    // ... bestehende Felder ...
-    val avgDistanceKm: Double = 0.0,
-    val avgDurationHours: Double = 0.0,
+    // Rhythmus
+    val favoriteDayOfWeek: java.time.DayOfWeek?,       // häufigster Starttag
+    val dayOfWeekDistribution: Map<java.time.DayOfWeek, Int>,  // DayOfWeek → Tourenanzahl
+    val weeklyFrequencyHistogram: Map<Int, Int>,        // toursPerWeek → Wochenanzahl
+    val activeWeeksRatio: Double?,          // null wenn Zeitraum < 2 Kalenderwochen
 )
 ```
 
-Im ViewModel berechnen:
+`StatisticsUiState` bekommt ein neues Feld:
 
 ```kotlin
-// StatisticsViewModel.kt — in toUiState()
-avgDistanceKm = if (size > 0) sumOf { it.distanceMeters } / 1000.0 / size else 0.0,
-avgDurationHours = if (size > 0) sumOf { it.durationWithoutStopsSeconds }.toDouble() / 3600.0 / size else 0.0,
+data class StatisticsUiState(
+    // ... bestehende Felder ...
+    val highlights: StatisticsHighlights? = null,   // null solange isLoading oder 0 Aktivitäten
+)
 ```
 
-Im Screen eine zweite `StatisticsSummaryRow` oder erweiterbare Tiles ergänzen. Alternativ: eine zweite Zeile mit den Avg-Tiles unterhalb der ersten.
+---
 
-Neue String-Ressourcen: `statistics_summary_avg_distance`, `statistics_summary_avg_duration`.
+## Schicht: Berechnung
 
-**Betroffene Dateien:** `StatisticsUiState.kt`, `StatisticsViewModel.kt`, `StatisticsScreen.kt`, `strings.xml`, `strings-de.xml` (falls vorhanden)
+### Neue Methode in `StatisticsUiModelMapper`
+
+Statt einer eigenen Klasse wird `mapHighlights()` direkt in den bestehenden Mapper aufgenommen —
+konsistent mit `mapPeriods()`, selbe Abhängigkeiten (`zoneId`, `locale`), kein extra DI-Binding nötig.
+
+```kotlin
+fun mapHighlights(activities: List<BoschActivity>): StatisticsHighlights? {
+    if (activities.isEmpty()) return null
+    // ... Berechnungen (s.u.) ...
+}
+```
+
+**Bestleistungen:**
+
+```kotlin
+val longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0
+val totalElevationGainM = activities.sumOf { it.elevationGainMeters ?: 0 }
+val maxSpeedKmh = activities.mapNotNull { it.maxSpeedKmh }.maxOrNull()
+val maxRiderPowerWatts = activities.mapNotNull { it.maxRiderPowerWatts }.maxOrNull()
+val totalCaloriesBurned = activities.mapNotNull { it.caloriesBurned }
+    .takeIf { it.isNotEmpty() }?.sum()
+```
+
+**Effizienz — effektive Reisegeschwindigkeit:**
+
+```kotlin
+val totalDistanceKm = activities.sumOf { it.distanceMeters } / 1000.0
+val totalDurationHours = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0
+val avgTravelSpeedKmh = if (totalDurationHours > 0) totalDistanceKm / totalDurationHours else null
+```
+
+**Rhythmus — Wochentag-Verteilung:**
+
+```kotlin
+val dayOfWeekDistribution: Map<DayOfWeek, Int> = activities
+    .mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
+    .groupingBy { it }
+    .eachCount()
+
+val favoriteDayOfWeek: DayOfWeek? = dayOfWeekDistribution
+    .maxByOrNull { it.value }?.key
+```
+
+**Rhythmus — Wochen-Frequenz-Histogram:**
+
+Zählt, wie viele Kalenderwochen (ISO) es mit 0, 1, 2 … Touren gab.
+
+```kotlin
+// Alle Touren ihren ISO-Wochen-Startdaten zuordnen
+val toursPerWeek: Map<LocalDate, Int> = activities
+    .mapNotNull { it.startTime.toLocalDate(zoneId)?.toPeriodStart(StatisticsGrouping.WEEK, locale) }
+    .groupingBy { it }
+    .eachCount()
+
+// Lückenwochen (0 Touren) auffüllen — nur innerhalb des Aktivitätszeitraums
+val firstWeek = toursPerWeek.keys.minOrNull()
+val lastWeek = toursPerWeek.keys.maxOrNull()
+val allWeeks: List<LocalDate> = generateSequence(firstWeek) { it.plusWeeks(1) }
+    .takeWhile { !it.isAfter(lastWeek!!) }
+    .toList()
+
+val weeklyFrequencyHistogram: Map<Int, Int> = allWeeks
+    .map { week -> toursPerWeek[week] ?: 0 }
+    .groupingBy { it }
+    .eachCount()
+    .toSortedMap()
+
+// Aktivitäts-Quote
+val activeWeeksRatio: Double? = if (allWeeks.size >= 2) {
+    toursPerWeek.size.toDouble() / allWeeks.size
+} else null
+```
+
+### Anpassung `StatisticsViewModel`
+
+In der `combine`-Pipeline wird `mapHighlights` aufgerufen und in `toUiState` eingebaut:
+
+```kotlin
+val highlights = uiModelMapper.mapHighlights(activities)
+// in toUiState():
+highlights = highlights,
+```
+
+---
+
+## Schicht: UI
+
+### Aufbau der neuen Sektion
+
+`StatisticsHighlightsSection` wird als eigenes `@Composable` in `StatisticsScreen.kt` ergänzt.
+Es erscheint als letztes `item { }` in der `LazyColumn`, nach dem Detail-Card.
+`AnimatedVisibility` wrappen — wird nur gezeigt wenn `highlights != null`.
+
+Sektion ist in **drei thematische Blöcke** unterteilt, jeweils als eigene `Card`:
+
+---
+
+#### Block A — Bestleistungen (`StatisticsPersonalBestsCard`)
+
+2-spaltige Grid-Anordnung mit `StatisticsMetricTile`:
+
+| Tile | Wert | Immer sichtbar? |
+|---|---|---|
+| Längste Tour | `"42.3 km"` | ja |
+| Gesamte Höhenmeter | `"1 234 m"` | ja (0 m wenn keine Daten) |
+| Top-Geschwindigkeit | `"38.4 km/h"` | nur wenn ≥ 1 Aktivität mit Wert |
+| Max. Eigenleistung | `"312 W"` | nur wenn ≥ 1 Aktivität mit Wert |
+| Verbrauchte Kalorien | `"8 540 kcal"` | nur wenn ≥ 1 Aktivität mit Wert |
+
+Nullable Tiles werden per `if (highlights.maxSpeedKmh != null)` bedingt gerendert — kein Leer-Placeholder.
+
+Formatierungen:
+- km: `"%.1f km"` (Locale.getDefault())
+- m: `"%,d m"` — Tausender-Trenner für > 999 m
+- km/h: `"%.1f km/h"`
+- W: `"%d W"`
+- kcal: `"%,.0f kcal"`
+
+---
+
+#### Block B — Effizienz (`StatisticsEfficiencyCard`)
+
+Einzeiliges Statement-Format statt Tiles:
+
+```
+Effektive Reisegeschwindigkeit
+  ⌀ 18.4 km/h  (Strecke ÷ Fahrzeit ohne Pausen)
+```
+
+Als `Row` mit großem Wert-Text (`titleLarge`, `FontWeight.Bold`) links und erläuterndem
+`bodySmall`-Text darunter. Wird nur gezeigt wenn `highlights.avgTravelSpeedKmh != null`.
+
+---
+
+#### Block C — Rhythmus (`StatisticsRhythmCard`)
+
+**Statement-Zeile:**
+
+```
+Dein aktivster Tag: Samstag (23 Touren)
+```
+
+Als farblich hervorgehobener Text: Label `onSurfaceVariant`, Wochentag `primary + SemiBold`, Anzahl `onSurface`.
+
+**Wochentag-Mini-Bar:**
+
+7 Spalten (Mo–So) als `Row` mit `weight(1f)` pro Spalte. Jede Spalte zeigt:
+- Balken: `Box` mit `fillMaxWidth()` und Höhe proportional zum Maximum, gefärbt mit `primary.copy(alpha = ...)`
+- Favoritentag bekommt vollen `primary`-Alpha, andere skaliert
+- Darunter: 2-stellige Kurzbezeichnung (`"Mo"`, `"Di"` … oder `"Mon"`, `"Tue"`)
+- Ganz unten: Tourenzahl als kleine Zahl
+
+Höhe der gesamten Mini-Bar: 64 dp. Kein Vico, rein Compose.
+
+**Wochen-Frequenz-Tabelle:**
+
+Kompakte `Column` mit Zeilen für jeden `(toursPerWeek, weekCount)`-Eintrag:
+
+```
+0 Touren/Woche  → 4 Wochen
+1 Tour/Woche    → 11 Wochen
+2 Touren/Woche  →  7 Wochen
+3+ Touren/Woche →  2 Wochen
+```
+
+Zeilen mit `toursPerWeek >= 3` werden zusammengefasst zu `"3+ Touren/Woche"` (Overflow-Schutz).
+Jede Zeile als `Row` mit `Spacer(Modifier.weight(1f))` zwischen Label und Wert.
+Die Zeile mit dem häufigsten Wert wird mit `surfaceContainerHigh`-Hintergrund hervorgehoben.
+
+**Aktivitäts-Quote:**
+
+Nur wenn `highlights.activeWeeksRatio != null`:
+
+```
+Aktiv in 73 % aller Wochen
+```
+
+Als `LinearProgressIndicator` (0..1) mit Wert-Text daneben. Farbe: `primary`.
+
+---
+
+### String-Ressourcen (neu)
+
+**`res/values/strings.xml`:**
+
+```xml
+<!-- Highlights Section -->
+<string name="statistics_highlights_section">Highlights &amp; Rhythmus</string>
+<string name="statistics_highlights_personal_bests">Bestleistungen</string>
+<string name="statistics_highlights_longest_tour">Längste Tour</string>
+<string name="statistics_highlights_total_elevation">Gesamthöhenmeter</string>
+<string name="statistics_highlights_max_speed">Top-Geschwindigkeit</string>
+<string name="statistics_highlights_max_power">Max. Eigenleistung</string>
+<string name="statistics_highlights_total_calories">Kalorien gesamt</string>
+<string name="statistics_highlights_efficiency">Effizienz</string>
+<string name="statistics_highlights_avg_speed">Effektive Reisegeschw.</string>
+<string name="statistics_highlights_avg_speed_hint">Strecke ÷ Fahrzeit ohne Pausen</string>
+<string name="statistics_highlights_rhythm">Rhythmus</string>
+<string name="statistics_highlights_favorite_day">Aktivster Tag: %1$s (%2$d Touren)</string>
+<string name="statistics_highlights_active_weeks">Aktiv in %1$d\u2009%% aller Wochen</string>
+<string name="statistics_highlights_freq_row_zero">0 Touren / Woche</string>
+<string name="statistics_highlights_freq_row_one">1 Tour / Woche</string>
+<string name="statistics_highlights_freq_row_n">%1$d Touren / Woche</string>
+<string name="statistics_highlights_freq_row_overflow">%1$d+ Touren / Woche</string>
+<string name="statistics_highlights_freq_weeks">%1$d Wochen</string>
+```
+
+**`res/values-de/strings.xml`:** analog Deutsch — Wochentagnamen kommen aus `DayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())`, daher keine statischen String-Ressourcen nötig.
+
+---
+
+## Tests
+
+### `StatisticsUiModelMapperTest` (Erweiterung)
+
+Neue Testfälle für `mapHighlights()`:
+
+| Testfall | Was geprüft wird |
+|---|---|
+| Leere Liste | Rückgabe `null` |
+| Alle nullable Felder null | `maxSpeedKmh == null`, `totalCaloriesBurned == null` |
+| Einzelne Aktivität | `activeWeeksRatio == null` (< 2 Wochen), `favoriteDayOfWeek` korrekt |
+| Zwei Aktivitäten, selber Wochentag | `favoriteDayOfWeek` = dieser Tag, `activeWeeksRatio` berechnet |
+| Aktivitäten über 3 Wochen, eine Woche leer | Histogram enthält `0 → 1`, Quote = 2/3 |
+| Wochentag-Verteilung Mo+Sa dominiert | `favoriteDayOfWeek` = Sa bei Sa > Mo |
+| `avgTravelSpeedKmh` bei 0 Dauer | `null`, kein Division-by-zero |
 
 ---
 
 ## Reihenfolge der Umsetzung
 
-| # | Schritt | Typ | Risiko |
-|---|---------|-----|--------|
-| 1 | Bug: Index-Lookup | Bug-Fix | niedrig |
-| 2 | Threshold-Konstanten | Refactoring | trivial |
-| 3 | Y-Achsen Einheiten | Visual | trivial |
-| 4 | DataLabel-Padding | Visual | trivial |
-| 5 | Extensions herauslösen | Refactoring | niedrig |
-| 6 | Ø-Dauer-Dekoration | Feature | niedrig |
-| 7 | Avg-Tiles | Feature | mittel |
+| # | Schritt | Datei(en) |
+|---|---------|-----------|
+| 1 | `StatisticsHighlights` Datenklasse ergänzen | `StatisticsUiState.kt` |
+| 2 | `mapHighlights()` im Mapper implementieren | `StatisticsUiModelMapper.kt` |
+| 3 | ViewModel-Pipeline um `highlights` erweitern | `StatisticsViewModel.kt` |
+| 4 | String-Ressourcen ergänzen (EN + DE) | `strings.xml`, evtl. `strings-de.xml` |
+| 5 | `StatisticsPersonalBestsCard` implementieren | `StatisticsScreen.kt` |
+| 6 | `StatisticsEfficiencyCard` implementieren | `StatisticsScreen.kt` |
+| 7 | `StatisticsRhythmCard` implementieren (Statement + Mini-Bar + Tabelle + Quote) | `StatisticsScreen.kt` |
+| 8 | Tests für `mapHighlights()` schreiben | `StatisticsUiModelMapperTest.kt` |
 
-Schritte 1–5 können in einem Commit zusammengefasst werden (Bugfix + Cleanup).  
-Schritte 6–7 jeweils als eigener Commit (Features).
+Schritte 1–3 sind ein Commit (Datenmodell + Logik), Schritte 4–7 ein zweiter (UI), Schritt 8 kann direkt nach Schritt 2 erfolgen (TDD-Stil möglich).
 
 ---
 
 ## Nicht im Plan
 
-- Neue Datenserien (Höhenmeter, Geschwindigkeit) — fehlen in `BoschActivity`
-- Gradient-Fill für Balken — Vico 2.x unterstützt das über `ShaderProvider`, erhöht Komplexität ohne klaren Mehrwert
-- Responsive Chart-Höhe — 280dp ist für das aktuelle Layout ausreichend
-- Marker-Redesign — bestehender Marker ist funktional und klar
+- Vergleich mit Vorjahr / Vormonat (fehlen historische Referenzpunkte im Cache-Modell)
+- Höhenprofile oder Track-Metriken (kommen aus `BoschActivityDetail`, nicht aus `BoschActivity`)
+- Push-Notifications für Bestleistungen
+- Persistierung der Highlights (sie sind deterministisch aus dem Cache berechenbar, kein eigener Store nötig)
