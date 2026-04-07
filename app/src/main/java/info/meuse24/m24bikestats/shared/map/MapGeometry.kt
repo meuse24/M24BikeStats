@@ -44,6 +44,7 @@ fun computeGeoBounds(
     points: List<GeoPoint>,
     centerStrategy: BoundsCenterStrategy = BoundsCenterStrategy.MIDPOINT,
 ): GeoBounds {
+    require(points.isNotEmpty()) { "computeGeoBounds requires at least one point." }
     val minLatitude = points.minOf(GeoPoint::latitude)
     val maxLatitude = points.maxOf(GeoPoint::latitude)
     val minLongitude = points.minOf(GeoPoint::longitude)
@@ -229,6 +230,8 @@ fun createDiscreteMapViewport(
     minZoom: Double,
     maxZoom: Double,
 ): MapTileViewport {
+    // PDF rendering does not need interactive viewport padding. The caller is expected
+    // to pre-inflate bounds before this step, then fit the discrete tile viewport to it.
     val zoom = kotlin.math.floor(
         estimateZoomToFit(
             bounds = bounds,
