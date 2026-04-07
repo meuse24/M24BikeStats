@@ -189,6 +189,7 @@ class DashboardUiModelMapper(
                 powerOnSummary = driveUnit?.toPowerOnSummary(),
                 assistModesSummary = displayAssistModes.toAssistModeRangeSummary(),
                 batterySummary = batteries.firstOrNull()?.toBikeCardSummary(driveUnit),
+                bikePassSummary = bikePass.toBikePassCardSummary(theftReportLogs.size),
                 shareText = detailUiModel.toShareText(),
             )
         }
@@ -438,6 +439,23 @@ class DashboardUiModelMapper(
 
             else -> name
         }
+    }
+
+    private fun info.meuse24.m24bikestats.domain.model.BoschBikePass?.toBikePassCardSummary(
+        theftReportCount: Int,
+    ): String? {
+        if (this == null && theftReportCount <= 0) return null
+
+        val summaryParts = buildList {
+            this@toBikePassCardSummary?.frameNumber?.let { frameNumber ->
+                add(s(R.string.dashboard_label_frame_number) + ": " + frameNumber)
+            }
+            if (theftReportCount > 0) {
+                add(s(R.string.dashboard_label_records) + ": " + theftReportCount)
+            }
+        }
+
+        return summaryParts.joinToString(" • ").ifBlank { null }
     }
 
     private fun BoschBattery.toDetailSection(

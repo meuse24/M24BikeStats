@@ -54,6 +54,7 @@ class DashboardUiModelMapperTest {
         assertTrue(uiModel.walkAssistLabel!!.startsWith("res-"))
         assertTrue(uiModel.powerOnSummary!!.contains("867"))
         assertTrue(uiModel.batterySummary!!.contains("82"))
+        assertTrue(uiModel.bikePassSummary!!.contains("FRAME-123"))
         assertTrue(uiModel.assistModesSummary!!.contains("97"))
         assertTrue(uiModel.assistModesSummary!!.contains("59"))
         assertFalse(uiModel.assistModesSummary!!.contains("0 km"))

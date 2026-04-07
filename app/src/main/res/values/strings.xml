@@ -597,6 +597,7 @@
     <string name="dashboard_card_walk_assist">Walk</string>
     <string name="dashboard_card_usage">Usage</string>
     <string name="dashboard_card_assist_ranges">Assist ranges</string>
+    <string name="dashboard_card_bike_pass">Bike pass</string>
     <string name="dashboard_activity_detail_button">Details</string>
     <string name="dashboard_activity_map_button">Map</string>
     <string name="dashboard_activity_share_button">Share</string>

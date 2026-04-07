@@ -594,6 +594,7 @@ internal fun BikeOverviewCard(
         bike.powerOnSummary?.let { add(stringResource(R.string.dashboard_card_usage) to it) }
         bike.batterySummary?.let { add(stringResource(R.string.dashboard_battery_fallback_title) to it) }
         bike.assistModesSummary?.let { add(stringResource(R.string.dashboard_card_assist_ranges) to it) }
+        bike.bikePassSummary?.let { add(stringResource(R.string.dashboard_card_bike_pass) to it) }
     }
 
     Card(

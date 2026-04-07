@@ -551,6 +551,7 @@
     <string name="dashboard_battery_prefix_on_bike_cycles">%1$s On-Bike-Zyklen</string>
     <string name="dashboard_battery_prefix_off_bike_cycles">%1$s Off-Bike-Zyklen</string>
     <string name="dashboard_wh_value">%1$s Wh</string>
+    <string name="dashboard_card_bike_pass">Bike-Pass</string>
     <string name="dashboard_cycles_value">%1$s</string>
     <string name="dashboard_assist_mode_range">%1$s (%2$s km)</string>
     <string name="dashboard_duration_hours_minutes">%1$dh %2$dm</string>
