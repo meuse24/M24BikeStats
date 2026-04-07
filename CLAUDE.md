@@ -117,7 +117,7 @@ Regeln:
 - mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
 - optionaler täglicher Hintergrund-Sync über WorkManager mit einstellbarer Netzbedingung
 - CSV-Export für Aktivitäten, Details und Tracks
-- PDF-Zusammenfassungsbericht mit `PdfDocument`/`Canvas`, cache-only und mit teilbarem FileProvider-Export
+- PDF-Zusammenfassungsbericht mit `PdfDocument`/`Canvas`, cache-only und mit teilbarem FileProvider-Export; enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
 - Exporte sind cache-only und haben Cancel-Aktionen
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
@@ -127,7 +127,7 @@ Regeln:
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
 - Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
-- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monatsaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
+- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
@@ -178,6 +178,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Statistik-Anpassungen bleiben in `presentation/statistics/`; Chart-Extras (Vico `ExtraStore`) nur für Chart-spezifische Zusatzdaten nutzen, read-only Highlights/Rhythmus dagegen direkt im `StatisticsUiState` halten
 - Karten-Anpassungen bleiben in `presentation/map/`; `ActivityCenterCalculator` und `GpsPointProjection` gehören zur Datenschicht; keine zusätzliche Cloud-Abfrage nur für die Karte einführen
 - PDF-/Report-Datenmodelle dürfen keine `presentation`-States wie `StatisticsUiState` direkt referenzieren; dafür eigene domain-taugliche Aggregate oder Mapper-Grenzen vorsehen
+- Hilfe- und Info-Texte für Endnutzer bewusst einfach und verständlich formulieren; technische Details gehören in Doku, Diagnose oder den Info-Bereich nur dann, wenn sie dort wirklich nötig sind
 - PDF-Export bleibt cache-only; keine zusätzlichen Bosch-Cloud-Abfragen nur für Berichtserzeugung einführen
 - `PdfReportGenerator` ist Android-gebunden und liefert nur die Report-Datei; Aggregation und fachliche Kennzahlen gehören in `ExportPdfSummaryReportUseCase`
 - Vico-`dataLabelValueFormatter` bekommt nur den geplotteten Y-Wert; bei potenziell doppelten Distanzwerten keine positionsabhängige Zuordnung per Rohwert annehmen

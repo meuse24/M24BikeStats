@@ -13,13 +13,13 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
 - optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
-- PDF-Zusammenfassungsbericht als cache-only Export mit Nutzerkonto, Bikes, Aktivitätsübersicht, Statistikdiagramm und Rhythmus-Seite
+- PDF-Zusammenfassungsbericht als cache-only Export mit Nutzerkonto, Bikes, Aktivitätsübersicht, Highlights sowie Wochen-, Monats- und Jahresdiagrammen
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
 - API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
-- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monatsaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
+- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monats-/Jahresaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
 - Weltkarte mit allen gecachten Touren als anklickbare Kreise; Tap navigiert zur Aktivitätsdetailseite; Kameraposition bleibt beim Zurücknavigieren erhalten; GPS-Zentrum per Tour = am weitesten vom Startpunkt entfernte Koordinate
 - Profilcharts für Tracks
@@ -64,7 +64,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Weltkarte`: alle Touren als Kreise auf OpenFreeMap-Karte; Tap auf Kreis öffnet Aktivitätsdetail
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
 - `Funktionen`: CSV-Exporte und PDF-Zusammenfassungsbericht
-- `Statistiken`: Wochen-/Monatsaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
+- `Statistiken`: Wochen-/Monats-/Jahresaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, distanzstärkstem Zeitraum, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
 - `Setup`: App-Einstellungen wie CSV-Format-Presets
 - `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
@@ -88,6 +88,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Der optionale Hintergrund-Sync plant genau einen eindeutigen periodischen WorkManager-Job und übernimmt dabei den im Setup gewählten Detail-Sync-Modus.
 - Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
 - Der PDF-Bericht nutzt ebenfalls nur bereits lokal gecachte Daten und ergänzt sie um OIDC-UserInfo-/Discovery-Metadaten.
+- Der PDF-Bericht enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme mit jeweils passendem distanzstärkstem Zeitraum.
 - Der Home-Sync zeigt Fortschritt und kann abgebrochen werden.
 - Der Home-Sync kann datensparsam nur fehlende Aktivitätsdetails laden oder optional veraltete Details mitaktualisieren.
 - Die Home-Übersicht zeigt zusätzlich die Anzahl gecachter Detaildatensätze und GPS-Punkte.
@@ -115,7 +116,7 @@ Ergänzungen:
 - `data/export`: CSV-/PDF-Export-Helfer, PDF-Layout-Builder und Android-gebundene Report-Dateigenerierung
 - `domain/model/PdfReportData.kt`: Android-freies Aggregat für den PDF-Bericht
 - `domain/usecase/ExportPdfSummaryReportUseCase.kt`: baut den Bericht aus Cache-, Bike- und OIDC-Daten auf
-- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer, Durchschnittskennzahlen und read-only Highlights-/Rhythmus-Metriken aus gecachten `BoschActivity`-Daten
+- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer, Wochen-/Monats-/Jahresaggregation, Durchschnittskennzahlen und read-only Highlights-/Rhythmus-Metriken aus gecachten `BoschActivity`-Daten
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
 - `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen
