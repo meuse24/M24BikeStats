@@ -205,7 +205,9 @@
     <string name="pdf_section_bikes">Bikes &amp; components</string>
     <string name="pdf_section_activities">Activity overview</string>
     <string name="pdf_section_map">Tour map</string>
-    <string name="pdf_section_statistics">Statistics &amp; chart</string>
+    <string name="pdf_section_statistics">Statistics &amp; highlights</string>
+    <string name="pdf_section_statistics_weekly">Weekly overview</string>
+    <string name="pdf_section_statistics_monthly">Monthly overview</string>
     <string name="pdf_section_statistics_yearly">Yearly overview</string>
     <string name="pdf_section_rhythm">Rhythm &amp; frequency</string>
     <string name="pdf_map_no_points">No map points available yet</string>

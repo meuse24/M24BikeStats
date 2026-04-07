@@ -13,6 +13,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.time.temporal.TemporalAdjusters
 import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlinx.coroutines.flow.first
@@ -68,8 +70,9 @@ class ExportPdfSummaryReportUseCase(
         locale: Locale,
         zoneId: ZoneId,
     ): PdfReportStatistics {
+        val weeklyPeriods = buildWeeklyPeriods(locale, zoneId)
         val monthlyPeriods = buildMonthlyPeriods(locale, zoneId)
-        val yearlyPeriods = buildYearlyPeriods(zoneId)
+        val yearlyPeriods = buildYearlyPeriods(locale, zoneId)
         val dayOfWeekDistribution = mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
             .groupingBy { it }
             .eachCount()
@@ -87,14 +90,20 @@ class ExportPdfSummaryReportUseCase(
             .orEmpty()
 
         return PdfReportStatistics(
+            weeklyPeriods = weeklyPeriods,
             monthlyPeriods = monthlyPeriods,
             yearlyPeriods = yearlyPeriods,
             highlights = PdfReportHighlights(
                 longestTourKm = maxOfOrNull { it.distanceMeters }?.div(1000.0) ?: 0.0,
+                longestRideHours = maxOfOrNull { it.durationWithoutStopsSeconds }?.div(3600.0) ?: 0.0,
                 maxSpeedKmh = mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull(),
+                fastestTourAvgSpeedKmh = mapNotNull(BoschActivity::averageSpeedKmh).maxOrNull(),
                 maxRiderPowerWatts = mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull(),
                 favoriteDayOfWeek = favoriteDayOfWeek,
             ),
+            strongestWeek = weeklyPeriods.strongestPeriod(),
+            strongestMonth = monthlyPeriods.strongestPeriod(),
+            strongestYear = yearlyPeriods.strongestPeriod(),
             dayOfWeekDistribution = dayOfWeekDistribution,
             weeklyFrequencyHistogram = allWeeks
                 .map { weekStart -> toursPerWeek[weekStart] ?: 0 }
@@ -132,6 +141,38 @@ class ExportPdfSummaryReportUseCase(
             .map { bucket ->
                 PdfReportPeriod(
                     label = bucket.periodStart.format(DateTimeFormatter.ofPattern("LLL yy", locale)),
+                    dateRangeLabel = bucket.periodStart.toDateRangeLabel(
+                        bucket.periodStart.with(TemporalAdjusters.lastDayOfMonth()),
+                        locale,
+                    ),
+                    tourCount = bucket.tourCount,
+                    distanceKm = bucket.distanceMeters / 1000.0,
+                    durationHours = bucket.durationSeconds / 3600.0,
+                )
+            }
+    }
+
+    private fun List<BoschActivity>.buildWeeklyPeriods(
+        locale: Locale,
+        zoneId: ZoneId,
+    ): List<PdfReportPeriod> {
+        val buckets = linkedMapOf<LocalDate, MutablePdfReportPeriod>()
+
+        forEach { activity ->
+            val localDate = activity.startTime.toLocalDate(zoneId) ?: return@forEach
+            val weekStart = localDate.toWeekStart(locale)
+            val bucket = buckets.getOrPut(weekStart) { MutablePdfReportPeriod(periodStart = weekStart) }
+            bucket.tourCount += 1
+            bucket.distanceMeters += activity.distanceMeters
+            bucket.durationSeconds += activity.durationWithoutStopsSeconds
+        }
+
+        return buckets.values
+            .sortedBy { it.periodStart }
+            .map { bucket ->
+                PdfReportPeriod(
+                    label = bucket.periodStart.toWeekLabel(locale),
+                    dateRangeLabel = bucket.periodStart.toDateRangeLabel(bucket.periodStart.plusDays(6), locale),
                     tourCount = bucket.tourCount,
                     distanceKm = bucket.distanceMeters / 1000.0,
                     durationHours = bucket.durationSeconds / 3600.0,
@@ -140,6 +181,7 @@ class ExportPdfSummaryReportUseCase(
     }
 
     private fun List<BoschActivity>.buildYearlyPeriods(
+        locale: Locale,
         zoneId: ZoneId,
     ): List<PdfReportPeriod> {
         val buckets = linkedMapOf<Int, MutablePdfReportPeriod>()
@@ -158,6 +200,10 @@ class ExportPdfSummaryReportUseCase(
             .map { (_, bucket) ->
                 PdfReportPeriod(
                     label = bucket.periodStart.year.toString(),
+                    dateRangeLabel = bucket.periodStart.toDateRangeLabel(
+                        bucket.periodStart.with(TemporalAdjusters.lastDayOfYear()),
+                        locale,
+                    ),
                     tourCount = bucket.tourCount,
                     distanceKm = bucket.distanceMeters / 1000.0,
                     durationHours = bucket.durationSeconds / 3600.0,
@@ -173,6 +219,30 @@ class ExportPdfSummaryReportUseCase(
 
     private fun LocalDate.toWeekStart(locale: Locale): LocalDate =
         with(WeekFields.of(locale).dayOfWeek(), 1L)
+
+    private fun LocalDate.toWeekLabel(locale: Locale): String {
+        val week = get(WeekFields.of(locale).weekOfWeekBasedYear())
+        return if (locale.language == Locale.GERMAN.language) {
+            "KW $week"
+        } else {
+            "W$week"
+        }
+    }
+
+    private fun LocalDate.toDateRangeLabel(
+        endDate: LocalDate,
+        locale: Locale,
+    ): String {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(locale)
+        return "${format(formatter)} - ${endDate.format(formatter)}"
+    }
+
+    private fun List<PdfReportPeriod>.strongestPeriod(): PdfReportPeriod? =
+        maxWithOrNull(
+            compareBy<PdfReportPeriod> { it.distanceKm }
+                .thenBy { it.tourCount }
+                .thenBy { it.durationHours },
+        )
 
     private data class MutablePdfReportPeriod(
         val periodStart: LocalDate,

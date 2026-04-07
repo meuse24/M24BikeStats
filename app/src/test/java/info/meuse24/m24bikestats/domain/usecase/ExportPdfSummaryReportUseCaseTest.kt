@@ -43,6 +43,7 @@ class ExportPdfSummaryReportUseCaseTest {
                     startTime = "2026-03-31T22:30:00Z",
                     distanceMeters = 32000,
                     durationWithoutStopsSeconds = 5400,
+                    averageSpeedKmh = 23.4,
                     maxSpeedKmh = 38.2,
                     maxRiderPowerWatts = 412.0,
                     elevationGainMeters = 640,
@@ -56,6 +57,7 @@ class ExportPdfSummaryReportUseCaseTest {
                     startTime = "2026-04-02T18:00:00Z",
                     distanceMeters = 20000,
                     durationWithoutStopsSeconds = 3600,
+                    averageSpeedKmh = 19.8,
                     maxSpeedKmh = 32.8,
                     maxRiderPowerWatts = 290.0,
                     elevationGainMeters = 280,
@@ -86,9 +88,16 @@ class ExportPdfSummaryReportUseCaseTest {
         assertEquals(1, report.bikes.size)
         assertEquals("test@example.com", report.userInfo?.email)
         assertEquals("https://issuer.example", report.discoveryInfo?.issuer)
+        assertEquals(1, report.statistics.weeklyPeriods.size)
         assertEquals(1, report.statistics.monthlyPeriods.size)
+        assertEquals(1, report.statistics.yearlyPeriods.size)
         assertEquals(java.time.DayOfWeek.WEDNESDAY, report.statistics.highlights.favoriteDayOfWeek)
         assertEquals(2, report.statistics.dayOfWeekDistribution.size)
+        assertEquals(1.5, report.statistics.highlights.longestRideHours, 0.001)
+        assertEquals(23.4, report.statistics.highlights.fastestTourAvgSpeedKmh ?: 0.0, 0.001)
+        assertEquals("KW 14", report.statistics.strongestWeek?.label)
+        assertEquals("Apr 26", report.statistics.strongestMonth?.label)
+        assertEquals("2026", report.statistics.strongestYear?.label)
         assertEquals(38.2, report.statistics.highlights.maxSpeedKmh ?: 0.0, 0.001)
         assertEquals(412.0, report.statistics.highlights.maxRiderPowerWatts ?: 0.0, 0.001)
         assertNull(report.statistics.activeWeeksRatio)
@@ -140,6 +149,7 @@ class ExportPdfSummaryReportUseCaseTest {
         startTime: String = "2026-04-01T08:00:00Z",
         distanceMeters: Int = 10000,
         durationWithoutStopsSeconds: Int = 1800,
+        averageSpeedKmh: Double? = null,
         maxSpeedKmh: Double? = null,
         maxRiderPowerWatts: Double? = null,
         elevationGainMeters: Int? = null,
@@ -156,7 +166,7 @@ class ExportPdfSummaryReportUseCaseTest {
         bikeId = null,
         startOdometerMeters = null,
         distanceMeters = distanceMeters,
-        averageSpeedKmh = null,
+        averageSpeedKmh = averageSpeedKmh,
         maxSpeedKmh = maxSpeedKmh,
         averageCadenceRpm = null,
         maxCadenceRpm = null,

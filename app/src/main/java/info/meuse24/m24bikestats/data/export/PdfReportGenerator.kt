@@ -120,17 +120,14 @@ class PdfReportGenerator(
         }
 
         builder.drawSectionHeader(s(R.string.pdf_section_statistics))
-        builder.drawBarLineChart(
-            periods = reportData.statistics.monthlyPeriods,
-            avgDistanceKm = reportData.activitySummary.avgDistanceKm,
-            avgDurationHours = reportData.activitySummary.avgDurationHours,
-            distanceLegend = s(R.string.statistics_legend_distance),
-            durationLegend = s(R.string.statistics_legend_duration),
-        )
         builder.drawMetricTiles(
             items = listOf(
                 s(R.string.statistics_highlights_longest_tour) to formatDistance(reportData.statistics.highlights.longestTourKm, locale),
+                s(R.string.statistics_highlights_longest_ride_time) to formatHours(reportData.statistics.highlights.longestRideHours, locale),
                 s(R.string.statistics_highlights_max_speed) to reportData.statistics.highlights.maxSpeedKmh?.let {
+                    formatSpeed(it, locale)
+                }.orDash(),
+                s(R.string.statistics_highlights_fastest_tour_avg_speed) to reportData.statistics.highlights.fastestTourAvgSpeedKmh?.let {
                     formatSpeed(it, locale)
                 }.orDash(),
                 s(R.string.statistics_highlights_max_power) to reportData.statistics.highlights.maxRiderPowerWatts?.let {
@@ -138,19 +135,30 @@ class PdfReportGenerator(
                 }.orDash(),
                 s(R.string.statistics_highlights_favorite_day_pdf) to reportData.statistics.highlights.favoriteDayOfWeek?.toLocalizedDay(locale).orDash(),
             ),
-            columns = 2,
+            columns = 3,
         )
 
-        if (reportData.statistics.yearlyPeriods.isNotEmpty()) {
-            builder.drawSectionHeader(s(R.string.pdf_section_statistics_yearly))
-            builder.drawBarLineChart(
-                periods = reportData.statistics.yearlyPeriods,
-                avgDistanceKm = reportData.activitySummary.avgDistanceKm,
-                avgDurationHours = reportData.activitySummary.avgDurationHours,
-                distanceLegend = s(R.string.statistics_legend_distance),
-                durationLegend = s(R.string.statistics_legend_duration),
-            )
-        }
+        drawStatisticsChartSection(
+            builder = builder,
+            title = s(R.string.pdf_section_statistics_weekly),
+            periods = reportData.statistics.weeklyPeriods,
+            strongestPeriod = reportData.statistics.strongestWeek,
+            locale = locale,
+        )
+        drawStatisticsChartSection(
+            builder = builder,
+            title = s(R.string.pdf_section_statistics_monthly),
+            periods = reportData.statistics.monthlyPeriods,
+            strongestPeriod = reportData.statistics.strongestMonth,
+            locale = locale,
+        )
+        drawStatisticsChartSection(
+            builder = builder,
+            title = s(R.string.pdf_section_statistics_yearly),
+            periods = reportData.statistics.yearlyPeriods,
+            strongestPeriod = reportData.statistics.strongestYear,
+            locale = locale,
+        )
 
         builder.drawSectionHeader(s(R.string.pdf_section_rhythm))
         builder.drawHorizontalBarChart(
@@ -277,6 +285,35 @@ class PdfReportGenerator(
             builder.drawLabelValueRow(
                 s(R.string.dashboard_label_delivered_energy),
                 battery.deliveredWhOverLifetime?.let { "$it Wh" }.orDash(),
+            )
+        }
+    }
+
+    private fun drawStatisticsChartSection(
+        builder: PdfPageBuilder,
+        title: String,
+        periods: List<info.meuse24.m24bikestats.domain.model.PdfReportPeriod>,
+        strongestPeriod: info.meuse24.m24bikestats.domain.model.PdfReportPeriod?,
+        locale: Locale,
+    ) {
+        if (periods.isEmpty()) return
+        builder.drawSectionHeader(title)
+        builder.drawBarLineChart(
+            periods = periods,
+            avgDistanceKm = periods.map(info.meuse24.m24bikestats.domain.model.PdfReportPeriod::distanceKm).average(),
+            avgDurationHours = periods.map(info.meuse24.m24bikestats.domain.model.PdfReportPeriod::durationHours).average(),
+            distanceLegend = s(R.string.statistics_legend_distance),
+            durationLegend = s(R.string.statistics_legend_duration),
+        )
+        strongestPeriod?.let { period ->
+            builder.drawMetricTiles(
+                items = listOf(
+                    s(R.string.statistics_highlights_active_period) to period.label,
+                    s(R.string.statistics_label_distance) to formatDistance(period.distanceKm, locale),
+                    s(R.string.statistics_label_tours) to period.tourCount.toString(),
+                    s(R.string.statistics_label_period) to period.dateRangeLabel,
+                ),
+                columns = 2,
             )
         }
     }
