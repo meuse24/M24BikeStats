@@ -66,12 +66,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.tan
+import info.meuse24.m24bikestats.shared.map.GeoBounds
+import info.meuse24.m24bikestats.shared.map.GeoPoint
+import info.meuse24.m24bikestats.shared.map.MapViewportPadding
+import info.meuse24.m24bikestats.shared.map.computeGeoBounds
+import info.meuse24.m24bikestats.shared.map.estimateZoomToFit
+import info.meuse24.m24bikestats.shared.map.inflateGeoBounds
+import info.meuse24.m24bikestats.shared.map.inverseMercatorYNormalized
+import info.meuse24.m24bikestats.shared.map.mercatorYNormalized
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -82,6 +84,9 @@ import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.spatialk.geojson.Position
+import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.pow
 
 private val TrackRouteColor = Color(0xFFD32F2F)
 private val TrackStartColor = Color(0xFF2E7D32)
@@ -177,7 +182,7 @@ fun TrackScreen(
 @Composable
 private fun TrackMapFullScreen(
     activity: ActivityDetailUiModel,
-    trackBounds: TrackBounds,
+    trackBounds: GeoBounds,
     modifier: Modifier = Modifier,
     onShare: () -> Unit,
     onShareCsv: () -> Unit,
@@ -762,77 +767,45 @@ private fun List<ProjectedTrackPoint>.withSyntheticVerticalSpread(canvasHeight: 
     }
 }
 
-private data class TrackBounds(
-    val minLatitude: Double,
-    val maxLatitude: Double,
-    val minLongitude: Double,
-    val maxLongitude: Double,
-    val centerLatitude: Double,
-    val centerLongitude: Double,
-)
-
-private fun calculateTrackBounds(trackPoints: List<ActivityTrackPointUiModel>): TrackBounds {
-    val minLatitude = trackPoints.minOf { it.latitude }
-    val maxLatitude = trackPoints.maxOf { it.latitude }
-    val minLongitude = trackPoints.minOf { it.longitude }
-    val maxLongitude = trackPoints.maxOf { it.longitude }
-    return TrackBounds(
-        minLatitude = minLatitude,
-        maxLatitude = maxLatitude,
-        minLongitude = minLongitude,
-        maxLongitude = maxLongitude,
-        centerLatitude = (minLatitude + maxLatitude) / 2.0,
-        centerLongitude = (minLongitude + maxLongitude) / 2.0,
-    )
-}
-
-private fun inflateTrackBounds(bounds: TrackBounds): TrackBounds {
-    val latitudeSpan = (bounds.maxLatitude - bounds.minLatitude).coerceAtLeast(0.0008)
-    val longitudeSpan = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0008)
-    val latitudePadding = latitudeSpan * 0.18
-    val longitudePadding = longitudeSpan * 0.18
-
-    val minLatitude = (bounds.minLatitude - latitudePadding).coerceIn(-85.05112878, 85.05112878)
-    val maxLatitude = (bounds.maxLatitude + latitudePadding).coerceIn(-85.05112878, 85.05112878)
-    val minLongitude = (bounds.minLongitude - longitudePadding).coerceIn(-180.0, 180.0)
-    val maxLongitude = (bounds.maxLongitude + longitudePadding).coerceIn(-180.0, 180.0)
-
-    return TrackBounds(
-        minLatitude = minLatitude,
-        maxLatitude = maxLatitude,
-        minLongitude = minLongitude,
-        maxLongitude = maxLongitude,
-        centerLatitude = (minLatitude + maxLatitude) / 2.0,
-        centerLongitude = (minLongitude + maxLongitude) / 2.0,
-    )
-}
+private fun calculateTrackBounds(trackPoints: List<ActivityTrackPointUiModel>): GeoBounds =
+    computeGeoBounds(trackPoints.map { GeoPoint(it.latitude, it.longitude) })
 
 private fun estimateTrackZoom(
-    bounds: TrackBounds,
+    bounds: GeoBounds,
     viewportWidth: Double,
     viewportHeight: Double,
     sidePaddingPx: Double = 28.0,
     topPaddingPx: Double = 28.0,
     bottomPaddingPx: Double = 28.0,
-): Double {
-    val usableWidth = (viewportWidth - (sidePaddingPx * 2.0)).coerceAtLeast(1.0)
-    val usableHeight = (viewportHeight - topPaddingPx - bottomPaddingPx).coerceAtLeast(1.0)
-    val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0003)
-    val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
-    val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * 256.0)) / ln(2.0)
-    val latitudeZoom = ln(usableHeight / (latitudeFraction * 256.0)) / ln(2.0)
-    return (minOf(longitudeZoom, latitudeZoom) - 1.2).coerceIn(6.8, 15.4)
-}
+): Double = estimateZoomToFit(
+    bounds = bounds,
+    viewportWidthPx = viewportWidth,
+    viewportHeightPx = viewportHeight,
+    tileSize = 256.0,
+    padding = MapViewportPadding(
+        sidePaddingPx = sidePaddingPx,
+        topPaddingPx = topPaddingPx,
+        bottomPaddingPx = bottomPaddingPx,
+    ),
+    minCoordinateDelta = 0.0003,
+    zoomAdjustment = 1.2,
+    minZoom = 6.8,
+    maxZoom = 15.4,
+)
 
 private fun calculateTrackCameraPosition(
-    bounds: TrackBounds,
+    bounds: GeoBounds,
     viewportWidth: Double,
     viewportHeight: Double,
     sidePaddingPx: Double,
     topPaddingPx: Double,
     bottomPaddingPx: Double,
 ): CameraPosition {
-    val fittedBounds = inflateTrackBounds(bounds)
+    val fittedBounds = inflateGeoBounds(
+        bounds = bounds,
+        spanScale = 1.36,
+        minLatitudeSpan = 0.0008,
+    )
     val zoom = estimateTrackZoom(
         bounds = fittedBounds,
         viewportWidth = viewportWidth,
@@ -842,29 +815,17 @@ private fun calculateTrackCameraPosition(
         bottomPaddingPx = bottomPaddingPx,
     )
     val pixelsPerWorld = 256.0 * 2.0.pow(zoom)
-    val mercatorCenter = (mercatorY(fittedBounds.minLatitude) + mercatorY(fittedBounds.maxLatitude)) / 2.0
+    val mercatorCenter = (mercatorYNormalized(fittedBounds.minLatitude) + mercatorYNormalized(fittedBounds.maxLatitude)) / 2.0
     val verticalOffsetPx = ((bottomPaddingPx - topPaddingPx) / 2.0) * 0.35
     val adjustedMercatorCenter = (mercatorCenter + (verticalOffsetPx / pixelsPerWorld)).coerceIn(0.0, 1.0)
 
     return CameraPosition(
         target = Position(
             longitude = fittedBounds.centerLongitude,
-            latitude = inverseMercatorY(adjustedMercatorCenter),
+            latitude = inverseMercatorYNormalized(adjustedMercatorCenter),
         ),
         zoom = zoom,
     )
-}
-
-private fun mercatorY(latitude: Double): Double {
-    val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
-    val radians = clamped * PI / 180.0
-    return (1.0 - ln(tan(radians) + 1.0 / cos(radians)) / PI) / 2.0
-}
-
-private fun inverseMercatorY(mercatorY: Double): Double {
-    val normalized = mercatorY.coerceIn(0.0, 1.0)
-    val n = PI * (1.0 - 2.0 * normalized)
-    return Math.toDegrees(kotlin.math.atan(kotlin.math.sinh(n)))
 }
 
 private fun buildSingleTrackPointGeoJson(

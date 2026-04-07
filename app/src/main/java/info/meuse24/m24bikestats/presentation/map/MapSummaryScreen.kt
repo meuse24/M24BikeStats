@@ -20,6 +20,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.ActivityMapPoint
+import info.meuse24.m24bikestats.shared.map.BoundsCenterStrategy
+import info.meuse24.m24bikestats.shared.map.GeoPoint
+import info.meuse24.m24bikestats.shared.map.MapViewportPadding
+import info.meuse24.m24bikestats.shared.map.computeGeoBounds
+import info.meuse24.m24bikestats.shared.map.estimateZoomToFit
+import info.meuse24.m24bikestats.shared.map.fitZoomToPoints
+import info.meuse24.m24bikestats.shared.map.inflateGeoBounds
+import info.meuse24.m24bikestats.shared.map.pointsFitInViewport
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
@@ -31,13 +39,8 @@ import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
 import org.maplibre.compose.util.ClickResult
 import org.maplibre.spatialk.geojson.Position
-import kotlin.math.PI
-import kotlin.math.abs
-import kotlin.math.cos
 import kotlin.math.hypot
-import kotlin.math.ln
 import kotlin.math.pow
-import kotlin.math.tan
 
 private const val STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
 private const val MAP_WORLD_TILE_SIZE = 512.0
@@ -152,34 +155,45 @@ private fun ActivityHeatMap(
     }
 }
 
-private data class MapBounds(
-    val minLatitude: Double,
-    val maxLatitude: Double,
-    val minLongitude: Double,
-    val maxLongitude: Double,
-    val centerLatitude: Double,
-    val centerLongitude: Double,
-)
-
 private fun calculateMapCameraPosition(
     points: List<ActivityMapPoint>,
     viewportWidthPx: Double,
     viewportHeightPx: Double,
 ): CameraPosition {
-    val rawBounds = points.toMapBounds()
-    val bounds = inflateMapBounds(rawBounds)
-    val zoom = estimateMapZoom(
+    val bounds = inflateGeoBounds(
+        bounds = computeGeoBounds(
+            points = points.map { GeoPoint(it.latitude, it.longitude) },
+            centerStrategy = BoundsCenterStrategy.AVERAGE_POINTS,
+        ),
+        spanScale = 1.22,
+        minLatitudeSpan = 0.02,
+    )
+    val zoom = estimateZoomToFit(
         bounds = bounds,
         viewportWidthPx = viewportWidthPx,
         viewportHeightPx = viewportHeightPx,
+        tileSize = MAP_WORLD_TILE_SIZE,
+        padding = MapViewportPadding(
+            sidePaddingPx = 36.0,
+            topPaddingPx = 36.0,
+            bottomPaddingPx = 36.0,
+        ),
+        minCoordinateDelta = 0.0003,
+        zoomAdjustment = 1.05,
+        minZoom = 3.2,
+        maxZoom = MAP_MAX_ZOOM,
     )
-    val fittedZoom = adjustZoomToFitPoints(
-        points = points,
+    val fittedZoom = fitZoomToPoints(
+        points = points.map { GeoPoint(it.latitude, it.longitude) },
         centerLatitude = bounds.centerLatitude,
         centerLongitude = bounds.centerLongitude,
         initialZoom = zoom,
+        minZoom = MAP_MIN_ZOOM,
+        maxZoom = MAP_MAX_ZOOM,
         viewportWidthPx = viewportWidthPx,
         viewportHeightPx = viewportHeightPx,
+        marginFraction = MAP_FIT_MARGIN_FRACTION,
+        tileSize = MAP_WORLD_TILE_SIZE,
     )
     return CameraPosition(
         target = Position(
@@ -188,62 +202,6 @@ private fun calculateMapCameraPosition(
         ),
         zoom = fittedZoom,
     )
-}
-
-private fun List<ActivityMapPoint>.toMapBounds(): MapBounds {
-    val minLat = minOf { it.latitude }
-    val maxLat = maxOf { it.latitude }
-    val minLng = minOf { it.longitude }
-    val maxLng = maxOf { it.longitude }
-    val avgLat = map { it.latitude }.average()
-    val avgLng = map { it.longitude }.average()
-    return MapBounds(
-        minLatitude = minLat,
-        maxLatitude = maxLat,
-        minLongitude = minLng,
-        maxLongitude = maxLng,
-        centerLatitude = avgLat,
-        centerLongitude = avgLng,
-    )
-}
-
-private fun inflateMapBounds(bounds: MapBounds): MapBounds {
-    val latitudeSpan = (bounds.maxLatitude - bounds.minLatitude).coerceAtLeast(0.0008)
-    val longitudeSpan = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0008)
-    val paddedLatitudeSpan = (latitudeSpan * 1.22).coerceAtLeast(0.02)
-    val paddedLongitudeSpan = (longitudeSpan * 1.22).coerceAtLeast(0.02)
-    val centerLatitude = bounds.centerLatitude
-    val centerLongitude = bounds.centerLongitude
-
-    val minLatitude = (centerLatitude - paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878)
-    val maxLatitude = (centerLatitude + paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878)
-    val minLongitude = (centerLongitude - paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0)
-    val maxLongitude = (centerLongitude + paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0)
-    return MapBounds(
-        minLatitude = minLatitude,
-        maxLatitude = maxLatitude,
-        minLongitude = minLongitude,
-        maxLongitude = maxLongitude,
-        centerLatitude = (minLatitude + maxLatitude) / 2.0,
-        centerLongitude = (minLongitude + maxLongitude) / 2.0,
-    )
-}
-
-private fun estimateMapZoom(
-    bounds: MapBounds,
-    viewportWidthPx: Double,
-    viewportHeightPx: Double,
-): Double {
-    val sidePaddingPx = 36.0
-    val topPaddingPx = 36.0
-    val bottomPaddingPx = 36.0
-    val usableWidth = (viewportWidthPx - (sidePaddingPx * 2.0)).coerceAtLeast(1.0)
-    val usableHeight = (viewportHeightPx - topPaddingPx - bottomPaddingPx).coerceAtLeast(1.0)
-    val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0003)
-    val latitudeFraction = abs(mercatorY(bounds.maxLatitude) - mercatorY(bounds.minLatitude)).coerceAtLeast(0.0003)
-    val longitudeZoom = ln(usableWidth * 360.0 / (longitudeDelta * MAP_WORLD_TILE_SIZE)) / ln(2.0)
-    val latitudeZoom = ln(usableHeight / (latitudeFraction * MAP_WORLD_TILE_SIZE)) / ln(2.0)
-    return (minOf(longitudeZoom, latitudeZoom) - 1.05).coerceIn(3.2, MAP_MAX_ZOOM)
 }
 
 private fun shouldUseSavedCameraPosition(
@@ -258,112 +216,15 @@ private fun shouldUseSavedCameraPosition(
     val zoomMatches = saved.zoom in (autoFit.zoom - 3.0)..(autoFit.zoom + 1.0)
     if (!zoomMatches) return false
     return pointsFitInViewport(
-        points = points,
+        points = points.map { GeoPoint(it.latitude, it.longitude) },
         centerLatitude = saved.target.latitude,
         centerLongitude = saved.target.longitude,
         zoom = saved.zoom,
         viewportWidthPx = viewportWidthPx,
         viewportHeightPx = viewportHeightPx,
         marginFraction = MAP_FIT_MARGIN_FRACTION,
+        tileSize = MAP_WORLD_TILE_SIZE,
     )
-}
-
-private fun adjustZoomToFitPoints(
-    points: List<ActivityMapPoint>,
-    centerLatitude: Double,
-    centerLongitude: Double,
-    initialZoom: Double,
-    viewportWidthPx: Double,
-    viewportHeightPx: Double,
-): Double {
-    fun fits(zoom: Double): Boolean =
-        pointsFitInViewport(
-            points = points,
-            centerLatitude = centerLatitude,
-            centerLongitude = centerLongitude,
-            zoom = zoom,
-            viewportWidthPx = viewportWidthPx,
-            viewportHeightPx = viewportHeightPx,
-            marginFraction = MAP_FIT_MARGIN_FRACTION,
-        )
-
-    val clampedInitialZoom = initialZoom.coerceIn(MAP_MIN_ZOOM, MAP_MAX_ZOOM)
-    if (fits(clampedInitialZoom)) return clampedInitialZoom
-    if (!fits(MAP_MIN_ZOOM)) return MAP_MIN_ZOOM
-
-    var low = MAP_MIN_ZOOM
-    var high = clampedInitialZoom
-    repeat(20) {
-        val mid = (low + high) / 2.0
-        if (fits(mid)) {
-            low = mid
-        } else {
-            high = mid
-        }
-    }
-    return low
-}
-
-private fun pointsFitInViewport(
-    points: List<ActivityMapPoint>,
-    centerLatitude: Double,
-    centerLongitude: Double,
-    zoom: Double,
-    viewportWidthPx: Double,
-    viewportHeightPx: Double,
-    marginFraction: Double,
-): Boolean {
-    val worldSize = MAP_WORLD_TILE_SIZE * 2.0.pow(zoom)
-    val centerX = longitudeToWorldX(centerLongitude, zoom)
-    val centerY = latitudeToWorldY(centerLatitude, zoom)
-    val minX = viewportWidthPx * marginFraction
-    val maxX = viewportWidthPx * (1.0 - marginFraction)
-    val minY = viewportHeightPx * marginFraction
-    val maxY = viewportHeightPx * (1.0 - marginFraction)
-    return points.all { point ->
-        val pointWorldX = longitudeToWorldX(point.longitude, zoom)
-        val pointWorldY = latitudeToWorldY(point.latitude, zoom)
-        val deltaX = normalizeWorldDelta(pointWorldX - centerX, worldSize)
-        val pointX = (viewportWidthPx / 2.0) + deltaX
-        val pointY = (viewportHeightPx / 2.0) + (pointWorldY - centerY)
-        pointX in minX..maxX && pointY in minY..maxY
-    }
-}
-
-private fun normalizeWorldDelta(
-    delta: Double,
-    worldSize: Double,
-): Double {
-    var wrapped = delta
-    val half = worldSize / 2.0
-    if (wrapped > half) wrapped -= worldSize
-    if (wrapped < -half) wrapped += worldSize
-    return wrapped
-}
-
-private fun longitudeToWorldX(
-    longitude: Double,
-    zoom: Double,
-): Double {
-    val worldSize = MAP_WORLD_TILE_SIZE * 2.0.pow(zoom)
-    return ((longitude.coerceIn(-180.0, 180.0) + 180.0) / 360.0) * worldSize
-}
-
-private fun latitudeToWorldY(
-    latitude: Double,
-    zoom: Double,
-): Double {
-    val worldSize = MAP_WORLD_TILE_SIZE * 2.0.pow(zoom)
-    val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
-    val radians = clamped * PI / 180.0
-    val normalized = (1.0 - ln(tan(radians) + 1.0 / cos(radians)) / PI) / 2.0
-    return normalized * worldSize
-}
-
-private fun mercatorY(latitude: Double): Double {
-    val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
-    val radians = clamped * PI / 180.0
-    return (1.0 - ln(tan(radians) + 1.0 / cos(radians)) / PI) / 2.0
 }
 
 /**

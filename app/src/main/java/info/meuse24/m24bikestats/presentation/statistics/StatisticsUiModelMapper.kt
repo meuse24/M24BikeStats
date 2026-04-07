@@ -17,18 +17,36 @@ class StatisticsUiModelMapper(
 ) {
     fun mapHighlights(
         activities: List<BoschActivity>,
+        periods: List<PeriodStats>,
         totalDistanceKm: Double = activities.sumOf { it.distanceMeters } / 1000.0,
         totalDurationHours: Double = activities.sumOf { it.durationWithoutStopsSeconds } / 3600.0,
     ): StatisticsHighlights? {
         if (activities.isEmpty()) return null
 
         val longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0
+        val longestRideHours = activities.maxOf { it.durationWithoutStopsSeconds } / 3600.0
         val totalElevationGainM = activities.sumOf { it.elevationGainMeters ?: 0 }
         val maxSpeedKmh = activities.mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull()
+        val fastestTourAvgSpeedKmh = activities.mapNotNull(BoschActivity::averageSpeedKmh).maxOrNull()
         val maxRiderPowerWatts = activities.mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull()
         val totalCaloriesValues = activities.mapNotNull(BoschActivity::caloriesBurned)
         val totalCaloriesBurned = totalCaloriesValues.takeIf { it.isNotEmpty() }?.sum()
         val avgTravelSpeedKmh = if (totalDurationHours > 0.0) totalDistanceKm / totalDurationHours else null
+        // Pick the distance-strongest period for the currently selected grouping.
+        // On ties prefer more tours, then longer ride time, then the most recent period.
+        val mostActivePeriod = periods.maxWithOrNull(
+            compareBy<PeriodStats> { it.distanceKm }
+                .thenBy { it.tourCount }
+                .thenBy { it.durationMinutes }
+                .thenBy { it.startEpochMillis },
+        )?.let { period ->
+            StatisticsActivePeriod(
+                label = period.label,
+                dateRangeLabel = period.dateRangeLabel,
+                distanceKm = period.distanceKm,
+                tourCount = period.tourCount,
+            )
+        }
 
         val dayOfWeekDistribution = activities
             .mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
@@ -64,11 +82,14 @@ class StatisticsUiModelMapper(
 
         return StatisticsHighlights(
             longestTourKm = longestTourKm,
+            longestRideHours = longestRideHours,
             totalElevationGainM = totalElevationGainM,
             maxSpeedKmh = maxSpeedKmh,
+            fastestTourAvgSpeedKmh = fastestTourAvgSpeedKmh,
             maxRiderPowerWatts = maxRiderPowerWatts,
             totalCaloriesBurned = totalCaloriesBurned,
             avgTravelSpeedKmh = avgTravelSpeedKmh,
+            mostActivePeriod = mostActivePeriod,
             favoriteDayOfWeek = favoriteDayOfWeek,
             dayOfWeekDistribution = dayOfWeekDistribution,
             weeklyFrequencyHistogram = weeklyFrequencyHistogram,

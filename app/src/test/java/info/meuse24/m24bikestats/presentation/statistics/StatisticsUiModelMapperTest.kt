@@ -69,51 +69,62 @@ class StatisticsUiModelMapperTest {
 
     @Test
     fun `map highlights returns null for empty list`() {
-        assertNull(mapper.mapHighlights(emptyList()))
+        assertNull(mapper.mapHighlights(emptyList(), emptyList()))
     }
 
     @Test
     fun `map highlights keeps nullable metrics null when source values are missing`() {
+        val activities = listOf(
+            activity("2026-04-01T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+            activity("2026-04-08T08:00:00Z", distanceMeters = 5000, durationSeconds = 900),
+        )
         val highlights = mapper.mapHighlights(
-            listOf(
-                activity("2026-04-01T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
-                activity("2026-04-08T08:00:00Z", distanceMeters = 5000, durationSeconds = 900),
-            ),
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.MONTH),
         )
 
         requireNotNull(highlights)
         assertNull(highlights.maxSpeedKmh)
+        assertNull(highlights.fastestTourAvgSpeedKmh)
         assertNull(highlights.maxRiderPowerWatts)
         assertNull(highlights.totalCaloriesBurned)
     }
 
     @Test
     fun `map highlights for single activity keeps active week ratio null and computes favorite day`() {
-        val highlights = mapper.mapHighlights(
-            listOf(
-                activity(
-                    startTime = "2026-04-04T08:00:00Z",
-                    distanceMeters = 42000,
-                    durationSeconds = 7200,
-                    elevationGainMeters = 350,
-                ),
+        val activities = listOf(
+            activity(
+                startTime = "2026-04-04T08:00:00Z",
+                distanceMeters = 42000,
+                durationSeconds = 7200,
+                elevationGainMeters = 350,
+                averageSpeedKmh = 18.5,
             ),
+        )
+        val highlights = mapper.mapHighlights(
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.MONTH),
         )
 
         requireNotNull(highlights)
         assertEquals(42.0, highlights.longestTourKm, 0.0)
+        assertEquals(2.0, highlights.longestRideHours, 0.0)
         assertEquals(350, highlights.totalElevationGainM)
+        assertEquals(18.5, highlights.fastestTourAvgSpeedKmh!!, 0.0)
+        assertEquals("Apr 26", highlights.mostActivePeriod!!.label)
         assertEquals(DayOfWeek.SATURDAY, highlights.favoriteDayOfWeek)
         assertNull(highlights.activeWeeksRatio)
     }
 
     @Test
     fun `map highlights computes favorite day and active week ratio across multiple weeks`() {
+        val activities = listOf(
+            activity("2026-04-03T08:00:00Z", distanceMeters = 20000, durationSeconds = 3600),
+            activity("2026-04-10T09:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+        )
         val highlights = mapper.mapHighlights(
-            listOf(
-                activity("2026-04-03T08:00:00Z", distanceMeters = 20000, durationSeconds = 3600),
-                activity("2026-04-10T09:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
-            ),
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.WEEK),
         )
 
         requireNotNull(highlights)
@@ -124,11 +135,13 @@ class StatisticsUiModelMapperTest {
 
     @Test
     fun `map highlights fills gap weeks in weekly histogram`() {
+        val activities = listOf(
+            activity("2026-04-01T08:00:00Z", distanceMeters = 12000, durationSeconds = 1800),
+            activity("2026-04-14T08:00:00Z", distanceMeters = 13000, durationSeconds = 2100),
+        )
         val highlights = mapper.mapHighlights(
-            listOf(
-                activity("2026-04-01T08:00:00Z", distanceMeters = 12000, durationSeconds = 1800),
-                activity("2026-04-14T08:00:00Z", distanceMeters = 13000, durationSeconds = 2100),
-            ),
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.WEEK),
         )
 
         requireNotNull(highlights)
@@ -138,13 +151,15 @@ class StatisticsUiModelMapperTest {
 
     @Test
     fun `map highlights favors dominant weekday distribution`() {
+        val activities = listOf(
+            activity("2026-04-04T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+            activity("2026-04-11T08:00:00Z", distanceMeters = 11000, durationSeconds = 1900),
+            activity("2026-04-18T08:00:00Z", distanceMeters = 12000, durationSeconds = 2000),
+            activity("2026-04-06T08:00:00Z", distanceMeters = 9000, durationSeconds = 1700),
+        )
         val highlights = mapper.mapHighlights(
-            listOf(
-                activity("2026-04-04T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
-                activity("2026-04-11T08:00:00Z", distanceMeters = 11000, durationSeconds = 1900),
-                activity("2026-04-18T08:00:00Z", distanceMeters = 12000, durationSeconds = 2000),
-                activity("2026-04-06T08:00:00Z", distanceMeters = 9000, durationSeconds = 1700),
-            ),
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.MONTH),
         )
 
         requireNotNull(highlights)
@@ -191,14 +206,55 @@ class StatisticsUiModelMapperTest {
 
     @Test
     fun `map highlights returns null average travel speed when duration is zero`() {
+        val activities = listOf(
+            activity("2026-04-01T08:00:00Z", distanceMeters = 10000, durationSeconds = 0),
+        )
         val highlights = mapper.mapHighlights(
-            listOf(
-                activity("2026-04-01T08:00:00Z", distanceMeters = 10000, durationSeconds = 0),
-            ),
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.MONTH),
         )
 
         requireNotNull(highlights)
         assertNull(highlights.avgTravelSpeedKmh)
+    }
+
+    @Test
+    fun `map highlights chooses most active period by distance within selected grouping`() {
+        val activities = listOf(
+            activity("2026-04-01T08:00:00Z", distanceMeters = 12000, durationSeconds = 1800, averageSpeedKmh = 22.0),
+            activity("2026-04-03T08:00:00Z", distanceMeters = 13000, durationSeconds = 2100, averageSpeedKmh = 23.0),
+            activity("2026-04-10T08:00:00Z", distanceMeters = 10000, durationSeconds = 1700, averageSpeedKmh = 21.0),
+        )
+
+        val highlights = mapper.mapHighlights(
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.WEEK),
+        )
+
+        requireNotNull(highlights)
+        assertEquals("KW 14", highlights.mostActivePeriod!!.label)
+        assertEquals(25.0, highlights.mostActivePeriod!!.distanceKm, 0.0)
+        assertEquals(2, highlights.mostActivePeriod!!.tourCount)
+        assertEquals(23.0, highlights.fastestTourAvgSpeedKmh!!, 0.0)
+    }
+
+    @Test
+    fun `map highlights breaks distance ties by higher tour count`() {
+        val activities = listOf(
+            activity("2026-04-01T08:00:00Z", distanceMeters = 12000, durationSeconds = 1800),
+            activity("2026-04-03T08:00:00Z", distanceMeters = 8000, durationSeconds = 1200),
+            activity("2026-04-08T08:00:00Z", distanceMeters = 20000, durationSeconds = 2100),
+        )
+
+        val highlights = mapper.mapHighlights(
+            activities = activities,
+            periods = mapper.mapPeriods(activities, StatisticsGrouping.WEEK),
+        )
+
+        requireNotNull(highlights)
+        assertEquals("KW 14", highlights.mostActivePeriod!!.label)
+        assertEquals(20.0, highlights.mostActivePeriod!!.distanceKm, 0.0)
+        assertEquals(2, highlights.mostActivePeriod!!.tourCount)
     }
 
     private fun activity(
@@ -206,6 +262,7 @@ class StatisticsUiModelMapperTest {
         distanceMeters: Int,
         durationSeconds: Int,
         elevationGainMeters: Int? = null,
+        averageSpeedKmh: Double? = null,
         maxSpeedKmh: Double? = null,
         maxRiderPowerWatts: Double? = null,
         caloriesBurned: Double? = null,
@@ -219,7 +276,7 @@ class StatisticsUiModelMapperTest {
         bikeId = null,
         startOdometerMeters = null,
         distanceMeters = distanceMeters,
-        averageSpeedKmh = null,
+        averageSpeedKmh = averageSpeedKmh,
         maxSpeedKmh = maxSpeedKmh,
         averageCadenceRpm = null,
         maxCadenceRpm = null,

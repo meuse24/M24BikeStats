@@ -179,10 +179,14 @@
     <string name="statistics_highlights_section">Highlights &amp; Rhythm</string>
     <string name="statistics_highlights_personal_bests">Personal bests</string>
     <string name="statistics_highlights_longest_tour">Longest tour</string>
+    <string name="statistics_highlights_longest_ride_time">Longest ride time</string>
     <string name="statistics_highlights_total_elevation">Total elevation gain</string>
     <string name="statistics_highlights_max_speed">Top speed</string>
+    <string name="statistics_highlights_fastest_tour_avg_speed">Fastest tour avg speed</string>
     <string name="statistics_highlights_max_power">Max rider power</string>
     <string name="statistics_highlights_total_calories">Total calories</string>
+    <string name="statistics_highlights_active_period">Distance-strongest period</string>
+    <string name="statistics_highlights_active_period_hint">Highest distance within the current grouping; ties prefer more tours and the more recent period</string>
     <string name="statistics_highlights_efficiency">Efficiency</string>
     <string name="statistics_highlights_avg_speed">Effective travel speed</string>
     <string name="statistics_highlights_avg_speed_hint">Distance ÷ ride time without stops</string>

@@ -639,6 +639,10 @@ private fun StatisticsHighlightsSection(
             highlights = highlights,
             locale = locale,
         )
+        StatisticsActivePeriodCard(
+            highlights = highlights,
+            locale = locale,
+        )
         StatisticsEfficiencyCard(
             highlights = highlights,
             locale = locale,
@@ -664,6 +668,12 @@ private fun StatisticsPersonalBestsCard(
         )
         add(
             StatisticsMetricItem(
+                label = stringResource(R.string.statistics_highlights_longest_ride_time),
+                value = highlights.longestRideHours.toReadableHours(locale),
+            ),
+        )
+        add(
+            StatisticsMetricItem(
                 label = stringResource(R.string.statistics_highlights_total_elevation),
                 value = highlights.totalElevationGainM.toReadableMeters(locale),
             ),
@@ -673,6 +683,14 @@ private fun StatisticsPersonalBestsCard(
                 StatisticsMetricItem(
                     label = stringResource(R.string.statistics_highlights_max_speed),
                     value = maxSpeed.toReadableSpeed(locale),
+                ),
+            )
+        }
+        highlights.fastestTourAvgSpeedKmh?.let { averageSpeed ->
+            add(
+                StatisticsMetricItem(
+                    label = stringResource(R.string.statistics_highlights_fastest_tour_avg_speed),
+                    value = averageSpeed.toReadableSpeed(locale),
                 ),
             )
         }
@@ -725,6 +743,61 @@ private fun StatisticsPersonalBestsCard(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun StatisticsActivePeriodCard(
+    highlights: StatisticsHighlights,
+    locale: Locale,
+) {
+    val mostActivePeriod = highlights.mostActivePeriod ?: return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.statistics_highlights_active_period),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = mostActivePeriod.label,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = mostActivePeriod.dateRangeLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                StatisticsMetricTile(
+                    label = stringResource(R.string.statistics_label_distance),
+                    value = mostActivePeriod.distanceKm.toReadableDistance(locale),
+                    modifier = Modifier.weight(1f),
+                )
+                StatisticsMetricTile(
+                    label = stringResource(R.string.statistics_label_tours),
+                    value = mostActivePeriod.tourCount.toString(),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Text(
+                text = stringResource(R.string.statistics_highlights_active_period_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

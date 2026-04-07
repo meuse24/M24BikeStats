@@ -128,8 +128,8 @@ class StatisticsViewModelTest {
     fun `ui state exposes computed highlights`() = runTest {
         val viewModel = createViewModel(
             listOf(
-                activity("2026-04-04T08:00:00Z", distanceMeters = 42000, durationSeconds = 7200),
-                activity("2026-04-11T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800),
+                activity("2026-04-04T08:00:00Z", distanceMeters = 42000, durationSeconds = 7200, averageSpeedKmh = 24.1),
+                activity("2026-04-11T08:00:00Z", distanceMeters = 10000, durationSeconds = 1800, averageSpeedKmh = 18.4),
             ),
         )
         val collector = backgroundScope.launch { viewModel.uiState.collect { } }
@@ -138,7 +138,10 @@ class StatisticsViewModelTest {
         val highlights = viewModel.uiState.value.highlights
         assertNotNull(highlights)
         assertEquals(42.0, highlights!!.longestTourKm, 0.0)
+        assertEquals(2.0, highlights.longestRideHours, 0.0)
+        assertEquals(24.1, highlights.fastestTourAvgSpeedKmh!!, 0.0)
         assertEquals(20.8, highlights.avgTravelSpeedKmh!!, 0.0)
+        assertEquals("Apr 26", highlights.mostActivePeriod!!.label)
         assertEquals(1.0, highlights.activeWeeksRatio!!, 0.0)
         assertEquals(DayOfWeek.SATURDAY, highlights.favoriteDayOfWeek)
         assertEquals(2, highlights.dayOfWeekDistribution[DayOfWeek.SATURDAY])
@@ -165,6 +168,7 @@ class StatisticsViewModelTest {
         startTime: String,
         distanceMeters: Int = 12000,
         durationSeconds: Int = 1800,
+        averageSpeedKmh: Double? = null,
     ) = BoschActivity(
         id = startTime,
         title = "Ride",
@@ -175,7 +179,7 @@ class StatisticsViewModelTest {
         bikeId = null,
         startOdometerMeters = null,
         distanceMeters = distanceMeters,
-        averageSpeedKmh = null,
+        averageSpeedKmh = averageSpeedKmh,
         maxSpeedKmh = null,
         averageCadenceRpm = null,
         maxCadenceRpm = null,

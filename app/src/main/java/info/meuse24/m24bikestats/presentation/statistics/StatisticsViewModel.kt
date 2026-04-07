@@ -32,6 +32,7 @@ class StatisticsViewModel(
         )
         val highlights = uiModelMapper.mapHighlights(
             activities = activities,
+            periods = periods,
             totalDistanceKm = totalDistanceKm,
             totalDurationHours = totalDurationHours,
         )

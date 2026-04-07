@@ -11,13 +11,16 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import info.meuse24.m24bikestats.domain.model.PdfReportPeriod
-import kotlin.math.PI
-import kotlin.math.abs
+import info.meuse24.m24bikestats.shared.map.GeoPoint
+import info.meuse24.m24bikestats.shared.map.MapTileViewport
+import info.meuse24.m24bikestats.shared.map.computeGeoBounds
+import info.meuse24.m24bikestats.shared.map.createDiscreteMapViewport
+import info.meuse24.m24bikestats.shared.map.inflateGeoBounds
+import info.meuse24.m24bikestats.shared.map.latitudeToWorldY
+import info.meuse24.m24bikestats.shared.map.longitudeToWorldX
 import kotlin.math.floor
-import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.pow
-import kotlin.math.tan
 
 class PdfPageBuilder(
     private val document: PdfDocument,
@@ -347,7 +350,7 @@ class PdfPageBuilder(
     private fun drawTileBackground(
         canvas: Canvas,
         mapRect: RectF,
-        viewport: MapViewport,
+        viewport: MapTileViewport,
         tileProvider: ((zoom: Int, x: Int, y: Int) -> Bitmap?)?,
     ) {
         if (tileProvider == null) return
@@ -394,83 +397,37 @@ class PdfPageBuilder(
     private fun drawRoutePoints(
         canvas: Canvas,
         mapRect: RectF,
-        viewport: MapViewport,
+        viewport: MapTileViewport,
         points: List<Pair<Double, Double>>,
     ) {
         canvas.save()
         canvas.clipRect(mapRect)
         points.forEach { (latitude, longitude) ->
-            val x = mapRect.left + (longitudeToWorldX(longitude, viewport.zoom) - viewport.topLeftWorldX).toFloat()
-            val y = mapRect.top + (latitudeToWorldY(latitude, viewport.zoom) - viewport.topLeftWorldY).toFloat()
+            val x = mapRect.left + (longitudeToWorldX(longitude, PDF_TILE_SIZE, viewport.zoom.toDouble()) - viewport.topLeftWorldX).toFloat()
+            val y = mapRect.top + (latitudeToWorldY(latitude, PDF_TILE_SIZE, viewport.zoom.toDouble()) - viewport.topLeftWorldY).toFloat()
             canvas.drawCircle(x, y, 4.6f, fillPaint(colors.primary))
             canvas.drawCircle(x, y, 5.8f, strokePaint(colors.surface, 1.3f))
         }
         canvas.restore()
     }
 
-    private fun longitudeToWorldX(
-        longitude: Double,
-        zoom: Int,
-    ): Double {
-        val worldSize = PDF_TILE_SIZE * 2.0.pow(zoom)
-        return ((longitude.coerceIn(-180.0, 180.0) + 180.0) / 360.0) * worldSize
-    }
-
-    private fun latitudeToWorldY(
-        latitude: Double,
-        zoom: Int,
-    ): Double {
-        val worldSize = PDF_TILE_SIZE * 2.0.pow(zoom)
-        return latitudeToMercatorYNormalized(latitude) * worldSize
-    }
-
-    private fun latitudeToMercatorYNormalized(latitude: Double): Double {
-        val clamped = latitude.coerceIn(-85.05112878, 85.05112878)
-        val radians = Math.toRadians(clamped)
-        return (1.0 - ln(tan(radians) + (1.0 / kotlin.math.cos(radians))) / PI) / 2.0
-    }
-
     private fun List<Pair<Double, Double>>.toMapViewport(
         mapWidthPx: Double,
         mapHeightPx: Double,
-    ): MapViewport {
-        val bounds = toPaddedBounds()
-        val longitudeDelta = (bounds.maxLongitude - bounds.minLongitude).coerceAtLeast(0.0002)
-        val latitudeFraction = abs(
-            latitudeToMercatorYNormalized(bounds.maxLatitude) - latitudeToMercatorYNormalized(bounds.minLatitude),
-        ).coerceAtLeast(0.0002)
-        val zoomLon = ln((mapWidthPx * 360.0) / (longitudeDelta * PDF_TILE_SIZE)) / ln(2.0)
-        val zoomLat = ln(mapHeightPx / (latitudeFraction * PDF_TILE_SIZE)) / ln(2.0)
-        val zoom = floor((minOf(zoomLon, zoomLat) - 0.15).coerceIn(2.5, 15.0)).toInt()
-        val centerWorldX = longitudeToWorldX(bounds.centerLongitude, zoom)
-        val centerWorldY = latitudeToWorldY(bounds.centerLatitude, zoom)
-        return MapViewport(
-            zoom = zoom,
-            topLeftWorldX = centerWorldX - (mapWidthPx / 2.0),
-            topLeftWorldY = centerWorldY - (mapHeightPx / 2.0),
-        )
-    }
-
-    private fun List<Pair<Double, Double>>.toPaddedBounds(): MapBounds {
-        val minLatitude = minOf { it.first }
-        val maxLatitude = maxOf { it.first }
-        val minLongitude = minOf { it.second }
-        val maxLongitude = maxOf { it.second }
-        val latitudeSpan = (maxLatitude - minLatitude).coerceAtLeast(0.001)
-        val longitudeSpan = (maxLongitude - minLongitude).coerceAtLeast(0.001)
-        val paddedLatitudeSpan = (latitudeSpan * 1.25).coerceAtLeast(0.02)
-        val paddedLongitudeSpan = (longitudeSpan * 1.25).coerceAtLeast(0.02)
-        val centerLatitude = (minLatitude + maxLatitude) / 2.0
-        val centerLongitude = (minLongitude + maxLongitude) / 2.0
-        return MapBounds(
-            minLatitude = (centerLatitude - paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878),
-            maxLatitude = (centerLatitude + paddedLatitudeSpan / 2.0).coerceIn(-85.05112878, 85.05112878),
-            minLongitude = (centerLongitude - paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0),
-            maxLongitude = (centerLongitude + paddedLongitudeSpan / 2.0).coerceIn(-180.0, 180.0),
-            centerLatitude = centerLatitude,
-            centerLongitude = centerLongitude,
-        )
-    }
+    ): MapTileViewport = createDiscreteMapViewport(
+        bounds = inflateGeoBounds(
+            bounds = computeGeoBounds(map { (latitude, longitude) -> GeoPoint(latitude, longitude) }),
+            spanScale = 1.25,
+            minLatitudeSpan = 0.02,
+        ),
+        mapWidthPx = mapWidthPx,
+        mapHeightPx = mapHeightPx,
+        tileSize = PDF_TILE_SIZE,
+        minCoordinateDelta = 0.0002,
+        zoomAdjustment = 0.15,
+        minZoom = 2.5,
+        maxZoom = 15.0,
+    )
 
     private fun requireCanvas(): Canvas =
         canvas ?: error("No active PDF page. Call startPage() before drawing.")
@@ -509,18 +466,4 @@ class PdfPageBuilder(
         const val BOTTOM_MARGIN = 40f
     }
 
-    private data class MapBounds(
-        val minLatitude: Double,
-        val maxLatitude: Double,
-        val minLongitude: Double,
-        val maxLongitude: Double,
-        val centerLatitude: Double,
-        val centerLongitude: Double,
-    )
-
-    private data class MapViewport(
-        val zoom: Int,
-        val topLeftWorldX: Double,
-        val topLeftWorldY: Double,
-    )
 }

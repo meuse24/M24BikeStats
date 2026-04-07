@@ -19,15 +19,25 @@ data class StatisticsUiState(
 
 data class StatisticsHighlights(
     val longestTourKm: Double,
+    val longestRideHours: Double,
     val totalElevationGainM: Int,
     val maxSpeedKmh: Double?,
+    val fastestTourAvgSpeedKmh: Double?,
     val maxRiderPowerWatts: Double?,
     val totalCaloriesBurned: Double?,
     val avgTravelSpeedKmh: Double?,
+    val mostActivePeriod: StatisticsActivePeriod?,
     val favoriteDayOfWeek: DayOfWeek?,
     val dayOfWeekDistribution: Map<DayOfWeek, Int>,
     val weeklyFrequencyHistogram: Map<Int, Int>,
     val activeWeeksRatio: Double?,
+)
+
+data class StatisticsActivePeriod(
+    val label: String,
+    val dateRangeLabel: String,
+    val distanceKm: Double,
+    val tourCount: Int,
 )
 
 data class PeriodStats(
