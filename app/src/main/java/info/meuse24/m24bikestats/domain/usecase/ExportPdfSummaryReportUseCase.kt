@@ -237,6 +237,9 @@ class ExportPdfSummaryReportUseCase(
         return "${format(formatter)} - ${endDate.format(formatter)}"
     }
 
+    // Period lists are built in ascending chronological order. On a full tie for
+    // distance, tours, and duration, maxWithOrNull therefore keeps the later period,
+    // which matches the statistics screen's "prefer the more recent period" behavior.
     private fun List<PdfReportPeriod>.strongestPeriod(): PdfReportPeriod? =
         maxWithOrNull(
             compareBy<PdfReportPeriod> { it.distanceKm }

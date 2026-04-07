@@ -12,6 +12,7 @@ import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
 import info.meuse24.m24bikestats.domain.model.PdfReportData
+import info.meuse24.m24bikestats.domain.model.PdfReportPeriod
 import info.meuse24.m24bikestats.domain.model.estimateHealth
 import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
 import java.io.File
@@ -292,16 +293,16 @@ class PdfReportGenerator(
     private fun drawStatisticsChartSection(
         builder: PdfPageBuilder,
         title: String,
-        periods: List<info.meuse24.m24bikestats.domain.model.PdfReportPeriod>,
-        strongestPeriod: info.meuse24.m24bikestats.domain.model.PdfReportPeriod?,
+        periods: List<PdfReportPeriod>,
+        strongestPeriod: PdfReportPeriod?,
         locale: Locale,
     ) {
         if (periods.isEmpty()) return
         builder.drawSectionHeader(title)
         builder.drawBarLineChart(
             periods = periods,
-            avgDistanceKm = periods.map(info.meuse24.m24bikestats.domain.model.PdfReportPeriod::distanceKm).average(),
-            avgDurationHours = periods.map(info.meuse24.m24bikestats.domain.model.PdfReportPeriod::durationHours).average(),
+            avgDistanceKm = periods.map(PdfReportPeriod::distanceKm).average(),
+            avgDurationHours = periods.map(PdfReportPeriod::durationHours).average(),
             distanceLegend = s(R.string.statistics_legend_distance),
             durationLegend = s(R.string.statistics_legend_duration),
         )

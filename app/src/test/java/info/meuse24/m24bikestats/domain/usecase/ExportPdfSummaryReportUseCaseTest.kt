@@ -143,6 +143,80 @@ class ExportPdfSummaryReportUseCaseTest {
         assertNull(report.activitySummary.totalCaloriesBurned)
     }
 
+    @Test
+    fun `strongest periods pick the highest distance across multiple buckets`() = runTest {
+        val useCase = ExportPdfSummaryReportUseCase(
+            metadataRepository = FakePdfMetadataRepository(),
+            repository = FakePdfRepository(
+                activities = listOf(
+                    activity(
+                        id = "w1",
+                        title = "Week 1",
+                        startTime = "2026-01-05T08:00:00Z",
+                        distanceMeters = 15000,
+                        durationWithoutStopsSeconds = 3600,
+                    ),
+                    activity(
+                        id = "w2",
+                        title = "Week 2",
+                        startTime = "2026-01-13T08:00:00Z",
+                        distanceMeters = 32000,
+                        durationWithoutStopsSeconds = 5400,
+                    ),
+                    activity(
+                        id = "m2",
+                        title = "Month 2",
+                        startTime = "2026-02-10T08:00:00Z",
+                        distanceMeters = 28000,
+                        durationWithoutStopsSeconds = 4000,
+                    ),
+                    activity(
+                        id = "y2",
+                        title = "Year 2",
+                        startTime = "2027-03-10T08:00:00Z",
+                        distanceMeters = 18000,
+                        durationWithoutStopsSeconds = 2700,
+                    ),
+                ),
+            ),
+            localeProvider = { Locale.GERMANY },
+            zoneIdProvider = { ZoneId.of("Europe/Vienna") },
+        )
+
+        val report = useCase().getOrThrow()
+
+        assertEquals(4, report.statistics.weeklyPeriods.size)
+        assertEquals(3, report.statistics.monthlyPeriods.size)
+        assertEquals(2, report.statistics.yearlyPeriods.size)
+        assertEquals("KW 3", report.statistics.strongestWeek?.label)
+        assertEquals(32.0, report.statistics.strongestWeek?.distanceKm ?: 0.0, 0.001)
+        assertEquals("Jan 26", report.statistics.strongestMonth?.label)
+        assertEquals(47.0, report.statistics.strongestMonth?.distanceKm ?: 0.0, 0.001)
+        assertEquals("2026", report.statistics.strongestYear?.label)
+        assertEquals(75.0, report.statistics.strongestYear?.distanceKm ?: 0.0, 0.001)
+    }
+
+    @Test
+    fun `empty activity list keeps statistics aggregates empty`() = runTest {
+        val useCase = ExportPdfSummaryReportUseCase(
+            metadataRepository = FakePdfMetadataRepository(),
+            repository = FakePdfRepository(),
+        )
+
+        val report = useCase().getOrThrow()
+
+        assertEquals(0, report.activitySummary.totalTours)
+        assertEquals(0.0, report.statistics.highlights.longestTourKm, 0.0)
+        assertEquals(0.0, report.statistics.highlights.longestRideHours, 0.0)
+        assertNull(report.statistics.highlights.favoriteDayOfWeek)
+        assertTrue(report.statistics.weeklyPeriods.isEmpty())
+        assertTrue(report.statistics.monthlyPeriods.isEmpty())
+        assertTrue(report.statistics.yearlyPeriods.isEmpty())
+        assertNull(report.statistics.strongestWeek)
+        assertNull(report.statistics.strongestMonth)
+        assertNull(report.statistics.strongestYear)
+    }
+
     private fun activity(
         id: String,
         title: String,
