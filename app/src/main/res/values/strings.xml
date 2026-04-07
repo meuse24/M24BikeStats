@@ -110,14 +110,14 @@
     <string name="info_credit_gemini_cli">Gemini CLI supported development work on this project.</string>
     <string name="info_credit_openfreemap">OpenFreeMap provides the map background used in the app.</string>
 
-    <string name="home_hero_subtitle">The start page bundles the latest ride dataset, bike status and recent export results.</string>
+    <string name="home_hero_subtitle">Quick overview of rides, details, GPS and bikes.</string>
     <string name="home_metric_tours">Tours</string>
     <string name="home_metric_details">Details</string>
     <string name="home_metric_gpx">GPX</string>
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Visible</string>
     <string name="home_sync_title">Cloud sync</string>
-    <string name="home_sync_subtitle">Cloud sync refreshes bike and activity lists, then loads only missing or stale activity details into the Room cache.</string>
+    <string name="home_sync_subtitle">Loads new rides and fills in missing details.</string>
     <string name="home_sync_last_sync">Last sync</string>
     <string name="home_sync_activities">Activities</string>
     <string name="home_sync_bikes">Bikes</string>

@@ -63,14 +63,11 @@ class PdfReportGenerator(
             columns = 2,
         )
         builder.drawLabelValueRow(s(R.string.pdf_label_generated), formatDateTime(reportData.generatedAt, locale, zoneId))
-        builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_email), reportData.userInfo?.email.orDash())
-        builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_username), reportData.userInfo?.username.orDash())
 
         builder.drawSectionHeader(s(R.string.pdf_section_account))
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_email), reportData.userInfo?.email.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_username), reportData.userInfo?.username.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_user_subject), reportData.userInfo?.subject.orDash())
-        builder.drawLabelValueRow(s(R.string.dashboard_label_oidc_discovery_issuer), reportData.discoveryInfo?.issuer.orDash())
 
         builder.drawSectionHeader(s(R.string.pdf_section_bikes))
         if (reportData.bikes.isEmpty()) {
@@ -121,6 +118,7 @@ class PdfReportGenerator(
         }
 
         builder.drawSectionHeader(s(R.string.pdf_section_statistics))
+        builder.drawBodyText(s(R.string.statistics_highlights_personal_bests))
         builder.drawMetricTiles(
             items = listOf(
                 s(R.string.statistics_highlights_longest_tour) to formatDistance(reportData.statistics.highlights.longestTourKm, locale),
@@ -134,10 +132,10 @@ class PdfReportGenerator(
                 s(R.string.statistics_highlights_max_power) to reportData.statistics.highlights.maxRiderPowerWatts?.let {
                     formatWatts(it, locale)
                 }.orDash(),
-                s(R.string.statistics_highlights_favorite_day_pdf) to reportData.statistics.highlights.favoriteDayOfWeek?.toLocalizedDay(locale).orDash(),
             ),
             columns = 3,
         )
+        drawStrongestPeriodsOverview(builder, reportData, locale)
 
         drawStatisticsChartSection(
             builder = builder,
@@ -162,6 +160,12 @@ class PdfReportGenerator(
         )
 
         builder.drawSectionHeader(s(R.string.pdf_section_rhythm))
+        builder.drawMetricTiles(
+            items = listOf(
+                s(R.string.statistics_highlights_favorite_day_pdf) to reportData.statistics.highlights.favoriteDayOfWeek?.toLocalizedDay(locale).orDash(),
+            ),
+            columns = 1,
+        )
         builder.drawHorizontalBarChart(
             rows = DayOfWeek.entries.map { it.toLocalizedDay(locale) to (reportData.statistics.dayOfWeekDistribution[it] ?: 0) },
             highlightLabel = reportData.statistics.highlights.favoriteDayOfWeek?.toLocalizedDay(locale),
@@ -215,7 +219,6 @@ class PdfReportGenerator(
             builder.drawBodyText(s(R.string.pdf_value_not_available))
             return
         }
-        builder.drawLabelValueRow(s(R.string.dashboard_label_product), driveUnit.productName.orDash())
         builder.drawLabelValueRow(s(R.string.dashboard_label_serial_number), driveUnit.serialNumber.orDash())
         builder.drawLabelValueRow(
             s(R.string.dashboard_label_odometer),
@@ -270,7 +273,6 @@ class PdfReportGenerator(
                     ratio = health.healthPercent / 100.0,
                 )
             }
-            builder.drawLabelValueRow(s(R.string.dashboard_label_product), battery.productName.orDash())
             builder.drawLabelValueRow(
                 s(R.string.dashboard_label_total_charge_cycles),
                 battery.totalChargeCycles?.let { String.format(locale, "%.1f", it) }.orDash(),
@@ -317,6 +319,30 @@ class PdfReportGenerator(
                 columns = 2,
             )
         }
+    }
+
+    private fun drawStrongestPeriodsOverview(
+        builder: PdfPageBuilder,
+        reportData: PdfReportData,
+        locale: Locale,
+    ) {
+        val strongestPeriods = listOfNotNull(
+            reportData.statistics.strongestWeek?.let { period ->
+                s(R.string.statistics_group_week) to "${period.label} • ${formatDistance(period.distanceKm, locale)}"
+            },
+            reportData.statistics.strongestMonth?.let { period ->
+                s(R.string.statistics_group_month) to "${period.label} • ${formatDistance(period.distanceKm, locale)}"
+            },
+            reportData.statistics.strongestYear?.let { period ->
+                s(R.string.statistics_group_year) to "${period.label} • ${formatDistance(period.distanceKm, locale)}"
+            },
+        )
+        if (strongestPeriods.isEmpty()) return
+        builder.drawBodyText(s(R.string.statistics_highlights_active_period))
+        builder.drawMetricTiles(
+            items = strongestPeriods,
+            columns = 3,
+        )
     }
 
     private fun drawComponent(

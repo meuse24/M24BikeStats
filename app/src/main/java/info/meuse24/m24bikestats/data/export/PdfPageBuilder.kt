@@ -154,6 +154,7 @@ class PdfPageBuilder(
         if (periods.isNotEmpty()) {
             val slotWidth = chartWidth / periods.size
             val barWidth = slotWidth * 0.56f
+            val visibleLabelStep = computeVisibleXAxisLabelStep(periods, slotWidth)
             val linePath = Path()
             periods.forEachIndexed { index, period ->
                 val centerX = chartLeft + (slotWidth * index) + (slotWidth / 2f)
@@ -173,10 +174,12 @@ class PdfPageBuilder(
                     linePath.lineTo(centerX, lineY)
                 }
                 localCanvas.drawCircle(centerX, lineY, 3.5f, fillPaint(colors.secondary))
-                localCanvas.save()
-                localCanvas.rotate(30f, centerX, axisBottom + 8f)
-                localCanvas.drawText(period.label, centerX - 12f, axisBottom + 8f, typography.chartLabel)
-                localCanvas.restore()
+                if (index % visibleLabelStep == 0 || index == periods.lastIndex) {
+                    localCanvas.save()
+                    localCanvas.rotate(30f, centerX, axisBottom + 8f)
+                    localCanvas.drawText(period.label, centerX - 12f, axisBottom + 8f, typography.chartLabel)
+                    localCanvas.restore()
+                }
             }
             localCanvas.drawPath(linePath, strokePaint(colors.secondary, 2f))
         }
@@ -345,6 +348,16 @@ class PdfPageBuilder(
         layout.draw(requireCanvas())
         requireCanvas().restore()
         return layout.height.toFloat()
+    }
+
+    private fun computeVisibleXAxisLabelStep(
+        periods: List<PdfReportPeriod>,
+        slotWidth: Float,
+    ): Int {
+        if (periods.size <= 1) return 1
+        val widestLabel = periods.maxOfOrNull { typography.chartLabel.measureText(it.label) } ?: return 1
+        val minimumReadableWidth = max(widestLabel * 0.95f, 28f)
+        return max(1, kotlin.math.ceil(minimumReadableWidth / slotWidth).toInt())
     }
 
     private fun drawTileBackground(

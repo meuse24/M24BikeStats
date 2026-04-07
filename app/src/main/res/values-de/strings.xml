@@ -110,14 +110,14 @@
     <string name="info_credit_gemini_cli">Gemini CLI hat Entwicklungsarbeit in diesem Projekt unterstützt.</string>
     <string name="info_credit_openfreemap">OpenFreeMap liefert den Kartenhintergrund, den die App verwendet.</string>
 
-    <string name="home_hero_subtitle">Die Startseite bündelt den letzten Fahrtdatensatz, Bike-Status und die letzten Exportergebnisse.</string>
+    <string name="home_hero_subtitle">Schneller Überblick über Touren, Details, GPS und Bikes.</string>
     <string name="home_metric_tours">Touren</string>
     <string name="home_metric_details">Details</string>
     <string name="home_metric_gpx">GPX</string>
     <string name="home_metric_bikes">Bikes</string>
     <string name="home_metric_visible">Sichtbar</string>
     <string name="home_sync_title">Cloud-Abgleich</string>
-    <string name="home_sync_subtitle">Der Cloud-Abgleich aktualisiert Bike- und Aktivitätenlisten und lädt danach nur fehlende oder veraltete Aktivitätsdetails in den Room-Cache.</string>
+    <string name="home_sync_subtitle">Lädt neue Touren und ergänzt fehlende Details.</string>
     <string name="home_sync_last_sync">Letzter Abgleich</string>
     <string name="home_sync_activities">Aktivitäten</string>
     <string name="home_sync_bikes">Bikes</string>

@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -63,17 +64,15 @@ fun HomeScreen(
                 subtitle = stringResource(R.string.home_hero_subtitle),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    SummaryChipRow(
-                        summary = listOf(
-                            stringResource(R.string.home_metric_tours) to uiState.loadedActivityCount.toString(),
-                            stringResource(R.string.home_metric_details) to uiState.cachedDetailActivityCount.toString(),
-                            stringResource(R.string.home_metric_gpx) to uiState.cachedGpsPointCount.toString(),
-                            stringResource(R.string.home_metric_bikes) to uiState.bikes.size.toString(),
-                            stringResource(R.string.home_metric_visible) to uiState.visibleActivityCount.toString(),
-                        ),
-                    )
-                }
+                HomeHeroMetricGrid(
+                    summary = listOf(
+                        stringResource(R.string.home_metric_tours) to uiState.loadedActivityCount.toString(),
+                        stringResource(R.string.home_metric_details) to uiState.cachedDetailActivityCount.toString(),
+                        stringResource(R.string.home_metric_gpx) to uiState.cachedGpsPointCount.toString(),
+                        stringResource(R.string.home_metric_bikes) to uiState.bikes.size.toString(),
+                        stringResource(R.string.home_metric_visible) to uiState.visibleActivityCount.toString(),
+                    ),
+                )
             }
         }
         item {
@@ -87,16 +86,6 @@ fun HomeScreen(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text(
-                        text = stringResource(R.string.home_sync_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.home_sync_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                     uiState.lastCloudSyncSummary?.let { summary ->
                         SectionSurface {
                             OptionalRow(stringResource(R.string.home_sync_last_sync), summary.syncedAtLabel)
@@ -291,6 +280,68 @@ fun HomeScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeHeroMetricGrid(
+    summary: List<Pair<String, String>>,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        summary.chunked(3).forEach { rowItems ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                rowItems.forEach { (label, value) ->
+                    HeroMetricPill(
+                        label = label,
+                        value = value,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                repeat(3 - rowItems.size) {
+                    Spacer(modifier = Modifier.weight(1f).alpha(0f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroMetricPill(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+            )
         }
     }
 }
