@@ -1,218 +1,564 @@
-# Plan: Gemeinsame Codebasis fuer Kartenlogik
+# Bosch API Gap-Liste aus `docs_api`
 
-## Ziel
+Stand: 2026-04-07
 
-Die drei Kartenpfade
+## Bereits in der App angebunden
 
-- Gesamt-Touren: `MapSummaryScreen`
-- Einzel-Tour: `TrackMapFullScreen`
-- PDF: `drawRoutePointMap`
+- Activities: `/activity/smart-system/v1/activities`
+- Activity Detail: `/activity/smart-system/v1/activities/{activityId}/details`
+- Bikes: `/bike-profile/smart-system/v1/bikes`
+- Bike Detail: `/bike-profile/smart-system/v1/bikes/{bikeId}`
 
-sollen nicht auf eine einzige Rendering-Funktion vereinheitlicht werden. Stattdessen soll die gemeinsame mathematische und geografische Logik in eine kleine, stabile Utility-Schicht ausgelagert werden.
+## Bereits verfügbar, aber im Modell nur teilweise genutzt
 
-Der Grund dafuer ist einfach:
+### eBike Profile API
 
-- Die Render-Ziele sind unterschiedlich: Compose-Map, Compose-Track-Map und PDF-Canvas.
-- Die Interaktionen sind unterschiedlich: Klick-Selektion, Auto-Fit, Overlays, Export.
-- Die zugrunde liegende Geometrie ist aber sehr aehnlich: Bounds, Padding, Mercator-Projektion, Zoom-Schaetzung, Viewport-Fit.
+Status: hoher Nutzen, geringe bis mittlere Umsetzungskosten
 
-Damit gibt es echtes Shared-Code-Potenzial, aber nur im Unterbau.
+- `oemId`
+- `serviceDue.date`
+- `serviceDue.odometer`
+- `antiLockBrakeSystems`
+- `connectModule`
+- vollständigeres Komponenten-Inventar je Bike
 
-## Bewertung
+Nutzen für die App:
 
-### Wo ein gemeinsamer Unterbau Mehrwert hat
+- Service-fällig-Anzeige
+- bessere Bike-Detailansicht
+- saubereres Komponentenprofil
 
-- Weniger duplizierte Mercator- und Zoom-Mathematik
-- Konsistenteres Verhalten beim Auto-Fit ueber App und PDF hinweg
-- Einfachere Bugfixes, weil Geometrie nur an einer Stelle angepasst wird
-- Leichter testbare Kartenlogik ohne UI- oder PDF-Abhaengigkeiten
+## Neue Datenquellen mit hohem Produktnutzen
 
-### Wo eine Vereinheitlichung wenig oder keinen Mehrwert hat
+### 1. Digital Service Book API
 
-- Rendering selbst
-- Compose-spezifische State- und Camera-Integration
-- PDF-spezifisches Tile- und Canvas-Zeichnen
-- Layer-Konfiguration fuer Punkte, Linien, Start- und Endmarker
+Endpoint:
 
-Eine Vollabstraktion wuerde hier eher Komplexitaet erzeugen als sie zu reduzieren.
+- `/service-book/smart-system/v1/service-records?bikeId=...`
 
-## Empfohlene gemeinsame Bausteine
+Neue Daten:
 
-### 1. Gemeinsames Geo-Grundmodell
+- Servicehistorie je Bike
+- Händlerdaten
+- `odometerValue` bei Serviceereignissen
+- Inspektionen
+- Software-Updates
+- Customer Reports
+- Bike-ID-Wechsel
+- Batterie-Messungen
 
-Ein kleines, UI-freies Paket fuer Kartengeometrie, z. B. `presentation.map.geometry` oder `core.map`.
+Besonders wertvoll:
 
-Vorgeschlagene Datentypen:
+- Batterie-Messung mit
+- `fullChargeCycles`
+- `measuredEnergyCapacity`
+- `nominalEnergyCapacity`
+- `measuredCapacityPercentage`
+- `onBikeMeasurement`
 
-- `GeoPoint(latitude: Double, longitude: Double)`
-- `GeoBounds(minLatitude, maxLatitude, minLongitude, maxLongitude, centerLatitude, centerLongitude)`
-- `MapViewportSpec(centerLatitude, centerLongitude, zoom)`
+App-Ideen:
 
-Begruendung:
+- Wartungschronik
+- Service-Timeline
+- Software-/Firmware-Historie
+- Batteriegesundheit aus echten Messwerten
 
-- Die drei Pfade arbeiten alle mit Koordinaten und Bounds.
-- Das Modell macht die spaeteren Helfer klarer und besser testbar.
+Priorität: sehr hoch
 
-### 2. Bounds-Berechnung aus Punkten
+### 2. Bike Pass API
 
-Eine gemeinsame Funktion fuer:
+Endpoint:
 
-- Bounds aus Punktlisten berechnen
-- optionalen Mindest-Span erzwingen
-- symmetrisches Padding anwenden
+- `/bike-pass/smart-system/v1/bike-passes?bikeId=...`
 
-Vorgeschlagene Helfer:
+Neue Daten:
 
-- `computeGeoBounds(points: List<GeoPoint>): GeoBounds`
-- `inflateGeoBounds(bounds: GeoBounds, latPaddingFactor: Double, lngPaddingFactor: Double, minSpan: Double): GeoBounds`
+- `frameNumber`
+- `frameNumberPosition`
+- Bike-Beschreibung / Merkmale
+- `theftReportLogs`
+- `riderPortalLink`
+- Diebstahl-Ort / Zeitpunkt
 
-Begruendung:
+App-Ideen:
 
-- Diese Logik existiert heute mehrfach in leicht unterschiedlicher Form.
-- Die Unterschiede sollten als Parameter ausdrueckbar sein, nicht als Copy-Paste.
+- Bike-Pass-Ansicht
+- Diebstahl-/Sicherheitsansicht
+- Rahmennummer und Identifikationsdaten
 
-### 3. Gemeinsame Mercator-Helfer
+Priorität: hoch
 
-Vorgeschlagene Helfer:
+### 3. eBike Registration API
 
-- `latitudeToMercatorYNormalized(latitude: Double): Double`
-- `mercatorToLatitude(normalizedY: Double): Double`
-- `longitudeToWorldX(longitude: Double, tileSize: Double, zoom: Double): Double`
-- `latitudeToWorldY(latitude: Double, tileSize: Double, zoom: Double): Double`
+Endpoint:
 
-Begruendung:
+- `/bike-registration/smart-system/v1/registrations`
 
-- Diese Funktionen sind reine Mathematik.
-- Sie haben keinen UI-Kontext und sind ideale Shared Utilities.
-- Genau dort ist heute die offensichtlichste Duplizierung.
+Neue Daten:
 
-### 4. Gemeinsame Zoom-Schaetzung aus Bounds und Viewport
+- Registrierungszeitpunkt von Bike
+- Registrierungszeitpunkt von Komponenten
+- `componentType`
+- `partNumber`
+- `serialNumber`
 
-Vorgeschlagene Helfer:
+App-Ideen:
 
-- `estimateZoomToFit(bounds, viewportWidthPx, viewportHeightPx, tileSize, padding, minZoom, maxZoom): Double`
-- optional `fitCameraToBounds(...)` als Rueckgabe von Zentrum plus Zoom
+- Registrierungsübersicht
+- Komponenten-Inventar
+- Abgleich registrierter Komponenten gegen Bike-Profil
 
-Begruendung:
+Priorität: hoch
 
-- Gesamtkarte, Track-Karte und PDF berechnen alle einen Fit-Viewport.
-- Die Regeln unterscheiden sich vor allem in Tile-Size, Padding und Zoom-Grenzen.
-- Das sind gute Parameter, keine guten Gruende fuer duplizierten Code.
+Status:
 
-### 5. Gemeinsame Punkt-Fit-Pruefung
+- umgesetzt am 2026-04-07
+- App zeigt jetzt Registrierungsübersicht und registrierte Komponenten im Konto-/Bike-Detail
+- API-Test hat dafür eine eigene Kurzansicht
 
-Vorgeschlagene Helfer:
+## Neue Datenquellen mit speziellem, aber starkem Mehrwert
 
-- `pointsFitInViewport(...)`
-- `normalizeWrappedWorldDelta(...)`
+### 4. Diagnosis Field Data API
 
-Begruendung:
+Endpoint:
 
-- Besonders fuer `MapSummaryScreen` wichtig, aber auch allgemein nuetzlich.
-- Das ist spezialisierte Geometrie, die zentral besser wartbar ist.
+- `/diagnosis-field-data/smart-system/v1/capacity-testers?partNumber=...&serialNumber=...`
 
-### 6. Kleine spezialisierte Adapter pro Anwendungsfall
+Voraussetzung:
 
-Die drei konkreten Pfade sollen duenn bleiben und nur noch ihre Spezialfaelle steuern:
+- Batterie-`partNumber` und `serialNumber` aus dem Bike-Profil
 
-- `MapSummaryScreen`: Punkte, Klick-Toleranz, gespeicherte Kamera
-- `TrackMapFullScreen`: Track-Bounds, asymmetrisches Padding fuer Top/Bottom-UI
-- `PdfPageBuilder`: PDF-Tile-Size, tileProvider, Canvas-Zeichnung
+Neue Daten:
 
-Begruendung:
+- Capacity-Tester-Messhistorie
+- Fehlerzähler
+- Spannungswerte
+- Stromwerte
+- Temperatur-Extrema
+- Messzeitpunkte
 
-- So bleibt jede Funktion lesbar.
-- Die Spezifika gehen nicht in einer generischen Monster-API unter.
+App-Ideen:
 
-## Was bewusst getrennt bleiben sollte
+- fundierte Batterie-Health-Ansicht
+- Diagnose-/Werkstattmodus
+- Verlauf realer Batterietests
 
-Diese Teile sollten nicht vereinheitlicht werden:
+Einschränkung:
 
-- `MaplibreMap`-Composables
-- Layer-Aufbau fuer Punktkarte und Track-Karte
-- PDF-Rendering in `PdfPageBuilder`
-- Tile-Background-Rendering fuer PDFs
-- Klick-Interaktion und Marker-Auswahl
-- Share-/Export-spezifische Aktionen
+- häufig nur verfügbar, wenn echte Werkstatt-/Tester-Messungen existieren
 
-Begruendung:
+Priorität: mittel bis hoch
 
-- Hier ist die Aehnlichkeit oberflaechlich, nicht strukturell.
-- Eine gemeinsame API wuerde eher kuenstlich wirken und die Lesbarkeit verschlechtern.
+## Eher B2B / Werkstatt / Hersteller
 
-## Empfohlene Zielstruktur
+### 5. Remote Configuration API
 
-`presentation/map/geometry/` scheidet als Paketort aus: `PdfPageBuilder` liegt in `data/export/` und darf nicht aus `presentation/` importieren — das wuerde die Schichtenregel (`data` → `presentation`) verletzen.
+Endpoint:
 
-`domain/` scheidet ebenfalls aus: reine Projektions- und Viewport-Mathematik ist keine fachliche Domain-Logik.
+- `/remote-configuration/smart-system/v1/cases?bikeId=...`
 
-Der richtige Ort ist das bestehende `shared/`-Paket, das bereits von beiden Schichten genutzt wird:
+Neue Daten:
 
-- `app/src/main/java/info/meuse24/m24bikestats/shared/mapgeo/GeoPoint.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/shared/mapgeo/GeoBounds.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/shared/mapgeo/MapProjection.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/shared/mapgeo/MapViewportCalculator.kt`
+- Konfigurationsfälle
+- Freigabe-/Ablehnungsstatus
+- Original-/Zielkonfiguration
+- Händlerbezug
 
-Hinweis: `ActivityMapPoint` im Domain-Modell traegt bereits Koordinaten. Ob ein eigener `GeoPoint`-Typ neben `ActivityMapPoint` noetig ist oder ob eine Extension auf `ActivityMapPoint` genuegt, sollte bei der Umsetzung von Phase 1 entschieden werden.
+Eignung:
 
-## Umsetzungsreihenfolge
+- eher für Diagnose oder Hersteller-/Werkstattkontext
 
-### Phase 1: Extraktion ohne Verhaltensaenderung
+Priorität: niedrig
 
-- Gemeinsame Mercator-Helfer extrahieren
-- Gemeinsame Bounds-Berechnung extrahieren
-- Alle drei bestehenden Pfade intern darauf umstellen
-- Keine API- oder UI-Aenderungen
+### 6. Bulk Configuration API
 
-Warum zuerst:
+Endpoint:
 
-- Niedrigstes Risiko
-- Schnellster Test auf echten Mehrwert
+- `/bulk-configuration/smart-system/v1/installation-reports?bikeId=...`
 
-### Phase 2: Gemeinsame Viewport-/Zoom-Berechnung
+Neue Daten:
 
-- `estimateZoomToFit` zentralisieren
-- `fitCameraToBounds` oder aequivalente Rueckgabe einfuehren
-- Parameter fuer Tile-Size, Padding und Zoom-Limits explizit machen
+- Installationsreports für Bulk-Konfigurationen
 
-Warum erst danach:
+Eignung:
 
-- Hier sitzen die inhaltlichen Unterschiede.
-- Diese Stufe sollte erst angegangen werden, wenn Phase 1 sauber laeuft.
+- technisch
+- wenig Endnutzerwert
 
-### Phase 3: Optionale Feinarbeit
+Priorität: niedrig
 
-- `pointsFitInViewport` und Saved-Camera-Pruefungen konsolidieren
-- gemeinsame Tests fuer typische Edge-Cases ergaenzen
-- nur bei Bedarf weitere kleine Helper zusammenziehen
+### 7. Release Management API
 
-## Teststrategie
+Endpoint:
 
-Die extrahierte Geometrie sollte separat unit-getestet werden.
+- `/software-update/smart-system/v1/installation-reports?bikeId=...`
 
-Wichtige Faelle:
+Neue Daten:
 
-- Einzelpunkt
-- sehr eng beieinanderliegende Punkte
-- grosse Nord-Sued- und Ost-West-Spannen
-- Punkte nahe Datumsgrenze oder mit grosser Laengenausdehnung
-- asymmetrisches Padding
-- minimale und maximale Zoom-Grenzen
+- Update-Installationsreports
+- Status einzelner Komponenten
+- Fehlerdetails bei fehlgeschlagenen Updates
 
-Begruendung:
+Eignung:
 
-- Genau hier entsteht der eigentliche Nutzen der Extraktion.
-- Ohne Tests verschiebt man die Komplexitaet nur an einen anderen Ort.
+- nützlich für Diagnose- oder Supportansicht
+- für normale Rider-App nur sekundär
 
-## Entscheidung
+Priorität: niedrig bis mittel
 
-Es gibt klaren Mehrwert fuer eine gemeinsame Codebasis im Bereich Geometrie, Projektion und Fit-Berechnung.
+## Empfohlene Umsetzungsreihenfolge
 
-Es gibt dagegen wenig Mehrwert fuer eine gemeinsame Rendering-Schicht.
+1. eBike Profile vervollständigen
+2. Digital Service Book integrieren
+3. Bike Pass integrieren
+4. eBike Registration integrieren
+5. Diagnosis Field Data integrieren
+6. Release Management optional
+7. Remote Configuration und Bulk Configuration nur bei Diagnosefokus
 
-Die richtige Richtung ist daher:
+## Wahrscheinlich bester nächster Schritt
 
-- gemeinsamer mathematischer Unterbau
-- getrennte, kleine Renderer fuer App-Gesamtkarte, Einzeltrack und PDF
+Wenn nur ein Bereich als Nächstes umgesetzt werden soll:
 
-Das reduziert Duplizierung, ohne die drei Anwendungsfaelle unnoetig zu verkoppeln.
+- zuerst `Digital Service Book`
+
+Begründung:
+
+- höchster zusätzlicher Nutzwert
+- echte neue Datendomäne
+- direkt sichtbarer Mehrwert in der App
+- besonders stark für Batterie- und Wartungsansichten
+
+## Wichtige Einschränkungen
+
+- Viele Endpunkte liefern nur Daten, wenn der Nutzer diese Daten im Bosch-Portal freigegeben hat.
+- Einige Endpunkte sind oft leer, obwohl sie technisch funktionieren.
+- `Diagnosis Field Data` ist ereignisbasiert und meist nur nach Werkstatt-/Kapazitätstest sinnvoll.
+- `Bike Pass` und `Service Book` sind je nach Nutzerprofil unterschiedlich vollständig.
+
+## Technische Umsetzungsliste für Priorität 1 bis 3
+
+### 1. eBike Profile vervollständigen
+
+Ziel:
+
+- vorhandenen `/bikes`- und `/bikes/{bikeId}`-Pfad fachlich vollständiger ausnutzen
+
+Betroffene Bereiche:
+
+- Domain-Modelle
+- JSON-Parser
+- Room-Entities und Migration
+- Mapper
+- Bike-Detail-UI
+
+Konkrete Schritte:
+
+1. `BoschBike` erweitern um
+- `oemId`
+- `serviceDueDate`
+- `serviceDueOdometerMeters`
+- `connectModule`
+- `antiLockBrakeSystems`
+
+2. gemeinsames Komponentenmodell prüfen
+- entweder `BoschComponent` beibehalten und mehrfach verwenden
+- oder differenzierte Typen nur dann einführen, wenn UI/Logik sie wirklich braucht
+
+3. `BikeEntity` erweitern um
+- `oemId`
+- `serviceDueDate`
+- `serviceDueOdometerMeters`
+- `connectModuleSerialNumber`
+- `connectModulePartNumber`
+- `connectModuleProductName`
+
+4. zusätzliche Tabelle für ABS-Komponenten anlegen
+- z. B. `bike_abs_components`
+- gleiche Struktur wie Batterie-/Assist-Mode-Tabellen
+
+5. Room-Migration vorbereiten
+- Datenbankversion von `7` auf `8`
+- neue Spalten für `bikes`
+- neue Tabelle für ABS-Komponenten
+- bestehende Daten erhalten
+
+6. Parser in `BoschSmartSystemParser` erweitern
+- `oemId`
+- `serviceDue`
+- `connectModule`
+- `antiLockBrakeSystems`
+
+7. Entity-Mapping ergänzen
+- Domain -> Entity
+- CachedBike/Projection -> Domain
+
+8. UI erweitern
+- Service-fällig-Karte oder Detailsektion
+- OEM-ID anzeigen
+- ConnectModule anzeigen
+- ABS-Komponenten anzeigen
+
+9. Tests ergänzen
+- Parser-Test mit vollständigem Bike-Profil
+- Mapper-Test für neue Felder
+- Migrationstest für DB v8
+- UI-Mapper-Test für Service-fällig-Anzeige
+
+Offene Entscheidung:
+
+- `serviceDue.date` als ISO-String speichern oder früh in `Instant`/Epoch konvertieren
+
+Empfehlung:
+
+- zunächst als Original-String persistieren, Formatierung erst in UI/Mapper
+
+### 2. Digital Service Book integrieren
+
+Ziel:
+
+- neue Domäne für Wartung, Softwarehistorie und Batterie-Messwerte aufbauen
+
+Endpoint:
+
+- `/service-book/smart-system/v1/service-records?bikeId=...`
+
+Betroffene Bereiche:
+
+- API-Endpunktkatalog
+- Repository
+- Parser
+- neue Domain-Modelle
+- neue Room-Tabellen
+- Sync-Orchestrierung
+- neue UI-Screens oder Sektionen
+
+Konkrete Schritte:
+
+1. neuen API-Test-Endpunkt ergänzen
+- `SERVICE_BOOK_RECORDS`
+- Pfad mit `bikeId`
+
+2. Repository-API erweitern
+- `getServiceRecords(accessToken, bikeId)`
+- `observeCachedServiceRecords(bikeId)`
+- optional `getCachedServiceRecords(bikeId)`
+
+3. neue Domain-Modelle anlegen
+- `BoschServiceRecord`
+- `BoschServiceRecordType`
+- `BoschBikeDealer`
+- `BoschBatteryMeasurement`
+- optional spezialisierte Submodelle für
+- `softwareUpdate`
+- `customerReport`
+- `inspection`
+
+4. Modellierung pragmatisch halten
+- in Phase 1 nicht die komplette OpenAPI 1:1 abbilden
+- zuerst nur die app-relevanten Teilmengen aufnehmen:
+- `id`
+- `type`
+- `bikeId`
+- `createdAt`
+- `odometerValue`
+- `bikeDealer`
+- Batterie-Messung
+- Software-Update-Kernaussagen
+
+5. neue Room-Tabellen anlegen
+- `service_records`
+- optional `service_record_software_updates`
+- optional `service_record_components`
+- alternativ in Phase 1 einige Detailpayloads als JSON-Spalte speichern
+
+6. Room-Migration planen
+- Datenbankversion von `8` auf `9` falls Punkt 1 zuerst umgesetzt wird
+- falls separat implementiert: von `7` auf `8`
+
+7. Parser implementieren
+- robuster Umgang mit optionalen `details.*`
+- nur relevante Felder extrahieren
+- unbekannte Teilstrukturen ignorieren statt Fail
+
+8. Sync-Strategie festlegen
+- Laden pro `bikeId`
+- beim Bike-Refresh optional Service-Records für sichtbare Bikes nachziehen
+- Background-Sync nur optional, um Netzlast klein zu halten
+
+9. UI-Plan Phase 1
+- neue Detailsektion "Service"
+- chronologische Liste
+- Zeilen mit
+- Typ
+- Datum
+- Händler
+- km-Stand
+- Highlight für Batterie-Messungen
+
+10. UI-Plan Phase 2
+- Software-Update-Historie
+- Batteriegesundheit aus gemessener Kapazität
+- Service-Countdown aus letztem Record plus `serviceDue`
+
+11. Export prüfen
+- optional PDF-Summary um Servicehistorie ergänzen
+- CSV-Export für Service-Records separat erwägen
+
+12. Tests ergänzen
+- Parser-Test für
+- `BBP_MEASUREMENT`
+- `SOFTWARE_UPDATE`
+- `INSPECTION`
+- DAO-/Repository-Test
+- UI-Mapper-Test
+- Sync-Test für leere Listen und Teilpayloads
+
+Wichtige Modellentscheidung:
+
+- volle Normalisierung aller Unterstrukturen lohnt anfangs nicht
+
+Empfehlung:
+
+- Phase 1: Service-Record-Kopf normalisiert speichern, ausgewählte Detailfelder explizit speichern, Rest optional als Raw-JSON
+
+### 3. Bike Pass integrieren
+
+Ziel:
+
+- Bike-Identitäts- und Sicherheitsdaten je Bike ergänzen
+
+Endpoint:
+
+- `/bike-pass/smart-system/v1/bike-passes?bikeId=...`
+
+Betroffene Bereiche:
+
+- API-Endpunktkatalog
+- Repository
+- Parser
+- neue Room-Tabellen
+- Bike-Detail-UI
+
+Konkrete Schritte:
+
+1. neuen API-Test-Endpunkt ergänzen
+- `BIKE_PASS`
+
+2. Repository-API erweitern
+- `getBikePass(accessToken, bikeId)`
+- `observeCachedBikePass(bikeId)`
+
+3. neue Domain-Modelle anlegen
+- `BoschBikePass`
+- `BoschTheftReportLog`
+- `BoschTheftLocation`
+- `BoschBikeOwner` nur falls im UI wirklich benötigt
+
+4. neue Room-Tabellen anlegen
+- `bike_passes`
+- `bike_theft_report_logs`
+
+5. Parser implementieren für
+- `frameNumber`
+- `frameNumberPosition`
+- `description`
+- `createdAt`
+- `updatedAt`
+- `theftReportLogs`
+- `riderPortalLink`
+- `location`
+
+6. Migration planen
+- nächste DB-Version nach Service-Book-Schritt
+
+7. UI-Plan Phase 1
+- neue Bike-Pass-Sektion im Bike-Detail
+- Rahmennummer
+- Position der Rahmennummer
+- Merkmale/Beschreibung
+- letzter Aktualisierungszeitpunkt
+
+8. UI-Plan Phase 2
+- Diebstahl-Log-Historie
+- Kartenlink/Portal-Link als Aktion
+- letzter bekannter Ort nur bei vorhandenen Daten
+
+9. Datenschutz prüfen
+- heikle Daten wie Besitzerkontakt oder exakter Diebstahl-Ort bewusst nur bei echtem Mehrwert anzeigen
+
+10. Sync-Strategie
+- beim Laden von Bike-Details Bike-Pass direkt mitziehen
+- bei Fehler oder leerer Antwort Bike-Profil weiterhin normal anzeigen
+
+11. Tests ergänzen
+- Parser-Test für Bike-Pass ohne Theft Logs
+- Parser-Test mit Theft Logs
+- DAO-/Repository-Test
+- UI-Mapper-Test für leere und vollständige Zustände
+
+## Empfohlene Reihenfolge auf Code-Ebene
+
+1. Punkt 1 zuerst komplett abschließen, weil dafür die bestehende Bike-Pipeline nur erweitert werden muss.
+2. Danach Punkt 3 oder Punkt 2 je nach UI-Ziel.
+3. Wenn du schnell sichtbaren Mehrwert willst: nach Punkt 1 direkt Bike Pass.
+4. Wenn du fachlich den größten Mehrwert willst: nach Punkt 1 direkt Digital Service Book.
+
+## Ticket-Schnitt für die Umsetzung
+
+### Ticket A: Bike-Profil vervollständigen
+
+- Domain erweitern
+- Parser erweitern
+- Room v8
+- Bike-Detail-UI ergänzen
+- Tests anpassen
+
+### Ticket B: Bike Pass Basisintegration
+
+- Endpoint + Repository
+- Parser + Tabellen
+- Bike-Pass-Sektion im UI
+- Tests
+
+### Ticket C: Service Book Basisintegration
+
+- Endpoint + Repository
+- minimales Datenmodell
+- Tabellen für Service-Record-Kopf plus Batterie-Messung
+- Timeline-UI
+- Tests
+
+### Ticket D: eBike Registration Basisintegration
+
+- Endpoint + Repository
+- minimales Datenmodell
+- Tabelle für Registrierungen
+- Registrierungssektionen im Bike-Detail
+- API-Test-Zusammenfassung
+- Tests
+
+## Umsetzungsstand 2026-04-07
+
+Erledigt:
+
+- Ticket A: eBike Profile erweitert um `oemId`, `serviceDue`, `connectModule`, ABS
+- Ticket B: Bike Pass mit Theft-Logs integriert
+- Ticket C: Service Book integriert
+- Ticket D: eBike Registration integriert
+- Login-Screen zeigt zusätzlich den Hinweis auf das Flow-Portal `https://flow.bosch-ebike.com/data-act`
+
+Aktuelle sichtbare Bereiche in der App:
+
+- Konto-/Bike-Detail: `Service book`, `Service record X`, `Bike pass`, `Theft report X`, `Registrations`, `Registered component X`
+- API-Test: `Bike Pass`, `Service Book`, `Registrations`
+
+Wichtige fachliche Hinweise:
+
+- `Service book = 0` ist zulässig und bedeutet meist nur, dass Bosch für dieses Bike keine freigegebenen Serviceeinträge liefert.
+- Registrierungen kommen kontoweit und werden in der App auf das aktuelle Bike und seine bekannten Komponenten gefiltert.
+- Zusatzdaten aus Bike Pass, Service Book und Registrierungen bleiben bei temporären API-Fehlern im Cache erhalten.
+
+Nächste sinnvolle Erweiterung:
+
+- `Diagnosis Field Data` für echte Batterie-Kapazitätstester-Daten

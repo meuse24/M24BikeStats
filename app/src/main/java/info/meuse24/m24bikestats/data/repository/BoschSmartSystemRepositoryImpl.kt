@@ -5,7 +5,17 @@ import info.meuse24.m24bikestats.data.local.dao.ActivityDao
 import info.meuse24.m24bikestats.data.local.dao.BikeDao
 import info.meuse24.m24bikestats.data.local.entity.ActivityCacheStateEntity
 import info.meuse24.m24bikestats.data.local.entity.BikeCacheStateEntity
-import info.meuse24.m24bikestats.data.local.mapper.*
+import info.meuse24.m24bikestats.data.local.mapper.ActivityCenterCalculator
+import info.meuse24.m24bikestats.data.local.mapper.toAbsEntities
+import info.meuse24.m24bikestats.data.local.mapper.toAssistModeEntities
+import info.meuse24.m24bikestats.data.local.mapper.toBatteryEntities
+import info.meuse24.m24bikestats.data.local.mapper.toBikePassEntity
+import info.meuse24.m24bikestats.data.local.mapper.toDomain
+import info.meuse24.m24bikestats.data.local.mapper.toEntity
+import info.meuse24.m24bikestats.data.local.mapper.toPointEntities
+import info.meuse24.m24bikestats.data.local.mapper.toRegistrationEntities
+import info.meuse24.m24bikestats.data.local.mapper.toServiceRecordEntities
+import info.meuse24.m24bikestats.data.local.mapper.toTheftReportLogEntities
 import info.meuse24.m24bikestats.data.local.model.CachedBike
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschJsonBodyExtractor
@@ -16,6 +26,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.BoschRegistration
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
@@ -34,7 +45,9 @@ class BoschSmartSystemRepositoryImpl(
 ) : BoschSmartSystemRepository, BoschSmartSystemCacheStatusRepository {
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> =
-        activityDao.observeAll().map { activities -> activities.map { it.toDomain() } }
+        activityDao.observeAll().map { activities ->
+            activities.map { it.toDomain() }
+        }
 
     override fun observeCachedBikes(): Flow<List<BoschBike>> =
         bikeDao.observeAll().map { bikes -> bikes.map(CachedBike::toDomain) }
@@ -49,7 +62,9 @@ class BoschSmartSystemRepositoryImpl(
         }
 
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
-        activityDetailDao.observeByActivityId(activityId).map { detail -> detail?.toDomain() }
+        activityDetailDao.observeByActivityId(activityId).map { detail ->
+            detail?.toDomain()
+        }
 
     override fun observeCachedBike(bikeId: String): Flow<BoschBike?> =
         bikeDao.observeById(bikeId).map { bike -> bike?.toDomain() }
@@ -113,7 +128,9 @@ class BoschSmartSystemRepositoryImpl(
             )
             val json = jsonBodyExtractor.extract(response) ?: error("Keine Aktivitätendaten erhalten")
             parser.parseActivitiesPage(json, limit, offset).also { page ->
-                activityDao.upsertAllPreservingCenter(page.items.map { it.toEntity() })
+                activityDao.upsertAllPreservingCenter(
+                    page.items.map { it.toEntity() }
+                )
                 activityDao.upsertCacheState(
                     ActivityCacheStateEntity(
                         totalCount = page.total,
@@ -133,6 +150,11 @@ class BoschSmartSystemRepositoryImpl(
                     bikes = bikes.map { it.toEntity(updatedAtEpochMillis) },
                     batteries = bikes.flatMap { it.toBatteryEntities() },
                     assistModes = bikes.flatMap { it.toAssistModeEntities() },
+                    absComponents = bikes.flatMap { it.toAbsEntities() },
+                    bikePass = null,
+                    theftReportLogs = emptyList(),
+                    serviceRecords = emptyList(),
+                    registrations = emptyList(),
                     cacheState = BikeCacheStateEntity(updatedAtEpochMillis = updatedAtEpochMillis),
                 )
             }
@@ -169,16 +191,67 @@ class BoschSmartSystemRepositoryImpl(
     override suspend fun getBikeDetail(accessToken: String, bikeId: String): Result<BoschBike> =
         runCatching {
             val updatedAtEpochMillis = currentTimeMillis()
+            val cachedBike = bikeDao.getById(bikeId)?.toDomain()
             val response = apiClient.get(
                 BoschEndpoint.SMART_BIKE_DETAIL.toRequest(bikeId = bikeId),
                 accessToken
             )
             val json = jsonBodyExtractor.extract(response) ?: error("Keine Bike-Detaildaten erhalten")
-            parser.parseBikeDetail(json).also { bike ->
+            val bike = parser.parseBikeDetail(json)
+            val bikePassResult = runCatching {
+                val bikePassResponse = apiClient.get(
+                    BoschEndpoint.SMART_BIKE_PASS.toRequest(bikeId = bikeId),
+                    accessToken
+                )
+                val bikePassJson = jsonBodyExtractor.extract(bikePassResponse)
+                    ?: error("Keine Bike-Pass-Daten erhalten")
+                parser.parseBikePassData(bikePassJson, bikeId)
+            }
+            val serviceRecordsResult = runCatching {
+                val serviceBookResponse = apiClient.get(
+                    BoschEndpoint.SMART_SERVICE_RECORDS.toRequest(bikeId = bikeId),
+                    accessToken
+                )
+                val serviceBookJson = jsonBodyExtractor.extract(serviceBookResponse)
+                    ?: error("Keine Service-Book-Daten erhalten")
+                parser.parseServiceRecords(serviceBookJson, bikeId)
+            }
+            val registrationsResult = runCatching {
+                val registrationsResponse = apiClient.get(
+                    BoschEndpoint.SMART_REGISTRATIONS.toRequest(),
+                    accessToken,
+                )
+                val registrationsJson = jsonBodyExtractor.extract(registrationsResponse)
+                    ?: error("Keine Registrierungsdaten erhalten")
+                parser.parseRegistrations(registrationsJson).filter { registration ->
+                    registration.bikeId == bikeId || bike.matchesRegistration(registration)
+                }
+            }
+            bike.copy(
+                bikePass = bikePassResult.fold(
+                    onSuccess = { it.bikePass },
+                    onFailure = { cachedBike?.bikePass },
+                ),
+                theftReportLogs = bikePassResult.fold(
+                    onSuccess = { it.theftReportLogs },
+                    onFailure = { cachedBike?.theftReportLogs.orEmpty() },
+                ),
+                serviceRecords = serviceRecordsResult.getOrElse {
+                    cachedBike?.serviceRecords.orEmpty()
+                },
+                registrations = registrationsResult.getOrElse {
+                    cachedBike?.registrations.orEmpty()
+                },
+            ).also { enrichedBike ->
                 bikeDao.replaceBike(
-                    bike = bike.toEntity(updatedAtEpochMillis),
-                    batteries = bike.toBatteryEntities(),
-                    assistModes = bike.toAssistModeEntities(),
+                    bike = enrichedBike.toEntity(updatedAtEpochMillis),
+                    batteries = enrichedBike.toBatteryEntities(),
+                    assistModes = enrichedBike.toAssistModeEntities(),
+                    absComponents = enrichedBike.toAbsEntities(),
+                    bikePass = enrichedBike.toBikePassEntity(),
+                    theftReportLogs = enrichedBike.toTheftReportLogEntities(),
+                    serviceRecords = enrichedBike.toServiceRecordEntities(),
+                    registrations = enrichedBike.toRegistrationEntities(),
                 )
             }
         }
@@ -188,5 +261,17 @@ class BoschSmartSystemRepositoryImpl(
     private fun isFresh(updatedAtEpochMillis: Long?, maxAgeMillis: Long): Boolean {
         if (updatedAtEpochMillis == null) return false
         return currentTimeMillis() - updatedAtEpochMillis <= maxAgeMillis
+    }
+
+    private fun BoschBike.matchesRegistration(registration: BoschRegistration): Boolean {
+        val serialNumber = registration.serialNumber ?: return false
+        val partNumber = registration.partNumber ?: return false
+        return buildList {
+            driveUnit?.let { add(it.serialNumber to it.partNumber) }
+            connectModule?.let { add(it.serialNumber to it.partNumber) }
+            batteries.forEach { add(it.serialNumber to it.partNumber) }
+        }.any { (componentSerial, componentPart) ->
+            componentSerial == serialNumber && componentPart == partNumber
+        }
     }
 }

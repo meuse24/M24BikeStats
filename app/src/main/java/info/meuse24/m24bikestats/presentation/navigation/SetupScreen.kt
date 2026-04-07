@@ -23,7 +23,6 @@ import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
-import java.util.Locale
 
 @Composable
 fun SetupScreen(
@@ -38,253 +37,86 @@ fun SetupScreen(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.setup_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.setup_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                    )
-                }
-            }
-        }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.setup_csv_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.setup_csv_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            SetupSectionTitle(text = stringResource(R.string.setup_csv_title))
         }
         items(CsvExportFormat.entries) { format ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
+            SetupOptionCard(
+                selected = format == csvExportFormat,
+                label = stringResource(format.labelRes()),
                 onClick = { onCsvExportFormatSelected(format) },
-                colors = CardDefaults.cardColors(
-                    containerColor = if (format == csvExportFormat) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(0.82f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = stringResource(format.labelRes()),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = stringResource(format.descriptionRes()),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = stringResource(
-                                    R.string.setup_csv_example,
-                                    sampleRow(
-                                        format = format,
-                                        sampleTitle = stringResource(R.string.setup_csv_sample_activity),
-                                    ),
-                                ),
-                                style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        RadioButton(
-                            selected = format == csvExportFormat,
-                            onClick = { onCsvExportFormatSelected(format) },
-                        )
-                    }
-                }
-            }
+            )
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.setup_sync_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.setup_sync_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            SetupSectionTitle(text = stringResource(R.string.setup_sync_title))
         }
         items(CloudSyncDetailMode.entries) { mode ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
+            SetupOptionCard(
+                selected = mode == cloudSyncDetailMode,
+                label = stringResource(mode.labelRes()),
                 onClick = { onCloudSyncDetailModeSelected(mode) },
-                colors = CardDefaults.cardColors(
-                    containerColor = if (mode == cloudSyncDetailMode) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(0.82f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = stringResource(mode.labelRes()),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = stringResource(mode.descriptionRes()),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        RadioButton(
-                            selected = mode == cloudSyncDetailMode,
-                            onClick = { onCloudSyncDetailModeSelected(mode) },
-                        )
-                    }
-                }
-            }
+            )
         }
         item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.setup_background_sync_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = stringResource(R.string.setup_background_sync_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
+            SetupSectionTitle(text = stringResource(R.string.setup_background_sync_title))
         }
         items(BackgroundSyncMode.entries) { mode ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
+            SetupOptionCard(
+                selected = mode == backgroundSyncMode,
+                label = stringResource(mode.labelRes()),
                 onClick = { onBackgroundSyncModeSelected(mode) },
-                colors = CardDefaults.cardColors(
-                    containerColor = if (mode == backgroundSyncMode) {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerLow
-                    },
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(0.82f),
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Text(
-                                text = stringResource(mode.labelRes()),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium,
-                            )
-                            Text(
-                                text = stringResource(mode.descriptionRes()),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        RadioButton(
-                            selected = mode == backgroundSyncMode,
-                            onClick = { onBackgroundSyncModeSelected(mode) },
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 }
 
-private fun sampleRow(
-    format: CsvExportFormat,
-    sampleTitle: String,
-): String {
-    val dialect = format.resolve(Locale.getDefault())
-    return dialect.row(listOf(dialect.formatIsoDate("2026-04-03"), sampleTitle, dialect.formatDecimal(12.34, 2)))
+@Composable
+private fun SetupSectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
+    )
+}
+
+@Composable
+private fun SetupOptionCard(
+    selected: Boolean,
+    label: String,
+    onClick: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.secondaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+        ),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
+                modifier = Modifier.fillMaxWidth(0.82f),
+            )
+            RadioButton(
+                selected = selected,
+                onClick = onClick,
+            )
+        }
+    }
 }
 
 private fun CsvExportFormat.labelRes(): Int = when (this) {
@@ -293,30 +125,13 @@ private fun CsvExportFormat.labelRes(): Int = when (this) {
     CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_label
 }
 
-private fun CsvExportFormat.descriptionRes(): Int = when (this) {
-    CsvExportFormat.SYSTEM_DEFAULT -> R.string.csv_export_format_system_default_description
-    CsvExportFormat.EXCEL_DE -> R.string.csv_export_format_excel_de_description
-    CsvExportFormat.STANDARD_INTERNATIONAL -> R.string.csv_export_format_standard_international_description
-}
-
 private fun CloudSyncDetailMode.labelRes(): Int = when (this) {
     CloudSyncDetailMode.MISSING_ONLY -> R.string.cloud_sync_detail_mode_missing_only_label
     CloudSyncDetailMode.MISSING_OR_STALE -> R.string.cloud_sync_detail_mode_missing_or_stale_label
-}
-
-private fun CloudSyncDetailMode.descriptionRes(): Int = when (this) {
-    CloudSyncDetailMode.MISSING_ONLY -> R.string.cloud_sync_detail_mode_missing_only_description
-    CloudSyncDetailMode.MISSING_OR_STALE -> R.string.cloud_sync_detail_mode_missing_or_stale_description
 }
 
 private fun BackgroundSyncMode.labelRes(): Int = when (this) {
     BackgroundSyncMode.DISABLED -> R.string.background_sync_mode_disabled_label
     BackgroundSyncMode.DAILY_UNMETERED -> R.string.background_sync_mode_daily_unmetered_label
     BackgroundSyncMode.DAILY_CONNECTED -> R.string.background_sync_mode_daily_connected_label
-}
-
-private fun BackgroundSyncMode.descriptionRes(): Int = when (this) {
-    BackgroundSyncMode.DISABLED -> R.string.background_sync_mode_disabled_description
-    BackgroundSyncMode.DAILY_UNMETERED -> R.string.background_sync_mode_daily_unmetered_description
-    BackgroundSyncMode.DAILY_CONNECTED -> R.string.background_sync_mode_daily_connected_description
 }

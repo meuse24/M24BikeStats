@@ -24,14 +24,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -219,7 +217,6 @@ fun ApiTestContent(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EndpointDropdown(
     selected: BoschEndpoint,
@@ -227,22 +224,29 @@ private fun EndpointDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
 
-    ExposedDropdownMenuBox(
-        expanded = expanded,
-        onExpandedChange = { expanded = it },
-        modifier = Modifier.fillMaxWidth(),
-    ) {
+    Box(modifier = Modifier.fillMaxWidth()) {
         OutlinedTextField(
             value = selected.label,
             onValueChange = {},
             readOnly = true,
             label = { Text(stringResource(R.string.api_test_endpoint)) },
-            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier
-                .fillMaxWidth()
-                .menuAnchor(type = MenuAnchorType.PrimaryNotEditable),
+                .fillMaxWidth(),
         )
-        ExposedDropdownMenu(
+        Box(
+            modifier = Modifier
+                .matchParentSize(),
+        ) {
+            Button(
+                onClick = { expanded = true },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 12.dp),
+            ) {
+                Text(stringResource(R.string.common_select))
+            }
+        }
+        DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
         ) {
@@ -269,6 +273,31 @@ private fun ReadableResultSection(result: BoschReadableResult) {
             is BoschReadableResult.Activities -> ActivitiesSection(result)
             is BoschReadableResult.BikeList -> BikeListSection(result)
             is BoschReadableResult.BikeDetail -> BikeDetailSection(result)
+            is BoschReadableResult.BikePass -> SimpleInfoCard(
+                title = stringResource(R.string.api_test_bike_pass_title),
+                lines = listOfNotNull(
+                    result.frameNumber?.let { stringResource(R.string.api_test_bike_pass_frame_number, it) },
+                    result.frameNumberPosition?.let { stringResource(R.string.api_test_bike_pass_frame_position, it) },
+                    result.description?.let { stringResource(R.string.api_test_bike_pass_description, it) },
+                    stringResource(R.string.api_test_bike_pass_theft_reports, result.theftReportCount.toString()),
+                )
+            )
+            is BoschReadableResult.ServiceBook -> SimpleInfoCard(
+                title = stringResource(R.string.api_test_service_book_title),
+                lines = listOfNotNull(
+                    stringResource(R.string.api_test_service_book_count, result.recordCount.toString()),
+                    result.latestType?.let { stringResource(R.string.api_test_service_book_latest_type, it) },
+                    result.latestDealer?.let { stringResource(R.string.api_test_service_book_latest_dealer, it) },
+                )
+            )
+            is BoschReadableResult.Registrations -> SimpleInfoCard(
+                title = stringResource(R.string.api_test_registrations_title),
+                lines = listOf(
+                    stringResource(R.string.api_test_registrations_count, result.registrationCount.toString()),
+                    stringResource(R.string.api_test_registrations_bikes, result.bikeRegistrationCount.toString()),
+                    stringResource(R.string.api_test_registrations_components, result.componentRegistrationCount.toString()),
+                )
+            )
             is BoschReadableResult.UserInfo -> SimpleInfoCard(
                 title = stringResource(R.string.api_test_user_profile_title),
                 lines = listOf(

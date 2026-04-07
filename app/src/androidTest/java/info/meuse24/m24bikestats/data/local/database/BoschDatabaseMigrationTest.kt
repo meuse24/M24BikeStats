@@ -21,7 +21,7 @@ class BoschDatabaseMigrationTest {
     )
 
     @Test
-    fun migrate2To6_preservesActivitiesAndAddsNewTables() {
+    fun migrate2To11_preservesActivitiesAndAddsNewTables() {
         helper.createDatabase(TEST_DB, 2).apply {
             execSQL(
                 """
@@ -43,7 +43,7 @@ class BoschDatabaseMigrationTest {
 
         helper.runMigrationsAndValidate(
             TEST_DB,
-            6,
+            11,
             true,
             *BoschDatabaseMigrations.ALL,
         ).apply {
@@ -57,6 +57,10 @@ class BoschDatabaseMigrationTest {
             }
             query("SELECT updatedAtEpochMillis FROM bikes").use { cursor ->
                 assertEquals(0, cursor.count)
+            }
+            query("SELECT COUNT(*) FROM bike_registrations").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
             }
             close()
         }
@@ -99,6 +103,195 @@ class BoschDatabaseMigrationTest {
                 assertEquals(0L, cursor.getLong(0))
             }
             query("SELECT COUNT(*) FROM bike_cache_state").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            close()
+        }
+    }
+
+    @Test
+    fun migrate7To8_addsBikeProfileColumnsAndAbsTable() {
+        helper.createDatabase(TEST_DB, 7).apply {
+            execSQL(
+                """
+                INSERT INTO bikes (
+                    id, createdAt, updatedAtEpochMillis, language,
+                    driveUnitSerialNumber, driveUnitPartNumber, driveUnitProductName,
+                    driveUnitOdometerMeters, driveUnitRearWheelCircumferenceMillimeters,
+                    driveUnitMaximumAssistanceSpeedKmh, driveUnitWalkAssistEnabled,
+                    driveUnitWalkAssistMaximumSpeedKmh, driveUnitTotalPowerOnHours,
+                    driveUnitSupportPowerOnHours, remoteControlSerialNumber,
+                    remoteControlPartNumber, remoteControlProductName,
+                    headUnitSerialNumber, headUnitPartNumber, headUnitProductName
+                ) VALUES (
+                    'bike-1', '2026-04-03T10:00:00Z', 1234, 'de',
+                    NULL, NULL, 'CX',
+                    1000.0, NULL,
+                    25.0, 1,
+                    NULL, 10,
+                    8, NULL,
+                    NULL, NULL,
+                    NULL, NULL, 'Kiox 300'
+                )
+                """.trimIndent()
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DB,
+            8,
+            true,
+            BoschDatabaseMigrations.MIGRATION_7_8,
+        ).apply {
+            query("SELECT oemId, serviceDueDate, serviceDueOdometerMeters, connectModuleProductName FROM bikes WHERE id = 'bike-1'").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(true, cursor.isNull(0))
+                assertEquals(true, cursor.isNull(1))
+                assertEquals(true, cursor.isNull(2))
+                assertEquals(true, cursor.isNull(3))
+            }
+            query("SELECT COUNT(*) FROM bike_abs_components").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            close()
+        }
+    }
+
+    @Test
+    fun migrate8To9_addsBikePassTables() {
+        helper.createDatabase(TEST_DB, 8).apply {
+            execSQL(
+                """
+                INSERT INTO bikes (
+                    id, createdAt, updatedAtEpochMillis, language, oemId, serviceDueDate,
+                    serviceDueOdometerMeters, driveUnitSerialNumber, driveUnitPartNumber,
+                    driveUnitProductName, driveUnitOdometerMeters, driveUnitRearWheelCircumferenceMillimeters,
+                    driveUnitMaximumAssistanceSpeedKmh, driveUnitWalkAssistEnabled,
+                    driveUnitWalkAssistMaximumSpeedKmh, driveUnitTotalPowerOnHours,
+                    driveUnitSupportPowerOnHours, remoteControlSerialNumber,
+                    remoteControlPartNumber, remoteControlProductName,
+                    headUnitSerialNumber, headUnitPartNumber, headUnitProductName,
+                    connectModuleSerialNumber, connectModulePartNumber, connectModuleProductName
+                ) VALUES (
+                    'bike-1', '2026-04-03T10:00:00Z', 1234, 'de', NULL, NULL,
+                    NULL, NULL, NULL,
+                    'CX', 1000.0, NULL,
+                    25.0, 1,
+                    NULL, 10,
+                    8, NULL,
+                    NULL, NULL,
+                    NULL, NULL, 'Kiox 300',
+                    NULL, NULL, NULL
+                )
+                """.trimIndent()
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DB,
+            9,
+            true,
+            BoschDatabaseMigrations.MIGRATION_8_9,
+        ).apply {
+            query("SELECT COUNT(*) FROM bike_passes").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            query("SELECT COUNT(*) FROM bike_theft_report_logs").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            close()
+        }
+    }
+
+    @Test
+    fun migrate9To10_addsBikeServiceRecordTable() {
+        helper.createDatabase(TEST_DB, 9).apply {
+            execSQL(
+                """
+                INSERT INTO bikes (
+                    id, createdAt, updatedAtEpochMillis, language, oemId, serviceDueDate,
+                    serviceDueOdometerMeters, driveUnitSerialNumber, driveUnitPartNumber,
+                    driveUnitProductName, driveUnitOdometerMeters, driveUnitRearWheelCircumferenceMillimeters,
+                    driveUnitMaximumAssistanceSpeedKmh, driveUnitWalkAssistEnabled,
+                    driveUnitWalkAssistMaximumSpeedKmh, driveUnitTotalPowerOnHours,
+                    driveUnitSupportPowerOnHours, remoteControlSerialNumber,
+                    remoteControlPartNumber, remoteControlProductName,
+                    headUnitSerialNumber, headUnitPartNumber, headUnitProductName,
+                    connectModuleSerialNumber, connectModulePartNumber, connectModuleProductName
+                ) VALUES (
+                    'bike-1', '2026-04-03T10:00:00Z', 1234, 'de', NULL, NULL,
+                    NULL, NULL, NULL,
+                    'CX', 1000.0, NULL,
+                    25.0, 1,
+                    NULL, 10,
+                    8, NULL,
+                    NULL, NULL,
+                    NULL, NULL, 'Kiox 300',
+                    NULL, NULL, NULL
+                )
+                """.trimIndent()
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DB,
+            10,
+            true,
+            BoschDatabaseMigrations.MIGRATION_9_10,
+        ).apply {
+            query("SELECT COUNT(*) FROM bike_service_records").use { cursor ->
+                cursor.moveToFirst()
+                assertEquals(0, cursor.getInt(0))
+            }
+            close()
+        }
+    }
+
+    @Test
+    fun migrate10To11_addsBikeRegistrationsTable() {
+        helper.createDatabase(TEST_DB, 10).apply {
+            execSQL(
+                """
+                INSERT INTO bikes (
+                    id, createdAt, updatedAtEpochMillis, language, oemId, serviceDueDate,
+                    serviceDueOdometerMeters, driveUnitSerialNumber, driveUnitPartNumber,
+                    driveUnitProductName, driveUnitOdometerMeters, driveUnitRearWheelCircumferenceMillimeters,
+                    driveUnitMaximumAssistanceSpeedKmh, driveUnitWalkAssistEnabled,
+                    driveUnitWalkAssistMaximumSpeedKmh, driveUnitTotalPowerOnHours,
+                    driveUnitSupportPowerOnHours, remoteControlSerialNumber,
+                    remoteControlPartNumber, remoteControlProductName,
+                    headUnitSerialNumber, headUnitPartNumber, headUnitProductName,
+                    connectModuleSerialNumber, connectModulePartNumber, connectModuleProductName
+                ) VALUES (
+                    'bike-1', '2026-04-03T10:00:00Z', 1234, 'de', NULL, NULL,
+                    NULL, NULL, NULL,
+                    'CX', 1000.0, NULL,
+                    25.0, 1,
+                    NULL, 10,
+                    8, NULL,
+                    NULL, NULL,
+                    NULL, NULL, 'Kiox 300',
+                    NULL, NULL, NULL
+                )
+                """.trimIndent()
+            )
+            close()
+        }
+
+        helper.runMigrationsAndValidate(
+            TEST_DB,
+            11,
+            true,
+            BoschDatabaseMigrations.MIGRATION_10_11,
+        ).apply {
+            query("SELECT COUNT(*) FROM bike_registrations").use { cursor ->
                 cursor.moveToFirst()
                 assertEquals(0, cursor.getInt(0))
             }

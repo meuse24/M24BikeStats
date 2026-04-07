@@ -37,6 +37,21 @@ enum class BoschEndpoint(val label: String, val baseUrl: String, val path: Strin
         "https://api.bosch-ebike.com",
         "/bike-profile/smart-system/v1/bikes/BIKE_ID"
     ),
+    SMART_BIKE_PASS(
+        "Bike Pass (Bike-ID ersetzen)",
+        "https://api.bosch-ebike.com",
+        "/bike-pass/smart-system/v1/bike-passes?bikeId=BIKE_ID"
+    ),
+    SMART_SERVICE_RECORDS(
+        "Service Book (Bike-ID ersetzen)",
+        "https://api.bosch-ebike.com",
+        "/service-book/smart-system/v1/service-records?bikeId=BIKE_ID"
+    ),
+    SMART_REGISTRATIONS(
+        "Registrierungen",
+        "https://api.bosch-ebike.com",
+        "/bike-registration/smart-system/v1/registrations"
+    ),
 
     // --- OIDC (bestätigt ✓) ---
 

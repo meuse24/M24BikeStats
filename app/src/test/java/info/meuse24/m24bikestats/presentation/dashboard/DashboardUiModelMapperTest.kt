@@ -8,8 +8,15 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
 import info.meuse24.m24bikestats.domain.model.BoschAssistMode
 import info.meuse24.m24bikestats.domain.model.BoschBattery
+import info.meuse24.m24bikestats.domain.model.BoschBatteryMeasurement
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.BoschBikePass
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
+import info.meuse24.m24bikestats.domain.model.BoschRegistration
+import info.meuse24.m24bikestats.domain.model.BoschServiceRecord
+import info.meuse24.m24bikestats.domain.model.BoschSoftwareUpdateSummary
+import info.meuse24.m24bikestats.domain.model.BoschTheftLocation
+import info.meuse24.m24bikestats.domain.model.BoschTheftReportLog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -53,6 +60,7 @@ class DashboardUiModelMapperTest {
         assertTrue(uiModel.shareText.contains("Drive Unit Performance Line CX"))
         assertTrue(uiModel.shareText.contains("PowerTube 750"))
         assertTrue(uiModel.shareText.contains("A100M00040"))
+        assertTrue(uiModel.shareText.contains("OEM-4711"))
     }
 
     @Test
@@ -66,6 +74,21 @@ class DashboardUiModelMapperTest {
         assertEquals(2, assistSection.rows.size)
         assertEquals("A100M00040", assistSection.rows[0].first)
         assertEquals("A100M00030", assistSection.rows[1].first)
+    }
+
+    @Test
+    fun `bike detail includes service due connect module and abs sections`() {
+        val uiModel = mapper.toBikeDetailUiModel(bike())
+
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "OEM-4711" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "ConnectModule" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "eBike ABS" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "FRAME-123" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "https://example.com/theft/1" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "Dealer One, Vienna" } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value.contains("Drive Unit, ABS") } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value.contains("BATTERY") } })
+        assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "bat-pn" } })
     }
 
     @Test
@@ -165,6 +188,9 @@ class DashboardUiModelMapperTest {
         id = "bike-1",
         createdAt = "2024-06-14T12:45:12.123452Z",
         language = "de",
+        oemId = "OEM-4711",
+        serviceDueDate = "2026-08-01T08:00:00Z",
+        serviceDueOdometerMeters = 7000000.0,
         driveUnit = BoschDriveUnit(
             serialNumber = "serial",
             partNumber = "part",
@@ -184,6 +210,90 @@ class DashboardUiModelMapperTest {
         ),
         remoteControl = null,
         headUnit = null,
+        connectModule = info.meuse24.m24bikestats.domain.model.BoschComponent(
+            serialNumber = "connect-serial",
+            partNumber = "connect-part",
+            productName = "ConnectModule",
+        ),
+        antiLockBrakeSystems = listOf(
+            info.meuse24.m24bikestats.domain.model.BoschComponent(
+                serialNumber = "abs-serial",
+                partNumber = "abs-part",
+                productName = "eBike ABS",
+            )
+        ),
+        bikePass = BoschBikePass(
+            bikeId = "bike-1",
+            frameNumber = "FRAME-123",
+            frameNumberPosition = "bottom bracket",
+            description = "orange fork",
+            createdAt = "2026-04-01T10:00:00Z",
+            updatedAt = "2026-04-02T10:00:00Z",
+        ),
+        theftReportLogs = listOf(
+            BoschTheftReportLog(
+                theftReportLogId = "log-1",
+                bikeId = "bike-1",
+                createdAt = "2026-04-03T10:00:00Z",
+                expiresAtEpochMillis = 1_800_000L,
+                timeZone = "Europe/Vienna",
+                theftCaseEnteredAt = "2026-04-03T11:00:00Z",
+                riderPortalLink = "https://example.com/theft/1",
+                description = "reported",
+                location = BoschTheftLocation(
+                    detectedAt = "2026-04-03T12:00:00Z",
+                    latitude = 47.1,
+                    longitude = 9.1,
+                    horizontalAccuracyMeters = 15.0,
+                    address = "Test Street 1",
+                    description = "behind stairs",
+                ),
+            )
+        ),
+        serviceRecords = listOf(
+            BoschServiceRecord(
+                id = "service-1",
+                type = "DIGITAL_SERVICE",
+                bikeId = "bike-1",
+                createdAt = "2026-04-04T10:00:00Z",
+                odometerValueMeters = 150000L,
+                bikeDealerName = "Dealer One",
+                bikeDealerCity = "Vienna",
+                toolVersion = "5.4.0",
+                batteryMeasurement = BoschBatteryMeasurement(
+                    fullChargeCycles = 52,
+                    measuredEnergyCapacityWh = 710,
+                    nominalEnergyCapacityWh = 750,
+                    measuredCapacityPercentage = 95,
+                    onBikeMeasurement = false,
+                ),
+                softwareUpdate = BoschSoftwareUpdateSummary(
+                    clientType = "DIAGNOSTIC_TOOL",
+                    clientVersion = "2026.4",
+                    isForcedUpdate = true,
+                    updatedComponentsCount = 2,
+                    updatedComponentNames = listOf("Drive Unit", "ABS"),
+                ),
+            )
+        ),
+        registrations = listOf(
+            BoschRegistration(
+                bikeId = "bike-1",
+                registrationType = "BIKE_REGISTRATION",
+                createdAt = "2026-04-05T10:00:00Z",
+                componentType = null,
+                partNumber = null,
+                serialNumber = null,
+            ),
+            BoschRegistration(
+                bikeId = "bike-1",
+                registrationType = "COMPONENT_REGISTRATION",
+                createdAt = "2026-04-05T10:00:00Z",
+                componentType = "BATTERY",
+                partNumber = "bat-pn",
+                serialNumber = "battery-serial",
+            ),
+        ),
         batteries = listOf(
             BoschBattery(
                 serialNumber = "battery-serial",

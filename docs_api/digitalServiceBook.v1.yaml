@@ -1,0 +1,1430 @@
+openapi: 3.0.3
+info:
+  version: 1.5.0
+  title: Digital Service Book API
+  description: |
+    The Diagnosis Event API offers an endpoint to retrieve service records of tracked bike's maintenance.
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - url: 'https://api.bosch-ebike.com/service-book/smart-system/v1'
+    description: Production
+paths:
+  /service-records:
+    get:
+      tags:
+        - Digital Service Books
+      summary: Get the service records of a Smart System bike.
+      description: |
+        Returns all available service records for the given Smart System bike that have been shared by the user with the 
+        data recipient (looked up by the backend via the user's JWT). The bike is identified by its bikeId.
+      operationId: getServiceRecords
+      parameters:
+        - $ref: '#/components/parameters/SmartSystemBikeIdFilter'
+      responses:
+        '200':
+          description: |
+            List of service records. Will return an empty list if no data available for the given bike.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRecordsResponseV1'
+                __errors__:
+                  '#/%24defs/ServiceBookStepResult': Keys ServiceBookStepResult_2 through ServiceBookStepResult_20 already taken.
+                  '#/%24defs/ServiceBookInspectionResult': Keys ServiceBookInspectionResult_2 through ServiceBookInspectionResult_20 already taken.
+        '400':
+          $ref: '#/components/responses/badRequestResponseV1'
+        '401':
+          $ref: '#/components/responses/unauthorizedResponseV1'
+        '403':
+          $ref: '#/components/responses/forbiddenResponseV1'
+        '429':
+          $ref: '#/components/responses/rateLimitResponseV1'
+        default:
+          $ref: '#/components/responses/unexpectedErrorResponseV1'
+      security:
+        - OIDC_PROD:
+            - offline_access
+      servers:
+        - url: 'https://api.bosch-ebike.com/service-book/smart-system/v1'
+          description: Production
+tags:
+  - name: Digital Service Books
+    description: Endpoints of Digital Service Book EUDA API for Smart System bikes
+components:
+  parameters:
+    SmartSystemBikeIdFilter:
+      name: bikeId
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/SmartSystemBikeId'
+  securitySchemes:
+    OIDC_PROD:
+      type: oauth2
+      description: |-
+        Bosch Identity & Access Management for **Smart System** users
+
+        **Offline Access:** Client applications may use [offline_access](https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess). See the scope description below.
+      flows:
+        authorizationCode:
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          authorizationUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth'
+          scopes:
+            offline_access: Use this optional scope to request a refresh token which never expires. The client application is responsible for securely persisting the token. The token never expires as long as it is used for a refresh token grant at least once every 180 days.
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+  responses:
+    unexpectedErrorResponseV1:
+      description: |
+        Unexpected error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    badRequestResponseV1:
+      description: |
+        Request parameters are malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    unauthorizedResponseV1:
+      description: |
+        Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification failed
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    forbiddenResponseV1:
+      description: Forbidden
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-denied:
+              value: 'RBAC: access denied'
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    rateLimitResponseV1:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: string
+          description: 'Bucket size, refresh size and time window for refresh, in seconds'
+          examples:
+            __default:
+              value: '100, 100;w=60'
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current time window
+          examples:
+            __default:
+              value: 96
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time in seconds until bucket is refreshed
+          examples:
+            __default:
+              value: 57
+  schemas:
+    ServiceRecordsResponseV1:
+      type: object
+      properties:
+        serviceRecords:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRecordSchemaV1'
+      required:
+        - serviceRecords
+    ServiceRecordSchemaV1:
+      type: object
+      description: |
+        A service record represents a specific service event or maintenance action performed on a bike.
+        It includes details such as the type of service, the date it was performed, and any relevant attributes.
+      properties:
+        id:
+          type: string
+          description: The unique identifier of the service record.
+          format: uuid
+          example: 0f7ff9dc-d240-4971-b897-ebc8283cb8da
+        type:
+          $ref: '#/components/schemas/ServiceRecordType'
+        attributes:
+          $ref: '#/components/schemas/ServiceRecordAttributesV1'
+      required:
+        - id
+        - type
+        - attributes
+    ServiceRecordType:
+      type: string
+      enum:
+        - INSPECTION
+        - SOFTWARE_UPDATE
+        - ACTUATOR_TEST
+        - CUSTOMER_REPORT
+        - BIKE_ID_CHANGE
+        - BBP_MEASUREMENT
+      description: 'The type of service record, indicating the nature of the service performed on the bike.'
+    ServiceRecordAttributesV1:
+      type: object
+      description: |
+        Attributes of a service record.
+        This object contains the details of a service record, including the bike dealer information, bike ID, odometer value, creation timestamp, and additional details.
+      properties:
+        bikeDealer:
+          $ref: '#/components/schemas/BikeDealer'
+        bikeId:
+          type: string
+          description: The unique identifier of the bike.
+          format: uuid
+        odometerValue:
+          type: integer
+          description: The current odometer value of the bike in meters.
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          description: ISO 8601 compliant timestamp when the service record has been created.
+          format: date-time
+        details:
+          $ref: '#/components/schemas/EntryDetails'
+      required:
+        - bikeId
+        - createdAt
+        - details
+    BikeDealer:
+      type: object
+      description: |
+        Bike dealer information.
+        This object contains details about a bike dealer, including their name, street address, and city.
+        It is used to identify the dealer associated with a bike or eBike system.
+      properties:
+        name:
+          type: string
+          description: Name of the bike dealer.
+          example: La vélo de Bosch
+        street:
+          type: string
+          description: Street address of the bike dealer.
+          example: La Liberté 4711
+        city:
+          type: string
+          description: Postcode and City of the bike dealer.
+          example: 75000 Paris
+      required:
+        - name
+    EntryDetails:
+      type: object
+      description: |
+        The details object of a service record. Exactly one of the following properties is non-null depending on the  overall type of the entry. E.g. 'actuatorTest' is non-null if the entry type is ACTUATOR_TEST.
+      properties:
+        version:
+          type: integer
+          description: Version of the details format as single integer.
+          format: int32
+          example: 1
+        toolVersion:
+          type: string
+          description: Free text describing the used version of the tool having entered the entry.
+          example: bdp/3.1.9
+        bike:
+          $ref: '#/components/schemas/BikeInformation'
+        actuatorTest:
+          $ref: '#/components/schemas/EntryDetailsActuatorTest'
+        inspection:
+          $ref: '#/components/schemas/EntryDetailsInspection'
+        softwareUpdate:
+          $ref: '#/components/schemas/EntryDetailsSoftwareUpdate'
+        customerReport:
+          $ref: '#/components/schemas/EntryDetailsCustomerReport'
+        bikeIdChange:
+          $ref: '#/components/schemas/EntryDetailsBikeIdChange'
+        batteryMeasurement:
+          $ref: '#/components/schemas/EntryDetailsBatteryMeasurement'
+      required:
+        - version
+    BikeInformation:
+      type: object
+      description: The bike information of a service record.
+      properties:
+        manufacturerBikeId:
+          type: string
+          description: The bike id defined by the bike's manufacturer.
+          example: some-bike-123
+        brandId:
+          type: string
+          description: Id of the bike's brand.
+          example: BR-AN-D1
+    EntryDetailsActuatorTest:
+      type: object
+      description: Details for the case of an actuator test entry. Null otherwise.
+      properties:
+        remoteControl:
+          type: array
+          description: The remote control actuator test steps.
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        driveUnit:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        battery1:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        battery2:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        headUnit:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        antiLockBrakeSystem:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+        connectModule:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryDetailsActuatorTestStep'
+    EntryDetailsActuatorTestStep:
+      type: object
+      description: A single step of an actuator test.
+      properties:
+        testName:
+          $ref: '#/components/schemas/ServiceBookTestName'
+        overallResult:
+          $ref: '#/components/schemas/ServiceBookOverallResult'
+        note:
+          type: string
+          description: Free text field filled out by bike dealer.
+        productName:
+          type: string
+          description: The name of the component to be displayed to the end user.
+          example: Kiox300
+        typeVariant:
+          $ref: '#/components/schemas/ServiceBookTypeVariant'
+        stepResults:
+          type: object
+          description: This is a map of step-ids to their respective result.
+          properties:
+            antiLockBrakingSystemRearSensorStep:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            antiLockBrakingSystemWssFrontWheel:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            antiLockBrakingSystemWssRearWheel:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            batteryButtonPower:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            batteryLedBlue:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            driveUnitRimSensor:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            driveUnitReedSensor:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            driveUnitImuAntiLockBrakingSystemSensor:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            driveUnitLightPowerPortStep:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlIlluminateSensor:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlDarkenSensor:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonPlus:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonMode:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonMinus:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonLeft:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonRight:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonCenter:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlButtonPower:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLedRed:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLedGreen:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLedBlue:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLedOrange:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLcdRed:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLcdGreen:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLcdBlue:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlLcdWhite:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            remoteControlBuzzerOn:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitLcdRed:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitLcdGreen:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitLcdBlue:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitLcdWhite:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitBuzzerOn:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonInfo:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonLight:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonReset:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonWalk:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonHome:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonPlus:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonMode:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonMinus:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonLeft:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonRight:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonCenter:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitButtonPower:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitJoystickUp:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitJoystickDown:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitJoystickLeft:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitJoystickRight:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+            headUnitJoystickCenter:
+              allOf:
+                - $ref: '#/components/schemas/ServiceBookStepResult'
+      required:
+        - testName
+        - overallResult
+        - stepResults
+    ServiceBookTestName:
+      type: string
+      enum:
+        - ABS_REAR_SENSOR_TEST
+        - ABS_WSS_TEST
+        - BBP_BUTTON_TEST
+        - BBP_LED_TEST
+        - BDU_LIGHT_POWER_PORT_TEST
+        - BDU_REED_SPEED_SENSOR_TEST
+        - BDU_RIM_SPEED_SENSOR_TEST
+        - BDU_IMU_ABS_SENSOR_TEST
+        - BDU_ROTOR_POSITION_CALIBRATION
+        - BDU_CADENCE_SENSOR_TEST
+        - BRC_BUTTON_TEST
+        - BRC_LED_TEST
+        - BRC_LCD_TEST
+        - BRC_AMBIENT_LIGHT_SENSOR_TEST
+        - BRC_BUZZER_TEST
+        - BRC3300_BUTTON_TEST
+        - BHU_LCD_TEST
+        - BHU_BUZZER_TEST
+        - BUI_KEY_TEST
+        - BUI_KEY_TEST_REMOTE
+      description: The name of the test performed on the component in the service book. Used to identify the test inside the report.
+    ServiceBookOverallResult:
+      type: string
+      enum:
+        - NOT_PERFORMED
+        - SUCCESS_INCOMPLETE
+        - SUCCESS
+        - FAILURE
+      description: The overall result of the actuator test.
+    ServiceBookTypeVariant:
+      type: string
+      enum:
+        - DRIVE_UNIT_ACTIVE_LINE_BDU332X
+        - DRIVE_UNIT_ACTIVE_LINE_PLUS_BDU334X
+        - DRIVE_UNIT_PERFORMANCE_LINE_SX_BDU314X
+        - DRIVE_UNIT_PERFORMANCE_LINE_SPRINT_BDU318X
+        - DRIVE_UNIT_PERFORMANCE_LINE_BDU336X
+        - DRIVE_UNIT_PERFORMANCE_LINE_BDU346X
+        - DRIVE_UNIT_PERFORMANCE_LINE_SPORT_BDU338X
+        - DRIVE_UNIT_PERFORMANCE_LINE_SPORT_BDU348X
+        - DRIVE_UNIT_BDU378X_SPEED
+        - DRIVE_UNIT_PERFORMANCE_LINE_CX_BDU374X
+        - DRIVE_UNIT_PERFORMANCE_LINE_CX_BDU384X
+        - DRIVE_UNIT_PERFORMANCE_LINE_CX_RACE_BDU376X
+        - DRIVE_UNIT_PERFORMANCE_LINE_CX_RACE_BDU386X
+        - DRIVE_UNIT_PERFORMANCE_LINE_PX_BDU347X
+        - DRIVE_UNIT_PERFORMANCE_LINE_SPEED_BDU388X
+        - DRIVE_UNIT_CARGO_LINE_BDU374X
+        - DRIVE_UNIT_CARGO_LINE_BDU384X
+        - DRIVE_UNIT_BDU374X_UNKNOWN_PRODUCT_ID
+        - DRIVE_UNIT_BDU384X_UNKNOWN_PRODUCT_ID
+        - BATTERY_COMPACT_TUBE_400_BBP324X
+        - BATTERY_POWER_PACK_RACK_400_BBP334X
+        - BATTERY_POWER_PACK_RACK_500_BBP335X
+        - BATTERY_POWER_MORE_250_BBP362X
+        - BATTERY_POWER_PACK_400_FRAME_BBP354X
+        - BATTERY_POWER_PACK_500_FRAME_BBP355X
+        - BATTERY_POWER_PACK_600_FRAME_BBP356X
+        - BATTERY_POWER_PACK_725_FRAME_BBP357X
+        - BATTERY_POWER_PACK_800_FRAME_BBP358X
+        - BATTERY_POWER_TUBE_500_BBP375X
+        - BATTERY_POWER_TUBE_540_BBP385X
+        - BATTERY_POWER_TUBE_625_BBP376X
+        - BATTERY_POWER_TUBE_750_BBP377X
+        - BATTERY_POWER_TUBE_21700_600_BBP386X
+        - BATTERY_POWER_TUBE_21700_800_BBP388X
+        - REMOTE_CONTROL_BRC3100
+        - REMOTE_CONTROL_BRC3200
+        - REMOTE_CONTROL_BRC3600
+        - REMOTE_CONTROL_BRC3800
+        - BOSCH_BLE_DEVICE_BRC3300
+        - BOSCH_BLE_DEVICE_BRC3310
+        - DISPLAY_PURION_400_BHU3500
+        - DISPLAY_KIOX_300_BHU3600
+        - DISPLAY_KIOX_500_BHU3700
+        - BOSCH_BLE_DEVICE_BHU3200
+        - ANTI_LOCK_BRAKE_SYSTEM_BAS32XX
+        - ANTI_LOCK_BRAKE_SYSTEM_BAS33XX
+        - ANTI_LOCK_BRAKE_SYSTEM_BAS35XX
+        - CONNECT_MODULE
+        - CONNECT_MODULE_BCM31XX
+        - DRIVE_UNIT_UNKNOWN
+        - BATTERY_POWER_TUBE_UNKNOWN
+        - BATTERY_POWER_PACK_FRAME_UNKNOWN
+        - BATTERY_POWER_PACK_RACK_UNKNOWN
+        - BATTERY_UNKNOWN
+        - REMOTE_CONTROL_UNKNOWN
+        - DISPLAY_UNKNOWN
+        - ANTI_LOCK_BRAKE_SYSTEM_UNKNOWN
+        - CONNECT_MODULE_UNKNOWN
+        - BOSCH_BLE_DEVICE_UNKNOWN
+        - BES2_DISPLAY_BUI210_PURION
+        - BES2_DISPLAY_BUI215_PURION
+        - BES2_DISPLAY_BUI250_INTUVIA
+        - BES2_DISPLAY_BUI250_INTUVIA_REMOTE
+        - BES2_DISPLAY_BUI251_INTUVIA
+        - BES2_DISPLAY_BUI251_INTUVIA_REMOTE
+        - BES2_DISPLAY_BUI255_INTUVIA
+        - BES2_DISPLAY_BUI255_INTUVIA_REMOTE
+        - BES2_DISPLAY_BUI270_NYON
+        - BES2_DISPLAY_BUI270_NYON_REMOTE
+        - BES2_DISPLAY_BUI275_NYON
+        - BES2_DISPLAY_BUI275_NYON_REMOTE
+        - BES2_DISPLAY_BUI330_KIOX
+        - BES2_DISPLAY_BUI330_KIOX_REMOTE
+        - BES2_DISPLAY_BUI350_NYON
+        - BES2_DISPLAY_BUI350_NYON_REMOTE
+        - BES2_DISPLAY_CUI100_COBI
+        - BES2_DISPLAY_UNKNOWN
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU250
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU280
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU290
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU365
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU385
+        - BES2_MOTOR_PERFORMANCE_LINE_BDU386
+        - BES2_MOTOR_PERFORMANCE_LINE_CX_BDU250
+        - BES2_MOTOR_PERFORMANCE_LINE_CX_BDU280
+        - BES2_MOTOR_PERFORMANCE_LINE_CX_BDU450
+        - BES2_MOTOR_PERFORMANCE_LINE_CX_BDU480
+        - BES2_MOTOR_PERFORMANCE_LINE_SPEED_BDU490
+        - BES2_MOTOR_ACTIVE_LINE_BDU250
+        - BES2_MOTOR_ACTIVE_LINE_BDU255
+        - BES2_MOTOR_ACTIVE_LINE_BDU280
+        - BES2_MOTOR_ACTIVE_LINE_BDU310
+        - BES2_MOTOR_ACTIVE_LINE_BDU330
+        - BES2_MOTOR_ACTIVE_LINE_PLUS_BDU350
+        - BES2_MOTOR_ACTIVE_LINE_PLUS_BDU380
+        - BES2_MOTOR_UNKNOWN
+        - BES2_BATTERY_RACK_400_PERFORMANCE_LINE
+        - BES2_BATTERY_FRAME_400_PERFORMANCE_LINE
+        - BES2_BATTERY_POWER_TUBE_500_HORIZONTAL
+        - BES2_BATTERY_POWER_TUBE_500_VERTICAL
+        - BES2_BATTERY_POWER_TUBE_600_HORIZONTAL
+        - BES2_BATTERY_POWER_TUBE_600_VERTICAL
+        - BES2_BATTERY_UNKNOWN
+        - BES2_ANTI_LOCK_BRAKE_SYSTEM_BAS100
+        - BES2_ANTI_LOCK_BRAKE_SYSTEM_UNKNOWN
+        - BES2_E_SHIFT
+        - BLE_E_SHIFT_DEVICE
+        - CAN_E_SHIFT_DEVICE
+        - THIRD_PARTY_DEVICE_X_ABS
+        - THIRD_PARTY_DEVICE_UNKNOWN
+        - BLE_HEART_RATE_SENSOR
+        - BLE_SHIFTER
+      description: The type of the component in the service book. Used to identify the component inside the report.
+    ServiceBookStepResult:
+      type: string
+      enum:
+        - NOT_TESTED
+        - SUCCESS
+        - FAILURE
+        - FAILURE_USER
+        - FAILURE_PRECONDITION
+      description: 'The result of this step of the actuator test.  E.g., the result of a button press within the remote control button test.'
+    EntryDetailsInspection:
+      type: object
+      description: Details for the case of an inspection entry. Null otherwise.
+      properties:
+        inspections:
+          type: array
+          description: The inspection results of the service inspection entry.
+          items:
+            $ref: '#/components/schemas/EntryDetailsInspectionResult'
+    EntryDetailsInspectionResult:
+      type: object
+      description: The inspection result details for a service inspection entry.
+      properties:
+        categoryType:
+          $ref: '#/components/schemas/ServiceBookCategoryType'
+        typeVariant:
+          $ref: '#/components/schemas/ServiceBookTypeVariant'
+        services:
+          $ref: '#/components/schemas/EntryDetailsInspectionResultServices'
+        productName:
+          type: string
+          description: The name of the component to be displayed to the end user.
+          example: Kiox300
+      required:
+        - categoryType
+        - services
+    ServiceBookCategoryType:
+      type: string
+      enum:
+        - REMOTE
+        - DRIVE_UNIT
+        - BATTERY
+        - HEAD_UNIT
+        - ABS
+        - BCM
+        - REMOTE_BLE
+        - HEAD_UNIT_BLE
+        - MISC
+    EntryDetailsInspectionResultServices:
+      type: object
+      description: The checklist entries for the component as part of the service inspection checklist.
+      properties:
+        headUnitCheckDesignCover:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnitCheckTurnOnOffBike:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnitCheckButtons:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnitCheckContacts:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnitCheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnitCheckCables:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControlTurnOnOff:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControlCheckButtons:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControlCheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControlCheckCables:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControlCheckDesignCover:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        batteryCheckMountingAndLock:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        batteryCheckTurnOnOffBike:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        batteryCheckCoverCap:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        batteryCheckHousing:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        batteryCheckCablesAndContacts:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckDesignCover:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckCrankGuides:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckCablesAndContacts:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckChainringIntakeAndLockring:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckChainringDamaged:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckBearingAndUpgrade:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        driveUnitCheckSpeedSensorAndMagnetPosition:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckIndicatorLampWorking:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckControlUnitMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckControlUnitDamaged:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckSpeedSensors:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckCables:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        antiLockBrakingSystemCheckBrakeSystemWaterproofErosionNoise:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        connectModuleCheckHousing:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        connectModuleCheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        connectModuleCheckCables:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        connectModuleCheckConnections:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControl3300CheckButtons:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControl3300CheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        remoteControl3300CheckCables:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnit3200CheckHousing:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnit3200CheckContacts:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        headUnit3200CheckMounting:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        miscUpdateSoftware:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        miscPerformTestDrive:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        miscCheckWalkAssistAndLight:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        miscCheckLight:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+        miscUpdateServiceInterval:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookInspectionResult'
+    ServiceBookInspectionResult:
+      type: string
+      enum:
+        - NOT_CHECKED
+        - CHECKED_AND_OK
+        - CHECKED_AND_NOT_OK
+        - CHECKED_AND_REPAIRED
+      description: The result of this entry of service check list.
+    EntryDetailsSoftwareUpdate:
+      type: object
+      description: Details for the case of a software-update entry. Null otherwise.
+      properties:
+        client:
+          $ref: '#/components/schemas/Client'
+        isForcedUpdate:
+          type: boolean
+          description: Whether the update was performed using the force update flag.
+          default: false
+        bike:
+          $ref: '#/components/schemas/ServiceBookSwUpdateBike'
+      required:
+        - client
+        - bike
+    Client:
+      type: object
+      description: Information about the client calling the endpoint.
+      properties:
+        type:
+          type: string
+          enum:
+            - BDP
+            - FLOW_IOS
+            - FLOW_ANDROID
+          description: Type of the client.
+          example: BDP
+        version:
+          type: string
+          description: Version of the client.
+          example: 1.0.3-354-g222b6197aa
+      required:
+        - type
+        - version
+    ServiceBookSwUpdateBike:
+      type: object
+      description: |
+        This object contains the details of a bike software update, including the updated applications and components.
+        It is used to report the results of a software update performed on a bike.
+      properties:
+        brandId:
+          type: string
+          description: The brand ID of the bike manufacturer.
+          example: BR-AN-D1
+        manufacturerBikeId:
+          allOf:
+            - $ref: '#/components/schemas/ManufacturerBikeId'
+        bikeId:
+          type: string
+          description: The unique identifier of the bike.
+          format: uuid
+          example: 0f7ff9dc-d240-4971-b897-ebc8283cb8da
+        bikeCategory:
+          $ref: '#/components/schemas/BikeCategory'
+        updatedApplications:
+          type: object
+          description: 'Contains all applications that have been updated. If an application has not been touched during the update, it is being left out (=> are optional).'
+          properties:
+            product:
+              $ref: '#/components/schemas/ServiceBookApplicationUpdateDetails'
+            gear:
+              $ref: '#/components/schemas/ServiceBookApplicationUpdateDetails'
+            speed:
+              $ref: '#/components/schemas/ServiceBookApplicationUpdateDetails'
+            assistModes:
+              type: array
+              description: |
+                Contains all assist modes that are on the bike.
+              items:
+                $ref: '#/components/schemas/ServiceBookAssistModeUpdateDetails'
+          required:
+            - assistModes
+        updatedComponents:
+          type: array
+          description: 'Contains all components that have been updated. If a component has not been touched during the update, it is being left out (=> are optional).'
+          items:
+            type: object
+            properties:
+              productCode:
+                type: string
+                description: 'The product code of the component, e.g. BDU3600.'
+                example: BDU3600
+              productName:
+                type: string
+                description: The name to be displayed to the end user.
+                example: Kiox300
+              partNumber:
+                type: string
+                description: 'The part number of the component, e.g. 0275007000.'
+                example: '0275007000'
+              serialNumber:
+                type: string
+                description: 'The serial number of the component, e.g. 33912-1234-37-300-00-0000.'
+                example: 33912-1234-37-300-00-0000
+              hardwareVersion:
+                type: string
+                description: 'The hardware version of the component, e.g. 1.0.0.'
+                example: 1.0.0
+              hardwareSoftwareVersion:
+                type: string
+                description: 'The hardware software version of the component, e.g. 1.0.0.'
+                example: 1.0.0
+              bootloaderVersion:
+                $ref: '#/components/schemas/ServiceBookSoftwareUpdateDetails'
+              softwareVersion:
+                $ref: '#/components/schemas/ServiceBookSoftwareUpdateDetails'
+              localizedReleaseNotes:
+                type: string
+                description: 'Overall release notes of component update, localized to the user''s language.'
+            required:
+              - productCode
+              - serialNumber
+              - bootloaderVersion
+              - softwareVersion
+      required:
+        - bikeId
+        - updatedComponents
+    ManufacturerBikeId:
+      type: string
+      description: 'The manufacturer bike identifier, which is most likely the frame number.'
+      maxLength: 30
+      example: ABC-12345
+    BikeCategory:
+      type: string
+      enum:
+        - CITY
+        - TREKKING
+        - M_T_B_TOUR
+        - M_T_B_TRAIL
+        - ROAD
+        - GRAVEL
+        - KIDS
+        - CARGO
+        - E_CARGO_LONG_TAIL
+        - FLEET
+        - OTHERS
+        - NOT_CONFIGURED
+      description: Category of the bike.
+    ServiceBookApplicationUpdateDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          example: P1000
+        longName:
+          type: string
+          description: The name to be displayed to the end user.
+          example: ULTRA TURBO+++
+        version:
+          type: object
+          properties:
+            old:
+              type: integer
+              format: int32
+              example: 1
+            new:
+              type: integer
+              format: int32
+              example: 2
+            localizedReleaseNotes:
+              type: string
+              example: Unglaubliche Performance.
+      required:
+        - version
+    ServiceBookAssistModeUpdateDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          example: A1000
+        longName:
+          type: string
+          description: The name to be displayed to the end user.
+          example: ULTRA TURBO+++
+        isActive:
+          type: boolean
+          description: Optional flag to indicate if this assist mode is among the four active assist modes that can be used while riding.
+        version:
+          type: object
+          properties:
+            old:
+              type: integer
+              format: int32
+              example: 1
+            new:
+              type: integer
+              format: int32
+              example: 2
+            localizedReleaseNotes:
+              type: string
+              example: Unglaubliche Performance.
+      required:
+        - version
+    ServiceBookSoftwareUpdateDetails:
+      type: object
+      properties:
+        old:
+          type: string
+          description: Optional/nullable. Version string before the update. Might be null for software version in case of FBL.
+          example: 1.2.4-a
+        new:
+          type: string
+          description: 'Optional/nullable. Version string after the update. Might be null if there is only a bootloader update, for example.'
+          example: 1.2.4-b
+        localizedReleaseNotes:
+          type: string
+          description: Optional/nullable. Release notes in the user's language.
+          example: What an update!
+    EntryDetailsCustomerReport:
+      type: object
+      description: Details for the case of a customer report entry. Null otherwise.
+      properties:
+        metaData:
+          type: object
+          properties:
+            toolCreationTimestamp:
+              type: string
+              description: The creation time of the report in the Bosch Diagnosis Tool 3 (not server time) in ISO 8601 compliant date time format (UTC).
+              format: date-time
+              example: '2022-11-30T14:04:54.846354+01:00'
+            toolVersion:
+              type: string
+              description: The version of the Bosch Diagnosis Tool 3 that has created the report.
+              example: 7.8.0
+            dataModelVersion:
+              type: string
+              description: The model of the eBike data model used for the data points in this report.
+              example: 5.1.3-b
+            schemaVersion:
+              type: integer
+              description: 'The schema version of this report. If value is not set, schema version 0 is assumed.'
+              format: int32
+              example: 1
+        bike:
+          $ref: '#/components/schemas/CustomerReportBike'
+        nextServiceInformation:
+          $ref: '#/components/schemas/NextServiceInformation'
+    CustomerReportBike:
+      type: object
+      description: The bike information of a customer report.
+      properties:
+        bikeInformation:
+          $ref: '#/components/schemas/CustomerReportBikeInformation'
+        individualInformation:
+          $ref: '#/components/schemas/CustomerReportBikeInformation'
+        additionalInformation:
+          $ref: '#/components/schemas/CustomerReportAdditionalInformation'
+        supportModes:
+          $ref: '#/components/schemas/CustomerReportSupportModes'
+        statistics:
+          $ref: '#/components/schemas/CustomerReportStatistics'
+        components:
+          $ref: '#/components/schemas/CustomerReportComponents'
+    CustomerReportBikeInformation:
+      type: object
+      properties:
+        datapointValues:
+          type: array
+          description: The data points of the bike information as part of the customer report.
+          items:
+            $ref: '#/components/schemas/CustomerReportDataPointValue'
+    CustomerReportDataPointValue:
+      type: object
+      description: A single data point value of the customer report.
+      properties:
+        id:
+          type: string
+          description: Name of a datapoint as in the ebike data model.
+          example: bikeId
+        value:
+          type: string
+          description: A string representation of the raw datapoint value.
+    CustomerReportAdditionalInformation:
+      type: object
+      properties:
+        datapointValues:
+          type: array
+          description: The data points of the additional information as part of the customer report.
+          items:
+            $ref: '#/components/schemas/CustomerReportDataPointValue'
+    CustomerReportSupportModes:
+      type: array
+      description: The support modes of the bike as part of the customer report.
+      items:
+        $ref: '#/components/schemas/CustomerReportSupportMode'
+    CustomerReportSupportMode:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+          description: Whether the support mode is active or not.
+        id:
+          type: string
+          description: The unique identifier of the support mode.
+          example: ID234234
+        version:
+          type: integer
+          description: The version of the support mode as single integer.
+          format: int32
+          example: 2
+        shortName:
+          type: string
+          description: The short name of the support mode.
+          example: AMA3
+        longName:
+          type: string
+          description: The long name of the support mode.
+          example: 'Assist Mode A3 [str=2]'
+        application:
+          type: string
+          description: The application of the support mode.
+          example: A000100010
+        isUserAdjusted:
+          type: boolean
+          description: Whether the support mode is user adjusted or not.
+        userDefinedAssistModeValues:
+          $ref: '#/components/schemas/UserDefinedAssistModeParams'
+        userDefinedAssistModeDefaults:
+          $ref: '#/components/schemas/UserDefinedAssistModeParams'
+        strength:
+          type: integer
+          description: The strength of the support mode.
+          format: int32
+          example: 250
+    UserDefinedAssistModeParams:
+      type: object
+      description: |
+        User-defined assist mode parameters for an e-bike. These parameters allow users to customize the behavior of the bike's motor assistance.
+      properties:
+        accelerationResponse:
+          type: number
+          description: Acceleration Response (0.0 - 1.0)
+          format: float
+          example: 0.55
+        assistLevel:
+          type: number
+          description: Assist Level (0.0 - 4.0)
+          format: float
+          example: 1.05
+        maximumBikeSpeed:
+          type: integer
+          description: Maximum Bike Speed (in km/h)
+          format: int32
+          example: 25
+        maximumMotorTorque:
+          type: integer
+          description: Maximum Motor Torque (in Nm)
+          format: int32
+          example: 70
+        maximumMotorPower:
+          type: integer
+          description: Maximum Motor Power (in W)
+          format: int32
+          example: 20
+    CustomerReportStatistics:
+      type: object
+      description: The statistics of the bike as part of the customer report.
+      properties:
+        chartData:
+          type: array
+          description: Statistic data for the support modes (distance in m and energy in Wh).
+          items:
+            $ref: '#/components/schemas/CustomerReportSupportModeChartData'
+        datapointValues:
+          type: array
+          description: The data points of the statistics as part of the customer report.
+          items:
+            $ref: '#/components/schemas/CustomerReportDataPointValue'
+    CustomerReportSupportModeChartData:
+      type: object
+      properties:
+        distanceValue:
+          type: integer
+          description: The total distance (in m) driven with this support mode.
+          format: int32
+          example: 1234
+        energyValue:
+          type: integer
+          description: The amount of energy (in Wh) used by this support mode.
+          format: int32
+          example: 82
+        displayName:
+          type: string
+          example: Assist Mode A3
+        tooltipName:
+          type: string
+          example: A useful tooltip
+    CustomerReportComponents:
+      type: array
+      description: The components of the bike as part of the customer report.
+      items:
+        $ref: '#/components/schemas/CustomerReportComponent'
+    CustomerReportComponent:
+      type: object
+      properties:
+        typeVariant:
+          $ref: '#/components/schemas/ServiceBookTypeVariant'
+        highestSpecialState:
+          $ref: '#/components/schemas/SpecialState'
+        connected:
+          type: boolean
+          description: Whether the component is connected and its details should be displayed
+        softwareUpdateAvailable:
+          type: boolean
+          description: Whether there's an update available at the time of entry creation
+        productName:
+          type: string
+          description: The name of the component to be displayed to the end user.
+          example: Performance Line CX
+        datapointValues:
+          type: array
+          description: The data points of the component as part of the customer report.
+          items:
+            $ref: '#/components/schemas/CustomerReportDataPointValue'
+    SpecialState:
+      type: string
+      enum:
+        - MISSING
+        - RECALLED
+        - MEMORY_ERROR
+        - STOLEN
+        - DEACTIVATED
+        - ID_CONFLICT
+        - LOCKED
+        - OWNERSHIP_CONFLICT
+        - MANIPULATED
+        - UNPROGRAMMED
+        - NOT_CONFIGURED
+        - SAMPLE_SW
+        - SAMPLE_HW
+        - NOT_ACTIVATED
+        - NOT_REGISTERED
+        - FLIGHT_MODE
+        - NONE
+      description: A component can have several states. For example if the component has sample software / hardware or has been manipulated. Only the most important special state is being listed here.
+    NextServiceInformation:
+      type: object
+      description: 'Contains information about remaining days and/or meters until next service is necessary. Properties both can be null/missing, if no values for next service are set.'
+      properties:
+        updatedAt:
+          type: string
+          description: |
+            Timestamp when the next service information was last updated.
+          format: date-time
+        daysNextService:
+          type: integer
+          description: Days until next service is necessary.
+          format: int64
+          example: 23
+        metersNextService:
+          type: integer
+          description: Meters until next service is necessary.
+          format: int64
+          example: 3145
+    EntryDetailsBikeIdChange:
+      type: object
+      description: Details for the case of a change of bike id due to a "resolve bike id conflict" action. Null otherwise.
+      properties:
+        remoteControlBikeId:
+          type: string
+          description: The bike id stored in remote control (before conflict resolution) if drive unit was replaced. Field can be null if a new remote control was installed.
+          format: uuid
+        newBikeId:
+          type: string
+          description: The bike id of newly installed drive unit. Will be the new bike id of the remote control after the conflict resolution.
+          format: uuid
+        typeVariantRemoteControl:
+          allOf:
+            - $ref: '#/components/schemas/ServiceBookTypeVariant'
+        replacedComponent:
+          $ref: '#/components/schemas/ServiceBookReplacedComponent'
+      required:
+        - newBikeId
+    ServiceBookReplacedComponent:
+      type: string
+      enum:
+        - DRIVE_UNIT
+        - REMOTE_CONTROL
+      description: The component being replaced with a used component
+    EntryDetailsBatteryMeasurement:
+      type: object
+      description: Details for the case of a battery measurement entry. Null otherwise.
+      properties:
+        battery:
+          $ref: '#/components/schemas/ComponentInfo'
+        measurement:
+          type: object
+          description: The battery measurement details.
+          properties:
+            fullChargeCycles:
+              type: integer
+              description: Number of full charge cycles
+              format: int32
+            measuredEnergyCapacity:
+              type: integer
+              description: The measured capacity of the battery in Wh
+              format: int32
+            nominalEnergyCapacity:
+              type: integer
+              description: The nominal capacity of the battery in Wh
+              format: int32
+            measuredCapacityPercentage:
+              type: integer
+              description: The measured capacity of the battery in % in relation to the nominal capacity
+              format: int32
+              minimum: 0
+              maximum: 100
+            onBikeMeasurement:
+              type: boolean
+              description: Measurement was performed while the battery was connected to the bike or not
+          required:
+            - fullChargeCycles
+            - measuredEnergyCapacity
+            - nominalEnergyCapacity
+            - measuredCapacityPercentage
+      required:
+        - battery
+        - measurement
+    ComponentInfo:
+      type: object
+      properties:
+        productCode:
+          type: string
+          description: Product code of the component.
+          example: BBP3770
+        productName:
+          type: string
+          description: The name to be displayed to the end user.
+          example: Kiox300
+        partNumber:
+          type: string
+          description: Part number of the component.
+          example: EB1210003A
+        serialNumber:
+          type: string
+          description: Serial number of the component.
+          example: 13919-0702-01-A10-00-0000
+        hardwareVersion:
+          type: string
+          description: Hardware version of the component.
+          example: 3.1.0
+        softwareVersion:
+          type: string
+          description: Software version of the component.
+          example: 4.14.2
+        bootloaderVersion:
+          type: string
+          description: Bootloader version of the component.
+          example: 1.0.1
+        hardwareSoftwareVersion:
+          type: string
+          description: Hardware software version of the component.
+          example: 1.2.0
+      required:
+        - productCode
+        - productName
+        - partNumber
+        - serialNumber
+        - hardwareVersion
+        - softwareVersion
+    SmartSystemBikeId:
+      type: string
+      description: |
+        The Smart System bike's globally unique ID (RFC 4122-compliant UUID) aka. Bosch System ID
+      format: uuid
+      example: 796c0ba5-c305-4dff-96b8-2e46237eb77e
+    problem-1.0.0:
+      type: object
+      title: Problem
+      properties:
+        type:
+          type: string
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          format: uri-reference
+          default: 'about:blank'
+          example: /problems/connection-error
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Service Unavailable
+        status:
+          type: integer
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          minimum: 100
+          maximum: 599
+          example: 503
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Connection to database timed out
+        instance:
+          type: string
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+          format: uri-reference
+          example: /problems/connection-error#token-info-read-timed-out
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      required:
+        - type
+        - detail
+        - requestId
+security:
+  - OIDC_PROD:
+      - offline_access

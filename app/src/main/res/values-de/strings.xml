@@ -30,6 +30,9 @@
     <string name="login_button">Mit Bosch anmelden</string>
     <string name="login_hint_title">Anmeldung mit Bosch SingleKey ID</string>
     <string name="login_hint_body">Melde dich hier mit deiner Bosch SingleKey ID an, ähnlich wie bei der eBike Flow App. Wenn du bereits eine SingleKey ID hast, kannst du sie direkt verwenden.</string>
+    <string name="login_data_act_hint">Wenn Du als Nutzer Deine generierten Daten an die App weitergeben möchtest, nutze bitte diesen Link:</string>
+    <string name="login_data_act_link_label">Zum Flow-Portal: https://flow.bosch-ebike.com/data-act</string>
+    <string name="login_data_act_link_url">https://flow.bosch-ebike.com/data-act</string>
     <string name="login_cancelled">Anmeldung abgebrochen</string>
 
     <string name="setup_title">Setup</string>
@@ -67,6 +70,8 @@
     <string name="help_activities_text">Hier findest du alle gespeicherten Touren, kannst suchen und die Liste sortieren. „Alle Touren auf der Karte“ öffnet eine Weltkarte mit einem Punkt pro Tour. Tippe auf einen Punkt, um direkt zur passenden Tour zu springen. Wenn du zurückgehst, öffnet sich die Karte wieder an derselben Stelle.</string>
     <string name="help_bike_label">Konto</string>
     <string name="help_bike_text">Im Kontobereich siehst du deine verbundenen Bosch Smart System Bikes zusammen mit den wichtigsten Kontoinformationen. Die App funktioniert mit dem aktuellen Bosch Smart System, unterstützt aber nicht eBike System 2 oder eBike Connect.</string>
+    <string name="help_setup_label">Setup</string>
+    <string name="help_setup_text">Im Setup legst du das CSV-Format fest, wie viele Details der Cloud-Abgleich nachlädt und ob der Hintergrund-Sync täglich per WLAN, in jedem Netz oder gar nicht laufen soll.</string>
     <string name="help_functions_label">Funktionen</string>
     <string name="help_functions_text">Unter Funktionen kannst du deine gespeicherten Daten als CSV oder als PDF-Bericht exportieren. Die Exporte verwenden nur die Daten, die bereits auf deinem Gerät vorhanden sind, und öffnen danach das normale Android-Teilen-Menü. Das CSV-Format folgt deiner Einstellung aus dem Setup, das PDF richtet sich nach Sprache und Region auf deinem Gerät.</string>
     <string name="help_statistics_label">Statistiken</string>
@@ -264,6 +269,10 @@
     <string name="api_test_bike_assist_speed">Max. Unterstützungs-Geschwindigkeit: %1$s</string>
     <string name="api_test_bike_batteries">Batterien: %1$s</string>
     <string name="api_test_bike_assist_modes">Assist Modes: %1$s</string>
+    <string name="api_test_registrations_title">Registrierungen</string>
+    <string name="api_test_registrations_count">Einträge: %1$s</string>
+    <string name="api_test_registrations_bikes">Bike-Registrierungen: %1$s</string>
+    <string name="api_test_registrations_components">Komponenten-Registrierungen: %1$s</string>
 
     <string name="activities_hero_eyebrow">Tourenübersicht</string>
     <string name="activities_hero_title">%1$d sichtbar • %2$d geladen</string>
@@ -373,6 +382,7 @@
     <string name="track_export_copy_gpx">GPX kopieren</string>
     <string name="common_close">Schließen</string>
     <string name="common_cancel">Abbrechen</string>
+    <string name="common_select">Auswählen</string>
     <string name="track_share_chooser_gpx">GPX exportieren</string>
     <string name="track_share_chooser_csv">Track als CSV exportieren</string>
     <string name="bike_detail_fallback_title">Konto</string>
@@ -476,6 +486,10 @@
     <string name="dashboard_label_oidc_chain_entries">Zertifikatsketten-Einträge</string>
     <string name="dashboard_value_yes">Ja</string>
     <string name="dashboard_value_no">Nein</string>
+    <string name="dashboard_label_records">Einträge</string>
+    <string name="dashboard_label_bike_registered_at">Bike registriert</string>
+    <string name="dashboard_label_registered_components">Registrierte Komponenten</string>
+    <string name="dashboard_label_component_type">Komponententyp</string>
     <string name="dashboard_label_odometer">Kilometerstand</string>
     <string name="dashboard_label_max_assist">Max. Unterstützung</string>
     <string name="dashboard_label_wheel_circumference">Radumfang</string>
@@ -523,6 +537,12 @@
     <string name="dashboard_battery_prefix">Batterie %1$d</string>
     <string name="dashboard_section_remote">Remote</string>
     <string name="dashboard_section_head_unit">Head Unit</string>
+    <string name="dashboard_section_bike_pass">Bike-Pass</string>
+    <string name="dashboard_section_theft_report">Diebstahlmeldung %1$d</string>
+    <string name="dashboard_section_service_book">Service Book</string>
+    <string name="dashboard_section_service_record">Service-Eintrag %1$d</string>
+    <string name="dashboard_section_registrations">Registrierungen</string>
+    <string name="dashboard_section_registration_component">Registrierte Komponente %1$d</string>
     <string name="dashboard_battery_prefix_product">%1$s Produkt</string>
     <string name="dashboard_battery_prefix_part_number">%1$s Teilenummer</string>
     <string name="dashboard_battery_prefix_serial_number">%1$s Seriennummer</string>

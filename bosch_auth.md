@@ -16,6 +16,14 @@
 
 Bosch nutzt den **Authorization Code Flow + PKCE** (RFC 6749 + RFC 7636) – ohne Client Secret.
 
+## Hinweis vor dem Login
+
+Wenn ein Nutzer seine über Bosch bereitgestellten Daten an die App weitergeben möchte, soll vor dem Login auf das Flow-Portal verwiesen werden:
+
+- Flow-Portal: https://flow.bosch-ebike.com/data-act
+
+Der Hinweis ist inzwischen direkt im Login-Screen der App ergänzt.
+
 ### Schritt 1 – Authorization Request (mit PKCE)
 
 AppAuth generiert `code_verifier` und `code_challenge` automatisch.
@@ -146,6 +154,9 @@ Stand dieser Übersicht:
 | `GET /activity/smart-system/v1/activities/{activityId}/track` | HTTP 404 | Nein | Vermuteter reiner GPS-Track-Endpunkt | Für den getesteten Smart-System-Account nicht vorhanden; `/details` deckt den fachlichen Bedarf bereits weitgehend ab |
 | `GET /bike-profile/smart-system/v1/bikes` | HTTP 200 | Ja | Liste der Bikes des Accounts | Liefert Bike-Objekte mit Drive Unit, Batteries, Head Unit, Active Assist Modes und Basis-Metadaten; zentrale Quelle für Bike-Liste und initiale Synchronisation |
 | `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | HTTP 200 | Ja | Detaildaten zu einem konkreten Bike | Liefert die produktiv nutzbaren Zusatzinfos wie Walk-Assist, Einschaltzeit, Reichweiten pro Modus, Batterie-Lebensdaten und Gerätekomponenten |
+| `GET /bike-pass/smart-system/v1/bike-passes?bikeId={bikeId}` | HTTP 200 | Ja | Bike-Pass und Theft-Logs eines Bikes | Liefert Rahmennummer, Positionsangabe, Freitextmerkmale und ggf. Theft-Logs; fachlich oft optional oder leer |
+| `GET /service-book/smart-system/v1/service-records?bikeId={bikeId}` | HTTP 200 | Ja | Digitales Service Book pro Bike | Liefert Servicehistorie, Händlerdaten, Software-Updates und Batterie-Messungen; kann legitimerweise `0` Records zurückgeben |
+| `GET /bike-registration/smart-system/v1/registrations` | HTTP 200 | Ja | Bike- und Komponentenregistrierungen des Accounts | Liefert Registrierungszeitpunkte sowie Typ-, Serien- und Teilenummern registrierter Komponenten; wird in der App auf das geöffnete Bike gefiltert |
 | `GET /activity/smart-system/v1/activities/{activityId}/statistics` | HTTP 404 | Nein | Vermutete aggregierte Aktivitätsstatistik | Im getesteten Account nicht vorhanden; die Kennzahlen aus `activitySummaries` und `activityDetails` bleiben damit die belastbare Datenquelle |
 | `GET /activity/smart-system/v1/activities/{activityId}/power-share` | HTTP 404 | Nein | Vermutete Aufteilung von Fahrer- und Motorleistung | Nicht vorhanden; es gibt im aktuellen Vertrag keinen separat erreichbaren Power-Share-Endpunkt |
 | `GET /activity/smart-system/v1/activities/{activityId}/riding-mode-usage` | HTTP 404 | Nein | Vermutete Verteilung der Unterstützungsmodi pro Aktivität | Nicht vorhanden; falls Bosch diese Daten intern hat, sind sie über diesen Pfad für den getesteten Account nicht exposed |
@@ -186,7 +197,9 @@ Für die App ist das relevant, weil damit sowohl klassisches Paging per Paramete
 ### Fachliche Schlussfolgerungen aus dem aktuellen Stand
 
 - Der belastbare Smart-System-Vertrag besteht derzeit aus Aktivitätenliste, Aktivitätsdetails, Bikeliste und Bike-Detail
+- Zusätzlich produktiv nutzbar sind Bike Pass, Service Book und Registrierungen, sofern Bosch für Konto und Bike tatsächlich Daten liefert
 - `/activities/{activityId}/details` ist funktional wertvoller als `/track`, weil dort bereits Trackpunkte und Metrikwerte gemeinsam vorliegen
+- `Service Book = 0` ist ein normaler fachlicher Zustand und kein technischer Fehler
 - Die `404`-Antworten auf `statistics`, `power-share`, `riding-mode-usage`, `braking-statistics`, `statistics/annual` und `bike model` sprechen dafür, dass diese Pfade entweder intern, veraltet oder für den getesteten Account nicht freigeschaltet sind
 - Aggregationen wie Jahresstatistik, Modusnutzung oder Bremsauswertung müssen aktuell aus den bestätigten Rohdaten in der App selbst berechnet werden
 - Die Detaildaten enthalten real teils `latitude=0.0` und `longitude=0.0` sowie aufeinanderfolgende Duplikate derselben Koordinate; vor Karten-, Profil- oder GPX-Nutzung ist daher eine Bereinigung sinnvoll

@@ -17,6 +17,9 @@ import info.meuse24.m24bikestats.domain.model.BoschBatteryStressLevel
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.BoschComponent
 import info.meuse24.m24bikestats.domain.model.BoschDriveUnit
+import info.meuse24.m24bikestats.domain.model.BoschRegistration
+import info.meuse24.m24bikestats.domain.model.BoschTheftReportLog
+import info.meuse24.m24bikestats.domain.model.BoschServiceRecord
 import info.meuse24.m24bikestats.domain.model.estimateHealth
 import java.time.Instant
 import java.time.ZoneId
@@ -219,12 +222,17 @@ class DashboardUiModelMapper(
                                 add(s(R.string.dashboard_label_bike_id) to id)
                                 createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
                                 language?.let { add(s(R.string.dashboard_label_language) to it) }
+                                oemId?.let { add(s(R.string.dashboard_label_oem_id) to it) }
                                 driveUnit?.odometerMeters?.div(1000.0)?.let {
                                     add(s(R.string.dashboard_label_odometer) to String.format(Locale.US, "%.1f km", it))
                                 }
                                 driveUnit?.maximumAssistanceSpeedKmh?.let { add(s(R.string.dashboard_label_max_assist) to it.toSpeedText()) }
                                 driveUnit?.rearWheelCircumferenceMillimeters?.let {
                                     add(s(R.string.dashboard_label_wheel_circumference) to s(R.string.dashboard_wheel_circumference_value, it.toWholeNumber()))
+                                }
+                                serviceDueDate?.let { add(s(R.string.dashboard_label_service_due_date) to it.toReadableDateTime()) }
+                                serviceDueOdometerMeters?.let {
+                                    add(s(R.string.dashboard_label_service_due_odometer) to it.toKilometerText())
                                 }
                             },
                         ),
@@ -331,6 +339,76 @@ class DashboardUiModelMapper(
                     }
                     remoteControl?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_remote), rows = it.toRows())) }
                     headUnit?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_head_unit), rows = it.toRows())) }
+                    connectModule?.let { add(DetailSectionUiModel(title = s(R.string.dashboard_section_connect_module), rows = it.toRows())) }
+                    if (antiLockBrakeSystems.isNotEmpty()) {
+                        addAll(
+                            antiLockBrakeSystems.mapIndexed { index, component ->
+                                DetailSectionUiModel(
+                                    title = s(R.string.dashboard_section_abs_component, index + 1),
+                                    rows = component.toRows(),
+                                )
+                            }
+                        )
+                    }
+                    bikePass?.let { bikePass ->
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_bike_pass),
+                                rows = buildList {
+                                    bikePass.frameNumber?.let { add(s(R.string.dashboard_label_frame_number) to it) }
+                                    bikePass.frameNumberPosition?.let { add(s(R.string.dashboard_label_frame_number_position) to it) }
+                                    bikePass.description?.let { add(s(R.string.dashboard_label_bike_pass_description) to it) }
+                                    bikePass.createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
+                                    bikePass.updatedAt?.let { add(s(R.string.dashboard_label_updated_at) to it.toReadableDateTime()) }
+                                },
+                            )
+                        )
+                    }
+                    if (theftReportLogs.isNotEmpty()) {
+                        addAll(theftReportLogs.mapIndexed { index, log -> log.toDetailSection(index) })
+                    }
+                    add(
+                        DetailSectionUiModel(
+                            title = s(R.string.dashboard_section_service_book),
+                            rows = buildList {
+                                add(s(R.string.dashboard_label_records) to serviceRecords.size.toString())
+                                serviceRecords.firstOrNull()?.type?.let { add(s(R.string.dashboard_label_type) to it) }
+                                serviceRecords.firstOrNull()?.createdAt?.let {
+                                    add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime())
+                                }
+                            },
+                        )
+                    )
+                    if (serviceRecords.isNotEmpty()) {
+                        addAll(serviceRecords.mapIndexed { index, record -> record.toDetailSection(index) })
+                    }
+                    if (registrations.isNotEmpty()) {
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.dashboard_section_registrations),
+                                rows = buildList {
+                                    add(s(R.string.dashboard_label_records) to registrations.size.toString())
+                                    registrations.firstOrNull { it.registrationType == "BIKE_REGISTRATION" }?.createdAt?.let {
+                                        add(s(R.string.dashboard_label_bike_registered_at) to it.toReadableDateTime())
+                                    }
+                                    registrations
+                                        .filter { it.registrationType == "COMPONENT_REGISTRATION" }
+                                        .takeIf { it.isNotEmpty() }
+                                        ?.let { componentRegistrations ->
+                                            add(
+                                                s(R.string.dashboard_label_registered_components) to
+                                                    componentRegistrations.joinToString { it.componentType ?: s(R.string.pdf_value_not_available) },
+                                            )
+                                        }
+                                },
+                            )
+                        )
+                        addAll(
+                            registrations
+                                .filter { it.registrationType == "COMPONENT_REGISTRATION" }
+                                .mapIndexed { index, registration -> registration.toDetailSection(index) }
+                        )
+                    }
                 }.filter { it.rows.isNotEmpty() },
             )
         }
@@ -432,6 +510,89 @@ class DashboardUiModelMapper(
         partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
         serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
     }
+
+    private fun BoschTheftReportLog.toDetailSection(index: Int): DetailSectionUiModel =
+        DetailSectionUiModel(
+            title = s(R.string.dashboard_section_theft_report, index + 1),
+            rows = buildList {
+                createdAt?.let { add(s(R.string.dashboard_label_created_at) to it.toReadableDateTime()) }
+                theftCaseEnteredAt?.let { add(s(R.string.dashboard_label_theft_case_entered) to it.toReadableDateTime()) }
+                description?.let { add(s(R.string.dashboard_label_bike_pass_description) to it) }
+                riderPortalLink?.let { add(s(R.string.dashboard_label_portal_link) to it) }
+                timeZone?.let { add(s(R.string.dashboard_label_time_zone) to it) }
+                expiresAtEpochMillis?.let {
+                    add(
+                        s(R.string.dashboard_label_expires_at) to
+                            Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).format(DATE_TIME_FORMATTER),
+                    )
+                }
+                location?.address?.let { add(s(R.string.dashboard_label_location_address) to it) }
+                location?.description?.let { add(s(R.string.dashboard_label_location_note) to it) }
+                if (location?.latitude != null && location.longitude != null) {
+                    add(
+                        s(R.string.dashboard_label_location_coordinates) to
+                            "${location.latitude.toCoordinateText()}, ${location.longitude.toCoordinateText()}",
+                    )
+                }
+                location?.horizontalAccuracyMeters?.let {
+                    add(s(R.string.dashboard_label_location_accuracy) to s(R.string.dashboard_meters_value, it.toWholeNumber()))
+                }
+                location?.detectedAt?.let { add(s(R.string.dashboard_label_location_detected_at) to it.toReadableDateTime()) }
+            },
+        )
+
+    private fun BoschServiceRecord.toDetailSection(index: Int): DetailSectionUiModel =
+        DetailSectionUiModel(
+            title = s(R.string.dashboard_section_service_record, index + 1),
+            rows = buildList {
+                add(s(R.string.dashboard_label_type) to type)
+                add(s(R.string.dashboard_label_created_at) to createdAt.toReadableDateTime())
+                odometerValueMeters?.let { add(s(R.string.dashboard_label_odometer) to it.toDouble().toKilometerText()) }
+                bikeDealerName?.let { dealer ->
+                    val value = listOfNotNull(dealer, bikeDealerCity).joinToString(", ")
+                    add(s(R.string.dashboard_label_bike_dealer) to value)
+                }
+                toolVersion?.let { add(s(R.string.dashboard_label_tool_version) to it) }
+                batteryMeasurement?.measuredCapacityPercentage?.let {
+                    add(s(R.string.dashboard_label_battery_health) to "$it %")
+                }
+                batteryMeasurement?.measuredEnergyCapacityWh?.let {
+                    add(s(R.string.dashboard_label_measured_capacity) to s(R.string.dashboard_wh_value, it))
+                }
+                batteryMeasurement?.nominalEnergyCapacityWh?.let {
+                    add(s(R.string.dashboard_label_nominal_capacity_short) to s(R.string.dashboard_wh_value, it))
+                }
+                batteryMeasurement?.fullChargeCycles?.let {
+                    add(s(R.string.dashboard_label_total_charge_cycles) to it.toString())
+                }
+                softwareUpdate?.let { update ->
+                    val client = listOfNotNull(update.clientType, update.clientVersion).joinToString(" ")
+                    if (client.isNotBlank()) add(s(R.string.dashboard_label_update_client) to client)
+                    add(
+                        s(R.string.dashboard_label_updated_components) to
+                            if (update.updatedComponentNames.isNotEmpty()) {
+                                "${update.updatedComponentsCount}: ${update.updatedComponentNames.joinToString()}"
+                            } else {
+                                update.updatedComponentsCount.toString()
+                            }
+                    )
+                    update.isForcedUpdate?.let {
+                        add(s(R.string.dashboard_label_forced_update) to if (it) s(R.string.dashboard_value_yes) else s(R.string.dashboard_value_no))
+                    }
+                }
+            },
+        )
+
+    private fun BoschRegistration.toDetailSection(index: Int): DetailSectionUiModel =
+        DetailSectionUiModel(
+            title = s(R.string.dashboard_section_registration_component, index + 1),
+            rows = buildList {
+                componentType?.let { add(s(R.string.dashboard_label_component_type) to it) }
+                add(s(R.string.dashboard_label_created_at) to createdAt.toReadableDateTime())
+                partNumber?.let { add(s(R.string.dashboard_label_part_number) to it) }
+                serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
+            },
+        )
 
     private fun BikeDetailUiModel.toShareText(): String =
         buildString {

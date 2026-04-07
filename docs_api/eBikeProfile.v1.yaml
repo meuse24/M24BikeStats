@@ -1,0 +1,548 @@
+openapi: 3.0.4
+info:
+  version: 1.3.0
+  title: eBike Profile API (Smart System)
+  description: 'With eBike Profile API, riders gain insights on their eBike data like detailed specifications, configurations and changes.'
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - url: 'https://api.bosch-ebike.com/bike-profile/smart-system/v1'
+    description: Production
+paths:
+  /bikes:
+    get:
+      tags:
+        - Bikes
+      summary: List all eBikes
+      description: Returns a list of eBikes associated with a user.
+      operationId: get-bikes
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bikes:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Bike'
+              examples:
+                example:
+                  value:
+                    bikes:
+                      - id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+                        createdAt: '2022-03-30T14:15:22Z'
+                        serviceDue:
+                          date: '2023-06-30T14:15:22Z'
+                          odometer: 2000000
+                        language: en
+                        driveUnit:
+                          productName: Drive Unit Performance Line CX
+                          serialNumber: 17509-0059-99-300-00-0000
+                          partNumber: EB1110000A-50
+                          walkAssistConfiguration:
+                            isEnabled: true
+                            maximumSpeed: 6
+                          odometer: 15000
+                          rearWheelCircumferenceUser: 2300
+                          maximumAssistanceSpeed: 45
+                          activeAssistModes:
+                            - name: Eco
+                              reachableRange: 60000
+                            - name: Tour
+                              reachableRange: 50000
+                            - name: eMTB
+                              reachableRange: 40000
+                            - name: Turbo
+                              reachableRange: 30000
+                          powerOnTime:
+                            total: 3600
+                            withMotorSupport: 3000
+                        remoteControl:
+                          productName: LED Remote
+                          serialNumber: 14026-0289-01-A10-00-0000
+                          partNumber: EB1310000E
+                        batteries:
+                          - productName: PowerTube 750
+                            serialNumber: 17331-0067-02-797-00-0016
+                            partNumber: EB1210000X
+                            deliveredWhOverLifetime: 10000
+                            chargeCycles:
+                              total: 27.9
+                              onBike: 5
+                              offBike: 22.9
+                        antiLockBrakeSystems:
+                          - productName: eBike ABS
+                            serialNumber: 12345-6789-12-345-11-1111
+                            partNumber: EB11110002
+                        connectModule:
+                          productName: ConnectModule
+                          serialNumber: 17918-0052-01-368-00-0000
+                          partNumber: EB1310000B
+                        headUnit:
+                          productName: Kiox 300
+                          serialNumber: 13916-0056-01-A06-00-0000
+                          partNumber: EB13100003
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: application/json
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/default'
+      security:
+        - OIDC:
+            - 'bike-profile:bikes:read'
+      servers:
+        - url: 'https://api.bosch-ebike.com/bike-profile/smart-system/v1'
+          description: Production
+  '/bikes/{bikeId}':
+    get:
+      tags:
+        - Bikes
+      summary: Retrieve a single eBike
+      description: |-
+        Returns data of a single eBike associated with a user.
+
+        This endpoint supports `ETag` (entity tag), a HTTP response header, to check if the resource has changed.
+        ETags can be used by API clients for caching and conditional requests to save bandwidth by using the `If-None-Match` HTTP request header.
+      operationId: get-bike-by-id
+      parameters:
+        - name: If-None-Match
+          in: header
+          description: 'Use the value of the previously received ETag response header to check if the resource has changed. If so, you get the HTTP response status `200`, the current version of the resource and a new ETag response header. In case the resource has not changed you just get the HTTP response status `304`.'
+          schema:
+            type: string
+        - name: bikeId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bike'
+              examples:
+                example:
+                  value:
+                    id: 497f6eca-6276-4993-bfeb-53cbbbba6f08
+                    createdAt: '2022-03-30T14:15:22Z'
+                    serviceDue:
+                      date: '2023-06-30T14:15:22Z'
+                      odometer: 2000000
+                    language: en
+                    driveUnit:
+                      productName: Drive Unit Performance Line CX
+                      serialNumber: 17509-0059-99-300-00-0000
+                      partNumber: EB1110000A-50
+                      walkAssistConfiguration:
+                        isEnabled: true
+                        maximumSpeed: 6
+                      odometer: 1500
+                      rearWheelCircumferenceUser: 2300
+                      maximumAssistanceSpeed: 45
+                      activeAssistModes:
+                        - name: Eco
+                          reachableRange: 60000
+                        - name: Tour
+                          reachableRange: 50000
+                        - name: eMTB
+                          reachableRange: 40000
+                        - name: Turbo
+                          reachableRange: 30000
+                      powerOnTime:
+                        total: 3600
+                        withMotorSupport: 3000
+                    remoteControl:
+                      productName: LED Remote
+                      serialNumber: 14026-0289-01-A10-00-0000
+                      partNumber: EB1310000E
+                    batteries:
+                      - productName: PowerTube
+                        serialNumber: 17331-0067-02-797-00-0016
+                        partNumber: EB1210000X
+                        chargeCycles:
+                          total: 27.9
+                          onBike: 5
+                          offBike: 22.9
+                    antiLockBrakeSystems:
+                      - productName: eBike ABS
+                        serialNumber: 12345-6789-12-345-11-1111
+                        partNumber: EB11110002
+                    connectModule:
+                      productName: ConnectModule
+                      serialNumber: 17918-0052-01-368-00-0000
+                      partNumber: EB1310000B
+                    headUnit:
+                      productName: Kiox 300
+                      serialNumber: 13916-0056-01-A06-00-0000
+                      partNumber: EB13100003
+          headers:
+            Content-Type:
+              schema:
+                type: string
+              description: application/json
+            ETag:
+              schema:
+                type: string
+              description: Calculated value to check with the `If-None-Match` request header  if the resource has changed.
+        '304':
+          description: Not Modified
+          headers:
+            ETag:
+              schema:
+                type: string
+              description: Calculated value to check with the `If-None-Match` request header  if the resource has changed.
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                validation-error:
+                  value:
+                    type: /problems/validation-error
+                    detail: 'parameter ''bikeId'' in path has an error: invalid UUID format'
+                    requestId: d4af4b7cc7db424e80a7a84557d53001
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '404':
+          description: Not Found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              examples:
+                resource-not-found:
+                  value:
+                    detail: requested resource was not found
+                    requestId: 7a019a28cf6d49ea8b5950626f51e50e
+                    type: /problems/resource-not-found
+        '500':
+          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/default'
+      security:
+        - OIDC:
+            - 'bike-profile:bikes:read'
+      servers:
+        - url: 'https://api.bosch-ebike.com/bike-profile/smart-system/v1'
+          description: Production
+tags:
+  - name: Bikes
+components:
+  securitySchemes:
+    OIDC:
+      type: oauth2
+      description: |-
+        Bosch Identity & Access Management
+
+        **Offline Access:** Client applications may use [offline_access](https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess) tokens instead of refresh tokens. See the scope description below.
+      flows:
+        authorizationCode:
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          authorizationUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth'
+          scopes:
+            'bike-profile:bikes:read': Enables reading eBike data.
+            offline_access: Use this optional scope to request an offline token instead of a refresh token. The client application is responsible for securely persisting the offline token. The offline token never expires as long as it is used for a refresh token action at least once every 180 days.
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+  responses:
+    '401':
+      description: Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification fails
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    '403':
+      description: Forbidden
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-missing:
+              value: 'RBAC: access denied'
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            insufficient-privileges:
+              value:
+                type: /problems/authorization-error#insufficient-privileges
+                detail: required scope(s) are missieng
+                requestId: 7a019a28cf6d49ea8b5950626f51e50e
+    '500':
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          examples:
+            internal-server-error:
+              value:
+                type: /problems/internal-server-error
+                detail: an unexpected error occured
+                requestId: 798a1836ee1a4a39b9e43f6425135bbe
+    default:
+      description: Example response
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+  schemas:
+    Bike:
+      type: object
+      title: Bike
+      description: The Bike contains eBike master data and information about its components.
+      properties:
+        id:
+          type: string
+          description: Bosch unique eBike ID.
+          format: uuid
+        oemId:
+          type: string
+          description: OEM unique eBike ID.
+        createdAt:
+          type: string
+          description: Date the Cloud API first received bike data from the Flow app.
+          format: date-time
+        language:
+          type: string
+          description: Language used within the eBike system.
+          maxLength: 11
+        serviceDue:
+          type: object
+          properties:
+            date:
+              type: string
+              description: Point in time in UTC after service is due.
+              format: date-time
+            odometer:
+              type: number
+              description: The total distance in meters after which service is due.
+              format: float
+        driveUnit:
+          $ref: '#/components/schemas/DriveUnit'
+        remoteControl:
+          $ref: '#/components/schemas/RemoteControl'
+        batteries:
+          type: array
+          description: Batteries of a bike.
+          items:
+            $ref: '#/components/schemas/Battery'
+        antiLockBrakeSystems:
+          type: array
+          items:
+            $ref: '#/components/schemas/AntiLockBrakeSystem'
+        connectModule:
+          $ref: '#/components/schemas/ConnectModule'
+        headUnit:
+          $ref: '#/components/schemas/HeadUnit'
+      required:
+        - id
+        - createdAt
+        - driveUnit
+        - remoteControl
+        - batteries
+    DriveUnit:
+      title: DriveUnit
+      description: The eBike drive unit.
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+        - type: object
+          properties:
+            walkAssistConfiguration:
+              type: object
+              properties:
+                isEnabled:
+                  type: boolean
+                  description: A boolean indicating if the walk assist is enabled.
+                maximumSpeed:
+                  type: number
+                  description: Maximum bike speed of the walk assist in km/h.
+                  format: float
+                  minimum: 0
+            odometer:
+              type: number
+              description: The total distance in meters.
+              format: float
+              minimum: 0
+            rearWheelCircumferenceUser:
+              type: number
+              description: Wheel circumference in mm.
+              format: float
+              minimum: 0
+            maximumAssistanceSpeed:
+              type: number
+              description: The maximum assistance speed in km/h.
+              format: float
+              minimum: 0
+            activeAssistModes:
+              type: array
+              description: Reachable range in meters per active assist mode sorted by weakest to strongest assist mode.
+              minItems: 4
+              maxItems: 4
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Name of the assist mode.
+                    maxLength: 20
+                  reachableRange:
+                    type: number
+                    description: Provides the reachable range in meters.
+                    format: float
+                    minimum: 0
+            powerOnTime:
+              type: object
+              properties:
+                total:
+                  type: integer
+                  description: The power-on time in hours.
+                  format: int32
+                withMotorSupport:
+                  type: integer
+                  format: int32
+    BaseComponent:
+      type: object
+      title: BaseComponent
+      properties:
+        productName:
+          type: string
+        serialNumber:
+          type: string
+          minLength: 25
+          maxLength: 25
+        partNumber:
+          type: string
+          minLength: 10
+          maxLength: 13
+      required:
+        - serialNumber
+        - partNumber
+    RemoteControl:
+      title: RemoteControl
+      description: Remote Control (also known as Thumb Controller). Used to allow riders to control the eBike settings without a third-party device.
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+        - type: object
+    Battery:
+      title: Battery
+      description: 'Bike battery (e.g., Bosch rechargeable lithium-ion battery). May include intelligent Battery Management System. A long-life energy source for the eBike. Accessible as PowerPack, PowerTube or DualBattery.'
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+        - type: object
+          properties:
+            deliveredWhOverLifetime:
+              type: integer
+              description: The delivered Wh over lifetime.
+              format: int64
+              minimum: 0
+            chargeCycles:
+              type: object
+              properties:
+                total:
+                  type: number
+                  description: The total number of full charge cycles.
+                  format: float
+                  minimum: 0
+                onBike:
+                  type: number
+                  description: The number of full charge cycles of the battery while charging on bike.
+                  format: float
+                  minimum: 0
+                offBike:
+                  type: number
+                  description: The number of full charge cycles of the battery while charging stand-alone/off bike.
+                  format: float
+                  minimum: 0
+              required:
+                - total
+                - onBike
+                - offBike
+    AntiLockBrakeSystem:
+      title: AntiLockBrakeSystem
+      description: Anti-lock Braking System (Commonly abbreviated as "ABS"). Stands for more riding safety while enabling controlled and stable braking even under difficult conditions.
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+    ConnectModule:
+      title: ConnectModule
+      description: Bosch ConnectModule (Hardware component to send telemetry data from the eBike without relying on a smartphone for internet connection).
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+    HeadUnit:
+      title: HeadUnit
+      description: Head Unit (display on the eBike to allow riding without needing a smartphone).
+      allOf:
+        - $ref: '#/components/schemas/BaseComponent'
+    Problem:
+      type: object
+      title: Problem
+      properties:
+        type:
+          type: string
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          format: uri-reference
+          default: 'about:blank'
+          example: /some/uri-reference
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: some title for the error situation
+        status:
+          type: integer
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          minimum: 100
+          exclusiveMaximum: true
+          maximum: 600
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: some description for the error situation
+        instance:
+          type: string
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+          format: uri-reference
+          example: /some/uri-reference#specific-occurrence-context
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      required:
+        - type
+        - detail
+        - requestId
+security:
+  - OIDC:
+      - 'bike-profile:bikes:read'

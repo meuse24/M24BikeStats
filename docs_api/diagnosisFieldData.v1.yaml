@@ -1,0 +1,411 @@
+openapi: 3.0.3
+info:
+  version: 1.1.0
+  title: Diagnosis Field Data API (Smart System)
+  description: |
+    The Diagnosis Field Data API offers endpoints that collect field data from Smart System bikes when  they are connected to the Bosch Diagnosis Tool 3 for the purpose of product improvement.
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - url: 'https://api.bosch-ebike.com/diagnosis-field-data/smart-system/v1'
+    description: Production
+paths:
+  /capacity-testers:
+    get:
+      tags:
+        - Smart System Field Data
+      summary: Get all available battery measurement field data collected by Bosch Capacity Tester (Smart System).
+      description: |
+        Returns all available battery measurement field data for the given Smart System battery that have been shared by  the user with the data recipient (looked up by the backend via the user's JWT). The battery is identified by its  part number and serial number.      
+      operationId: getCapacityTesterFieldData
+      parameters:
+        - $ref: '#/components/parameters/SmartSystemPartNumberFilter'
+        - $ref: '#/components/parameters/SmartSystemSerialNumberFilter'
+      responses:
+        '200':
+          description: |
+            List of battery measurement data by the Bosch Capacity Tester. Will return an empty list if no data is  available for the given battery.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CapacityTesterFieldDataResponseV1'
+        '400':
+          $ref: '#/components/responses/badRequestResponseV1'
+        '401':
+          $ref: '#/components/responses/unauthorizedResponseV1'
+        '403':
+          $ref: '#/components/responses/forbiddenResponseV1'
+        '429':
+          $ref: '#/components/responses/rateLimitResponseV1'
+        default:
+          $ref: '#/components/responses/unexpectedErrorResponseV1'
+      security:
+        - OIDC_PROD:
+            - offline_access
+      servers:
+        - url: 'https://api.bosch-ebike.com/diagnosis-field-data/smart-system/v1'
+          description: Production
+tags:
+  - name: Smart System Field Data
+    description: Smart System Field Data
+components:
+  parameters:
+    SmartSystemPartNumberFilter:
+      name: partNumber
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/SmartSystemPartNumber'
+    SmartSystemSerialNumberFilter:
+      name: serialNumber
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/SmartSystemSerialNumber'
+  securitySchemes:
+    OIDC_PROD:
+      type: oauth2
+      description: |-
+        Bosch Identity & Access Management for **Smart System** users
+
+        **Offline Access:** Client applications may use [offline_access](https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess). See the scope description below.
+      flows:
+        authorizationCode:
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          authorizationUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth'
+          scopes:
+            offline_access: Use this optional scope to request a refresh token which never expires. The client application is responsible for securely persisting the token. The token never expires as long as it is used for a refresh token grant at least once every 180 days.
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+  responses:
+    unexpectedErrorResponseV1:
+      description: |
+        Unexpected error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    badRequestResponseV1:
+      description: |
+        Request parameters are malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    unauthorizedResponseV1:
+      description: |
+        Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification failed
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    forbiddenResponseV1:
+      description: Forbidden
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-denied:
+              value: 'RBAC: access denied'
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    rateLimitResponseV1:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: string
+          description: 'Bucket size, refresh size and time window for refresh, in seconds'
+          examples:
+            __default:
+              value: '100, 100;w=60'
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current time window
+          examples:
+            __default:
+              value: 96
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time in seconds until bucket is refreshed
+          examples:
+            __default:
+              value: 57
+  schemas:
+    CapacityTesterFieldDataResponseV1:
+      type: object
+      description: |
+        Represents a response containing field data collected by the Bosch Capacity Tester for a Smart System or eBike System 2 bike.
+      properties:
+        capacityTesters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CapacityTesterDataPayload'
+      required:
+        - capacityTesters
+    CapacityTesterDataPayload:
+      type: object
+      description: |
+        Payload containing the capacity tester data details of one measurement.
+      properties:
+        capacityTesterSerialNumber:
+          type: string
+          description: Serial number of the Bosch Capacity Tester.
+          example: BCT3990.1
+        capacityTesterData:
+          $ref: '#/components/schemas/CapacityTesterDataDetails'
+        batteryData:
+          $ref: '#/components/schemas/BatteryDataDetails'
+        createdAt:
+          $ref: '#/components/schemas/TimestampServer'
+    CapacityTesterDataDetails:
+      type: object
+      description: |
+        Contains the capacity tester data details of one measurement.
+      properties:
+        totalOperationTime:
+          type: integer
+          description: Total operation time of the capacity tester device in minutes.
+          format: int64
+          minimum: 0
+          example: 4800
+        numOfSuccessfulFinishedDischargeCycles:
+          type: integer
+          description: Number of successfully completed battery discharge cycles.
+          format: int64
+          minimum: 0
+          example: 51
+        numOfSuccessfulFinishedMeasurementCycles:
+          type: integer
+          description: Number of successfully completed battery measurement cycles.
+          format: int64
+          minimum: 0
+          example: 163
+        numOfDischargeCyclesStopped:
+          type: integer
+          description: Number of battery discharge cycles that were manually stopped by the user.
+          format: int64
+          minimum: 0
+          example: 34
+        numOfDischargeCycleErrors:
+          type: integer
+          description: Number of battery discharge cycles that ended with errors.
+          format: int64
+          minimum: 0
+          example: 12
+        numOfMeasurementCyclesStopped:
+          type: integer
+          description: Number of battery measurement cycles that were manually stopped by the user.
+          format: int64
+          minimum: 0
+          example: 8
+        numOfMeasurementCycleErrors:
+          type: integer
+          description: Number of battery measurement cycles that ended with errors.
+          format: int64
+          minimum: 0
+          example: 15
+        maxBmsCurrentExtAdc:
+          type: integer
+          description: Maximum measured battery management system current over life time (ext. ADC) in milliamperes.
+          format: int64
+          minimum: 0
+          example: 45
+        minBmsCurrentExtAdc:
+          type: integer
+          description: Minimum measured battery management system current over life time (ext. ADC) in milliamperes.
+          format: int64
+          minimum: 0
+          example: 11
+        maxBmsCurrentIntAdc:
+          type: integer
+          description: Maximum measured battery management system current over life time (int. ADC) in milliamperes.
+          format: int64
+          minimum: 0
+          example: 40
+        minBmsCurrentIntAdc:
+          type: integer
+          description: Minimum measured battery management system current over life time (int. ADC) in milliamperes.
+          format: int64
+          minimum: 0
+          example: 12
+        maxBmsVoltageExtAdc:
+          type: integer
+          description: Maximum measured battery management system voltage over life time (ext. ADC) in millivolts.
+          format: int64
+          minimum: 0
+          example: 39
+        maxFanVoltageIntAdc:
+          type: integer
+          description: Maximum measured fan voltage over life time (int. ADC) in millivolts.
+          format: int64
+          minimum: 0
+          example: 3
+        maxTempSensor1:
+          type: integer
+          description: Maximum temperature recorded by sensor 1 over life time in 10mK.
+          format: int64
+          minimum: 0
+          example: 78
+        minTempSensor1:
+          type: integer
+          description: Minimum temperature recorded by sensor 1 over life time in 10mK.
+          format: int64
+          minimum: 0
+          example: 28
+        maxTempSensor2:
+          type: integer
+          description: Maximum temperature recorded by sensor 2 over life time in 10mK.
+          format: int64
+          minimum: 0
+          example: 83
+        minTempSensor2:
+          type: integer
+          description: Minimum temperature recorded by sensor 2 over life time in 10mK.
+          format: int64
+          minimum: 0
+          example: 18
+        numOfStartedDischargeCycles:
+          type: integer
+          description: Number of battery discharge cycles that were started by the user.
+          format: int64
+          minimum: 0
+          example: 93
+        numOfStartedMeasurementCycles:
+          type: integer
+          description: Number of battery measurement cycles that were started by the user.
+          format: int64
+          minimum: 0
+          example: 114
+        numOfInterruptedDischargeCyclesBatteryDisconnect:
+          type: integer
+          description: Number of battery discharge cycles interrupted due to battery disconnection.
+          format: int64
+          minimum: 0
+          example: 32
+        numOfInterruptedMeasurementCyclesBatteryDisconnect:
+          type: integer
+          description: Number of battery measurement cycles interrupted due to battery disconnection.
+          format: int64
+          minimum: 0
+          example: 53
+    BatteryDataDetails:
+      type: object
+      properties:
+        manufacturingDate:
+          type: string
+          description: Manufacturing date of the battery.
+          example: 01.01.2022
+        hwVersion:
+          type: string
+          description: Hardware version of the battery.
+          example: 1.0.0
+        nominalCapacity:
+          type: integer
+          description: Nominal capacity of the battery in watt-hours.
+          format: int64
+          minimum: 0
+          example: 500
+        fullChargeCycles:
+          type: number
+          description: Number of completed full charge cycles of the battery.
+          format: float
+          example: 2.3
+        partNumber:
+          type: string
+          description: Manufacturer's part number of the battery.
+          example: '1234567890'
+        serialNumber:
+          type: string
+          description: Unique serial number of the battery.
+          example: bbp123456789
+        swVersion:
+          type: string
+          description: Software version of the battery management system.
+          example: 1.0.0
+        measuredCapacity:
+          type: integer
+          description: Actual measured capacity of the battery in watt-hours.
+          format: int64
+          minimum: 0
+          example: 200
+        onBikeMeasurement:
+          type: boolean
+          description: Indicates whether the measurement was conducted while the battery was installed on a bike.
+          example: true
+    TimestampServer:
+      type: string
+      description: Time of the creation of this item on the server. Used in response only.
+      format: date-time
+      readOnly: true
+      example: '2023-04-30T14:04:54.846Z'
+    SmartSystemPartNumber:
+      type: string
+      description: |
+        The part number of a Smart System component.
+      pattern: '^[A-Za-z0-9]{10}((-[A-Za-z0-9]{2})|(#([A-F0-9]{2})*\$)|([A-F0-9]{2}))?$'
+      example: '1234567890'
+    SmartSystemSerialNumber:
+      type: string
+      description: |
+        The serial number of a Smart System component.
+      pattern: '^[A-Z0-9]{5}-[0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{3}-[A-Z0-9]{2}-[A-Z0-9]{4}$'
+      example: 12345-1234-12-123-12-1234
+    problem-1.0.0:
+      type: object
+      title: Problem
+      properties:
+        type:
+          type: string
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          format: uri-reference
+          default: 'about:blank'
+          example: /problems/connection-error
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Service Unavailable
+        status:
+          type: integer
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          minimum: 100
+          maximum: 599
+          example: 503
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Connection to database timed out
+        instance:
+          type: string
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+          format: uri-reference
+          example: /problems/connection-error#token-info-read-timed-out
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      required:
+        - type
+        - detail
+        - requestId
+security:
+  - OIDC_PROD:
+      - offline_access

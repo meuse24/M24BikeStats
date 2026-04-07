@@ -1,0 +1,360 @@
+openapi: 3.0.3
+info:
+  version: 1.1.0
+  title: Bike Pass API
+  description: |
+    The Bike Pass API offers an endpoint that collects additional eBike information provided by the Flow app user.
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - url: 'https://api.bosch-ebike.com/bike-pass/smart-system/v1'
+    description: Production
+paths:
+  /bike-passes:
+    get:
+      tags:
+        - Bike Passes
+      summary: Get bike passes for a Smart System bike
+      description: |
+        Returns the bike pass for the given Smart System bike that have been shared by the user with the data recipient  (looked up by the backend via the user's JWT). The bike is identified by its bikeId.
+      operationId: getBikePasses
+      parameters:
+        - $ref: '#/components/parameters/SmartSystemBikeIdFilter'
+      responses:
+        '200':
+          description: |
+            List with Bike pass data for requested rider. Will return an empty list if no data is available for the  given bike.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BikePassesResponseV1'
+        '400':
+          $ref: '#/components/responses/badRequestResponseV1'
+        '401':
+          $ref: '#/components/responses/unauthorizedResponseV1'
+        '403':
+          $ref: '#/components/responses/forbiddenResponseV1'
+        '429':
+          $ref: '#/components/responses/rateLimitResponseV1'
+        default:
+          $ref: '#/components/responses/unexpectedErrorResponseV1'
+      security:
+        - OIDC_PROD:
+            - offline_access
+      servers:
+        - url: 'https://api.bosch-ebike.com/bike-pass/smart-system/v1'
+          description: Production
+tags:
+  - name: Bike Passes
+    description: Endpoints of Smart System Bike Pass EUDA API
+components:
+  parameters:
+    SmartSystemBikeIdFilter:
+      name: bikeId
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/SmartSystemBikeId'
+  securitySchemes:
+    OIDC_PROD:
+      type: oauth2
+      description: |-
+        Bosch Identity & Access Management for **Smart System** users
+
+        **Offline Access:** Client applications may use [offline_access](https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess). See the scope description below.
+      flows:
+        authorizationCode:
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          authorizationUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth'
+          scopes:
+            offline_access: Use this optional scope to request a refresh token which never expires. The client application is responsible for securely persisting the token. The token never expires as long as it is used for a refresh token grant at least once every 180 days.
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+  responses:
+    unexpectedErrorResponseV1:
+      description: |
+        Unexpected error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    badRequestResponseV1:
+      description: |
+        Request parameters are malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    unauthorizedResponseV1:
+      description: |
+        Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification failed
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    forbiddenResponseV1:
+      description: Forbidden
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-denied:
+              value: 'RBAC: access denied'
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    rateLimitResponseV1:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: string
+          description: 'Bucket size, refresh size and time window for refresh, in seconds'
+          examples:
+            __default:
+              value: '100, 100;w=60'
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current time window
+          examples:
+            __default:
+              value: 96
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time in seconds until bucket is refreshed
+          examples:
+            __default:
+              value: 57
+  schemas:
+    BikePassesResponseV1:
+      type: object
+      description: |
+        Response schema for the bike passes of a Smart System bike.
+      properties:
+        bikePasses:
+          type: array
+          description: List of bike passes for the requested bike.
+          items:
+            $ref: '#/components/schemas/BikePassSchemaV1'
+        theftReportLogs:
+          type: array
+          description: List of theft report logs for the requested bike.
+          items:
+            $ref: '#/components/schemas/TheftReportLog'
+      required:
+        - bikePasses
+        - theftReportLogs
+    BikePassSchemaV1:
+      type: object
+      description: |
+        Schema for the bike pass, which includes unique identifiers and special attributes of the bike.
+        This schema is used to track and manage bike passes within the system.
+      properties:
+        bikeId:
+          $ref: '#/components/schemas/SmartSystemBikeId'
+        frameNumber:
+          type: string
+          description: Unique identifier for the bike's frame.
+          maxLength: 300
+          example: WOW 12345 AB CD
+        frameNumberPosition:
+          type: string
+          description: Position of unique identifier for the bike's frame.
+          maxLength: 300
+          example: bottom bracket
+        description:
+          type: string
+          description: Description of special attributes of the bike.
+          maxLength: 300
+          example: 'Some fancy stars on the fork that glows in the dark :)'
+        createdAt:
+          type: string
+          description: Timestamp when bikes pass has been created.
+          format: date-time
+          readOnly: true
+          example: '2023-04-05T08:08:08.12345Z'
+        updatedAt:
+          type: string
+          description: Timestamp when bike pass has been updated (latest update).
+          format: date-time
+          readOnly: true
+          example: '2023-04-05T08:08:08.12345Z'
+      required:
+        - bikeId
+        - createdAt
+        - updatedAt
+    SmartSystemBikeId:
+      type: string
+      description: |
+        The Smart System bike's globally unique ID (RFC 4122-compliant UUID) aka. Bosch System ID
+      format: uuid
+      example: 796c0ba5-c305-4dff-96b8-2e46237eb77e
+    TheftReportLog:
+      type: object
+      description: Data about a theft report log for a bike.
+      properties:
+        theftReportLogId:
+          type: string
+          description: Unique identifier for the theft report log.
+          format: uuid
+        createdAt:
+          type: string
+          description: Timestamp when the theft report log was created.
+          format: date-time
+          example: '2023-04-05T08:08:08.12345Z'
+        expiresAt:
+          type: integer
+          description: Expiry timestamp (epoch millis).
+          format: int64
+        bikeId:
+          $ref: '#/components/schemas/SmartSystemBikeId'
+        locale:
+          $ref: '#/components/schemas/Locale'
+        timeZone:
+          type: string
+          description: Time zone of the report.
+        unitSystem:
+          $ref: '#/components/schemas/UnitSystem'
+        theftCaseEnteredAt:
+          type: string
+          description: Timestamp when theft state has been entered by BCM or started by owner.
+          format: date-time
+          example: '2023-04-05T08:08:08.12345+01:00'
+        riderPortalLink:
+          type: string
+          description: Link to frontend with map to locate stolen bike
+          format: uri
+          example: 'https://example.edu/bite/basket?aunt=authority'
+        description:
+          type: string
+          description: Description of the theft report.
+        location:
+          $ref: '#/components/schemas/LocationV1'
+        owner:
+          $ref: '#/components/schemas/OwnerV1'
+    Locale:
+      type: string
+      description: |
+        Describes a country specific language. Values must be in Java Locale format with ISO 639 field (two-letter code) for 
+        language and an optional ISO 3166 field (two-letter code) for country. If nothing is provided or the locale is not 
+        valid - locale value from rider profile or 'en-GB' as fallback is used.
+      pattern: '^[a-z]{2}(-[A-Z]{2})?$'
+      example: de-DE
+    UnitSystem:
+      type: string
+      enum:
+        - METRIC
+        - IMPERIAL
+      description: |
+        The unit system used for measurements in the eBike system.
+        It can be either METRIC or IMPERIAL.
+        - METRIC: Uses metric units (e.g., kilometers, kilograms).
+        - IMPERIAL: Uses imperial units (e.g., miles, pounds).
+      example: METRIC
+    LocationV1:
+      type: object
+      properties:
+        detectedAt:
+          type: string
+          description: Timestamp when location has been detected by BCM or owner. All ISO 8601 compliant date time formats will be accepted.
+          format: date-time
+          example: '2023-04-05T08:08:08.12345Z'
+        latitude:
+          type: number
+          format: float
+          example: 52.45414
+        longitude:
+          type: number
+          format: float
+          example: 13.38835
+        horizontalAccuracy:
+          type: number
+          description: Describes the accuracy of provided gps coordinates in meters
+          format: float
+          example: 15
+        address:
+          type: string
+          maxLength: 300
+          example: 'Ullsteinstraße 128, 12109 Berlin'
+        description:
+          type: string
+          maxLength: 300
+          example: Behind the stairs
+    OwnerV1:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the bike owner. FirstName and lastName from rider profile are used for theft report if no value for name was provided.
+          maxLength: 300
+          example: Max Mustermann
+        address:
+          type: string
+          maxLength: 300
+          example: 'Ullsteinstraße 128, 12109 Berlin'
+        eMailAddress:
+          type: string
+          description: Email address of the bike owner. Email address from rider profile is used for theft report if no value for eMailAddress was provided.
+          maxLength: 349
+          example: user@test.com
+        phoneNumber:
+          type: string
+          maxLength: 30
+          example: 0123-4567890
+    problem-1.0.0:
+      type: object
+      title: Problem
+      properties:
+        type:
+          type: string
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          format: uri-reference
+          default: 'about:blank'
+          example: /problems/connection-error
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Service Unavailable
+        status:
+          type: integer
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          minimum: 100
+          maximum: 599
+          example: 503
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Connection to database timed out
+        instance:
+          type: string
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+          format: uri-reference
+          example: /problems/connection-error#token-info-read-timed-out
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      required:
+        - type
+        - detail
+        - requestId
+security:
+  - OIDC_PROD:
+      - offline_access

@@ -23,6 +23,25 @@ sealed interface BoschReadableResult {
         val bike: BikeItem,
     ) : BoschReadableResult
 
+    data class BikePass(
+        val frameNumber: String?,
+        val frameNumberPosition: String?,
+        val description: String?,
+        val theftReportCount: Int,
+    ) : BoschReadableResult
+
+    data class ServiceBook(
+        val recordCount: Int,
+        val latestType: String?,
+        val latestDealer: String?,
+    ) : BoschReadableResult
+
+    data class Registrations(
+        val registrationCount: Int,
+        val bikeRegistrationCount: Int,
+        val componentRegistrationCount: Int,
+    ) : BoschReadableResult
+
     data class UserInfo(
         val email: String,
         val username: String,
@@ -75,6 +94,9 @@ fun parseReadableResult(endpoint: BoschEndpoint, response: String): BoschReadabl
         BoschEndpoint.SMART_ACTIVITIES -> parseActivities(response)
         BoschEndpoint.SMART_BIKES -> parseBikeList(response)
         BoschEndpoint.SMART_BIKE_DETAIL -> parseBikeDetail(response)
+        BoschEndpoint.SMART_BIKE_PASS -> parseBikePass(response)
+        BoschEndpoint.SMART_SERVICE_RECORDS -> parseServiceBook(response)
+        BoschEndpoint.SMART_REGISTRATIONS -> parseRegistrations(response)
         BoschEndpoint.USERINFO -> parseUserInfo(response)
         BoschEndpoint.TOKEN_INFO -> parseTokenInfo(response)
         BoschEndpoint.OIDC_DISCOVERY -> parseOidcDiscovery(response)
@@ -149,6 +171,47 @@ private fun parseBikeDetail(response: String): BoschReadableResult.BikeDetail? {
     val json = extractJsonBody(response) ?: return null
     return BoschReadableResult.BikeDetail(
         bike = parseBikeItem(JSONObject(json))
+    )
+}
+
+private fun parseBikePass(response: String): BoschReadableResult.BikePass? {
+    val json = extractJsonBody(response) ?: return null
+    val root = JSONObject(json)
+    val bikePass = root.optJSONArray("bikePasses")?.optJSONObject(0)
+    val theftReportLogs = root.optJSONArray("theftReportLogs")
+    return BoschReadableResult.BikePass(
+        frameNumber = bikePass?.optString("frameNumber")?.ifBlank { null },
+        frameNumberPosition = bikePass?.optString("frameNumberPosition")?.ifBlank { null },
+        description = bikePass?.optString("description")?.ifBlank { null },
+        theftReportCount = theftReportLogs?.length() ?: 0,
+    )
+}
+
+private fun parseServiceBook(response: String): BoschReadableResult.ServiceBook? {
+    val json = extractJsonBody(response) ?: return null
+    val root = JSONObject(json)
+    val records = root.optJSONArray("serviceRecords") ?: return null
+    val latest = records.optJSONObject(0)
+    val latestAttributes = latest?.optJSONObject("attributes")
+    val latestDealer = latestAttributes?.optJSONObject("bikeDealer")?.optString("name")?.ifBlank { null }
+    return BoschReadableResult.ServiceBook(
+        recordCount = records.length(),
+        latestType = latest?.optString("type")?.ifBlank { null },
+        latestDealer = latestDealer,
+    )
+}
+
+private fun parseRegistrations(response: String): BoschReadableResult.Registrations? {
+    val json = extractJsonBody(response) ?: return null
+    val root = JSONObject(json)
+    val registrations = root.optJSONArray("registrations") ?: return null
+    val registrationTypes = registrations.mapObjects { registration ->
+        registration.optString("registrationType").ifBlank { "UNKNOWN" }
+    }
+    return BoschReadableResult.Registrations(
+        registrationCount = registrationTypes.size,
+        bikeRegistrationCount = registrationTypes.count { it == "BIKE_REGISTRATION" },
+        componentRegistrationCount = registrationTypes.count { it == "COMPONENT_REGISTRATION" },
     )
 }
 

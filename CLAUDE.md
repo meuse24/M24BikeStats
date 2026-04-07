@@ -127,6 +127,7 @@ Regeln:
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
 - Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
+- Kontodetails ergänzen Bike-Profil jetzt auch um `oemId`, `serviceDue`, `connectModule`, ABS-Komponenten, Bike Pass, Service Book und Registrierungen
 - Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
@@ -142,6 +143,9 @@ GET /activity/smart-system/v1/activities?limit=20&offset=0
 GET /activity/smart-system/v1/activities/{activityId}/details
 GET /bike-profile/smart-system/v1/bikes
 GET /bike-profile/smart-system/v1/bikes/{bikeId}
+GET /bike-pass/smart-system/v1/bike-passes?bikeId={bikeId}
+GET /service-book/smart-system/v1/service-records?bikeId={bikeId}
+GET /bike-registration/smart-system/v1/registrations
 GET /activity/smart-system/v1/activities/{activityId}/track   -> aktuell 404, nicht produktiv nutzen
 GET https://p9.authz.bosch.com/.../userinfo
 GET https://p9.authz.bosch.com/.../.well-known/openid-configuration
@@ -185,6 +189,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
+- Zusatzdaten pro Bike wie Bike Pass, Service Book und Registrierungen dürfen bei temporären API-Fehlern nicht aus dem Cache verschwinden; leere erfolgreiche Antworten dürfen den Cache dagegen leeren
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
 - Änderungen an `AppSettings` immer gegen drei Pfade prüfen: Setup-UI, Hintergrund-Scheduler und Dashboard-State
 - Periodischen Hintergrund-Sync nur über `BackgroundSyncScheduler` ändern; keine parallelen WorkManager-Namen oder konkurrierenden Schedules einführen

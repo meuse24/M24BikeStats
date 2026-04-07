@@ -1,0 +1,843 @@
+openapi: 3.0.3
+info:
+  version: 1.1.0
+  title: Bulk Configuration API
+  description: |
+    This API provides an endpoint to retrieve installation reports of performed bulk configuration changes on a Smart  System bike.
+  contact:
+    email: cloud-api.support@de.bosch.com
+    name: Bosch eBike Systems Support
+servers:
+  - url: 'https://api.bosch-ebike.com/bulk-configuration/smart-system/v1'
+    description: Production
+paths:
+  /installation-reports:
+    get:
+      tags:
+        - Bulk Configuration Installation Reports
+      summary: Get installation reports of a bulk configuration change for a Smart System bike
+      description: |
+        Returns all available installation reports of a performed bulk configuration change for the given Smart System  bike that have been shared by the user with the data recipient (looked up by the backend via the user's JWT).  The bike is identified by its bikeId.
+      operationId: getInstallationReports
+      parameters:
+        - $ref: '#/components/parameters/SmartSystemBikeIdFilter'
+      responses:
+        '200':
+          description: |
+            Installation report data successfully fetched. Will return an empty list if no data is available for the  given bike.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallationReportsResponseV1'
+        '400':
+          $ref: '#/components/responses/badRequestResponseV1'
+        '401':
+          $ref: '#/components/responses/unauthorizedResponseV1'
+        '403':
+          $ref: '#/components/responses/forbiddenResponseV1'
+        '429':
+          $ref: '#/components/responses/rateLimitResponseV1'
+        default:
+          $ref: '#/components/responses/unexpectedErrorResponseV1'
+      security:
+        - OIDC_PROD:
+            - offline_access
+      servers:
+        - url: 'https://api.bosch-ebike.com/bulk-configuration/smart-system/v1'
+          description: Production
+tags:
+  - name: Bulk Configuration Installation Reports
+    description: Endpoints of Bulk Configuration EUDA API
+components:
+  parameters:
+    SmartSystemBikeIdFilter:
+      name: bikeId
+      in: query
+      required: true
+      schema:
+        $ref: '#/components/schemas/SmartSystemBikeId'
+  securitySchemes:
+    OIDC_PROD:
+      type: oauth2
+      description: |-
+        Bosch Identity & Access Management for **Smart System** users
+
+        **Offline Access:** Client applications may use [offline_access](https://openid.net/specs/openid-connect-core-1_0.html#OfflineAccess). See the scope description below.
+      flows:
+        authorizationCode:
+          refreshUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+          authorizationUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/auth'
+          scopes:
+            offline_access: Use this optional scope to request a refresh token which never expires. The client application is responsible for securely persisting the token. The token never expires as long as it is used for a refresh token grant at least once every 180 days.
+          tokenUrl: 'https://p9.authz.bosch.com/auth/realms/obc/protocol/openid-connect/token'
+  responses:
+    unexpectedErrorResponseV1:
+      description: |
+        Unexpected error
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    badRequestResponseV1:
+      description: |
+        Request parameters are malformed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    unauthorizedResponseV1:
+      description: |
+        Unauthorized
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-token-expired:
+              value: JWT is expired
+            access-token-validation-failed:
+              value: JWT verification failed
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    forbiddenResponseV1:
+      description: Forbidden
+      content:
+        text/plain:
+          schema:
+            type: string
+          examples:
+            access-denied:
+              value: 'RBAC: access denied'
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/problem-1.0.0'
+    rateLimitResponseV1:
+      description: Too Many Requests
+      headers:
+        X-RateLimit-Limit:
+          schema:
+            type: string
+          description: 'Bucket size, refresh size and time window for refresh, in seconds'
+          examples:
+            __default:
+              value: '100, 100;w=60'
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+          description: Remaining requests in current time window
+          examples:
+            __default:
+              value: 96
+        X-RateLimit-Reset:
+          schema:
+            type: integer
+          description: Time in seconds until bucket is refreshed
+          examples:
+            __default:
+              value: 57
+  schemas:
+    InstallationReportsResponseV1:
+      type: object
+      description: |
+        Represents a response containing installation reports of performed bulk configuration changes on a Smart System bike.
+      properties:
+        installationReports:
+          type: array
+          description: List of installation reports for the specified bike.
+          items:
+            $ref: '#/components/schemas/InstallationReportSchemaV1'
+      required:
+        - installationReports
+    InstallationReportSchemaV1:
+      type: object
+      description: |
+        This schema describes the installation report of a configuration container on a bike.
+        It contains information about the bike components, properties, and manufacture information.
+      properties:
+        userAgent:
+          $ref: '#/components/schemas/UserAgent'
+        bikeComponents:
+          $ref: '#/components/schemas/BikeComponents'
+        bikeProperties:
+          $ref: '#/components/schemas/BikeProperties'
+        manufactureInformation:
+          $ref: '#/components/schemas/ManufactureInformation'
+        updateInformation:
+          $ref: '#/components/schemas/UpdateInformation'
+        failureInformation:
+          $ref: '#/components/schemas/FailureInformation'
+      required:
+        - bikeComponents
+        - bikeProperties
+        - manufactureInformation
+    UserAgent:
+      type: string
+      example: bdp/1.2.3
+    BikeComponents:
+      type: object
+      description: 'Contains components of a bike, including remote control, drive unit, and anti-lock braking system.'
+      properties:
+        remoteControl:
+          $ref: '#/components/schemas/BikeComponent'
+        driveUnit:
+          $ref: '#/components/schemas/BikeComponent'
+        antiLockBrakingSystem:
+          $ref: '#/components/schemas/BikeComponent'
+      required:
+        - remoteControl
+        - driveUnit
+    BikeComponent:
+      type: object
+      description: 'Contains information about a bike component, including its product code, serial number, part number, and software version.'
+      properties:
+        productCode:
+          $ref: '#/components/schemas/SmartSystemProductCode'
+        serialNumber:
+          $ref: '#/components/schemas/SmartSystemSerialNumber'
+        partNumber:
+          $ref: '#/components/schemas/SmartSystemPartNumber'
+        softwareVersion:
+          type: string
+          description: |
+            The software version of the component, e.g. 1.0.0.
+            This is used to track the software version of the component for updates and compatibility checks.
+          example: 1.0.0
+      required:
+        - productCode
+        - serialNumber
+        - partNumber
+        - softwareVersion
+    SmartSystemProductCode:
+      type: string
+      description: |
+        The product code of a Smart System component.
+      pattern: '^[A-Z]{3}[0-9x]{4}$'
+      example: BHU3600
+    SmartSystemSerialNumber:
+      type: string
+      description: |
+        The serial number of a Smart System component.
+      pattern: '^[A-Z0-9]{5}-[0-9]{4}-[A-Z0-9]{2}-[A-Z0-9]{3}-[A-Z0-9]{2}-[A-Z0-9]{4}$'
+      example: 12345-1234-12-123-12-1234
+    SmartSystemPartNumber:
+      type: string
+      description: |
+        The part number of a Smart System component.
+      pattern: '^[A-Za-z0-9]{10}((-[A-Za-z0-9]{2})|(#([A-F0-9]{2})*\$)|([A-F0-9]{2}))?$'
+      example: '1234567890'
+    BikeProperties:
+      type: object
+      description: 'Contains properties of a bike, including its brand, model, and motor torque status.'
+      properties:
+        brandId:
+          type: string
+          description: The identifier of the brand of the bike".
+        manufacturerBikeModelId:
+          description: The identifier of the bike model as assigned by the bike manufacturer.
+          allOf:
+            - $ref: '#/components/schemas/ManufacturerBikeId'
+        productId:
+          type: string
+          description: The product application identifier of the bike.
+        speedRegionId:
+          type: string
+          description: 'The speed region identifier of the bike, which indicates the speed limits applicable to the bike.'
+        gearshiftId:
+          type: string
+          description: 'The gearshift identifier of the bike, which indicates the type of gearshift system used.'
+        bikeCategory:
+          $ref: '#/components/schemas/BikeCategory'
+        maximumMotorTorqueStatus:
+          $ref: '#/components/schemas/MaximumMotorTorqueStatus'
+        maximumMotorTorque:
+          type: integer
+          description: 'if maximumMotorTorqueStatus is ENABLED, contains the maximum motor torque set by the Bike Manufacturer.'
+          format: int32
+        driveUnitProductCode:
+          $ref: '#/components/schemas/SmartSystemProductCode'
+      required:
+        - manufacturerBikeModelId
+        - maximumMotorTorqueStatus
+        - driveUnitProductCode
+    ManufacturerBikeId:
+      type: string
+      description: 'The manufacturer bike identifier, which is most likely the frame number.'
+      maxLength: 30
+      example: ABC-12345
+    BikeCategory:
+      type: string
+      enum:
+        - CITY
+        - TREKKING
+        - M_T_B_TOUR
+        - M_T_B_TRAIL
+        - ROAD
+        - GRAVEL
+        - KIDS
+        - CARGO
+        - E_CARGO_LONG_TAIL
+        - FLEET
+        - OTHERS
+        - NOT_CONFIGURED
+      description: Category of the bike.
+    MaximumMotorTorqueStatus:
+      type: string
+      enum:
+        - UNINITIALIZED
+        - DISABLED
+        - ENABLED
+      description: 'Indicates if the maximum motor torque is uninitialized, disabled or enabled.'
+    ManufactureInformation:
+      type: object
+      description: |
+        Contains information about the bike's manufacturer, model, and production line.
+        This information is used to identify the bike and its configuration.
+      properties:
+        manufacturerBikeModelId:
+          description: The identifier of the bike model as assigned by the bike manufacturer.
+          allOf:
+            - $ref: '#/components/schemas/ManufacturerBikeModelId'
+        manufacturerBikeId:
+          description: The identifier of the bike as assigned by the bike manufacturer.
+          allOf:
+            - $ref: '#/components/schemas/ManufacturerBikeId'
+        batteryKeyLockNumber:
+          type: string
+          description: |
+            The battery key lock number is used to identify the battery lock on the bike.
+            This is important for security and tracking purposes.
+      required:
+        - manufacturerBikeModelId
+        - manufacturerBikeId
+    ManufacturerBikeModelId:
+      type: string
+      description: |-
+        The manufacturer bike model ID, which is a unique identifier for the bike model
+        provided by the manufacturer. This ID is used to identify specific bike models
+        in the eBike system.
+      maxLength: 200
+    UpdateInformation:
+      type: object
+      description: Contains information about the successful upgrade of configuration containers on a bike.
+      properties:
+        installedAt:
+          type: string
+          description: Timestamp of successful container installation.
+          format: date-time
+          example: '2023-04-05T08:08:08.12345Z'
+        manufactureDate:
+          type: string
+          description: |
+            Production date of delivered configuration containers in format "dd.MM.YYYY".
+          format: date
+        bikeId:
+          $ref: '#/components/schemas/SmartSystemBikeId'
+        originalConfiguration:
+          $ref: '#/components/schemas/SmartSystemBikeConfigurationExtendedForReportV1'
+        originalManufactureInformation:
+          $ref: '#/components/schemas/ManufactureInformation'
+      required:
+        - installedAt
+        - manufactureDate
+        - bikeId
+        - originalConfiguration
+        - originalManufactureInformation
+    SmartSystemBikeId:
+      type: string
+      description: |
+        The Smart System bike's globally unique ID (RFC 4122-compliant UUID) aka. Bosch System ID
+      format: uuid
+      example: 796c0ba5-c305-4dff-96b8-2e46237eb77e
+    SmartSystemBikeConfigurationExtendedForReportV1:
+      allOf:
+        - $ref: '#/components/schemas/SmartSystemBikeConfigurationBaseV1'
+        - type: object
+          description: Extended configuration details for Smart System bikes.
+          properties:
+            bikeCategory:
+              $ref: '#/components/schemas/BikeCategory'
+            connectModuleReadiness:
+              type: boolean
+              description: Indicates if the connect module is ready for use.
+              example: true
+            lowPowerPortStatus:
+              type: boolean
+              description: Indicates if the low-power port is enabled.
+              example: true
+            highPowerPortStatus:
+              type: boolean
+              description: Indicates if the high-power port is enabled.
+              example: true
+    SmartSystemBikeConfigurationBaseV1:
+      type: object
+      description: A configuration schema for multiple bikes of the same kind. Must be max 10000 characters.
+      properties:
+        antiLockBrakingSystemBuiltIn:
+          type: boolean
+          description: Indicates if the anti-lock braking system is built into the bike.
+        antiLockBrakingSystemCalibration:
+          type: string
+          description: The calibration data for the anti-lock braking system.
+        antiLockBrakingSystemMode:
+          type: string
+          description: The mode of the anti-lock braking system.
+        availableAntiLockBrakingSystemModes:
+          type: array
+          description: List of available anti-lock braking system modes
+          items:
+            type: string
+        assistModes:
+          type: array
+          description: List of assist modes available for the bike configuration.
+          items:
+            $ref: '#/components/schemas/AssistMode'
+        antiLockBrakingSystemCalibrationChecksum:
+          type: integer
+          description: Checksum for the anti-lock braking system calibration.
+          format: int32
+        isAssistModesConfigurable:
+          type: boolean
+          description: Indicates if the assist modes are configurable by the Bike Dealer.
+        bikeCategoryChecksum:
+          type: integer
+          description: Checksum for the bike category.
+          format: int32
+        brakeHoseLengthFromCaliper:
+          type: integer
+          description: The length of the brake hose from the caliper in millimeters.
+          format: int32
+        brakeHoseLengthFromCaliperChecksum:
+          type: integer
+          description: Checksum for the brake hose length from the caliper.
+          format: int32
+        brakeHoseLengthFromMasterCylinder:
+          type: integer
+          description: The length of the brake hose from the master cylinder in millimeters.
+          format: int32
+        brakeHoseLengthFromMasterCylinderChecksum:
+          type: integer
+          description: Checksum for the brake hose length from the master cylinder.
+          format: int32
+        rangeExtenderReadiness:
+          type: boolean
+          description: Indicates if the range extender (dual battery) is ready for use.
+        displayLanguage:
+          type: string
+          description: The language used for the bike display.
+        frontBrakeDiscCalliper:
+          type: string
+          description: The type of the front brake disc calliper.
+        frontBrakeDiscCalliperChecksum:
+          type: integer
+          description: Checksum for the front brake disc calliper.
+          format: int32
+        frontBrakeDiscDiameter:
+          type: integer
+          description: The diameter of the front brake disc.
+          format: int32
+        frontBrakeDiscDiameterChecksum:
+          type: integer
+          description: Checksum for the front brake disc diameter.
+          format: int32
+        frontWheelCircumference:
+          type: number
+          description: The circumference of the front wheel in meters.
+          format: double
+        frontWheelCircumferenceChecksum:
+          type: integer
+          description: Checksum for the front wheel circumference.
+          format: int32
+        gearshiftApplication:
+          $ref: '#/components/schemas/Application'
+        isHighPowerPortConfigurable:
+          type: boolean
+          description: Indicates if the high-power port is configurable by the Bike Dealer.
+        lengthUnit:
+          $ref: '#/components/schemas/UnitSystem'
+        lightAttached:
+          type: boolean
+          description: Indicates if a bike light is attached to the bike.
+        lightPower:
+          type: number
+          description: The power output of the bike light in watts.
+          format: double
+        lightStatus:
+          $ref: '#/components/schemas/BikeLightConfiguration'
+        isLightConfigurable:
+          type: boolean
+          description: Indicates if the light configuration is configurable by the Bike Dealer.
+        isLowPowerPortConfigurable:
+          type: boolean
+          description: Indicates if the low-power port is configurable by the Bike Dealer.
+        multiPurposePortStatus:
+          $ref: '#/components/schemas/MultiPurposePortStatus'
+        isMultiPurposePortConfigurable:
+          type: boolean
+          description: Indicates if the multi-purpose port is configurable by the Bike Dealer.
+        maxGearTransmissionRatio:
+          type: number
+          description: The maximum gear transmission ratio for the bike.
+          format: double
+        speedRegionApplication:
+          $ref: '#/components/schemas/SpeedRegion'
+        name:
+          type: string
+          description: The name of the bike configuration.
+        productionSite:
+          type: string
+          description: The production site of the bike.
+        productApplication:
+          $ref: '#/components/schemas/Application'
+        rearWheelCircumference:
+          type: number
+          description: The circumference of the rear wheel in meters.
+          format: double
+        rearWheelCircumferenceChecksum:
+          type: integer
+          description: Checksum for the rear wheel circumference.
+          format: int32
+        speedSource:
+          $ref: '#/components/schemas/SpeedSource'
+        secondSpeedSource:
+          $ref: '#/components/schemas/SpeedSource'
+        timeFormat:
+          $ref: '#/components/schemas/TimeFormat'
+        imuAsAbsSpeedSource:
+          type: boolean
+          description: Indicates if the IMU is used as a speed source for the anti-lock braking system.
+        mountingAngle:
+          type: integer
+          description: The mounting angle of the drive unit in degrees.
+          format: int32
+        mountingAngleChecksum:
+          type: integer
+          description: Checksum for the mounting angle of the drive unit.
+          format: int32
+        maximumBikeSpeed:
+          type: number
+          description: The maximum speed of the bike in km/h.
+          format: double
+        walkAssistEnabled:
+          type: boolean
+          description: Indicates if the walk assist feature is enabled.
+        walkAssistSpeed:
+          type: number
+          description: The speed at which the walk assist feature operates in km/h.
+          format: double
+        maximumMotorTorque:
+          type: integer
+          description: Maximum torque value of the drive unit in Nm
+          format: int32
+          example: 85
+        maximumMotorTorqueStatus:
+          $ref: '#/components/schemas/MaximumMotorTorqueStatus'
+        throttleReadiness:
+          $ref: '#/components/schemas/ThrottleReadiness'
+        hubConfigurablePortConfiguration:
+          $ref: '#/components/schemas/HubConfigurablePortConfiguration'
+        isHubConfigurablePortConfigurable:
+          type: boolean
+          description: Indicates if the hub configurable port is configurable by the Bike Dealer.
+        mountingAngleRoll:
+          type: integer
+          description: The roll mounting angle of the drive unit in degrees.
+          format: int32
+        mountingAngleRollChecksum:
+          type: integer
+          description: Checksum for the roll mounting angle of the drive unit.
+          format: int32
+        motorProductCode:
+          type: string
+          description: Indicates if the hub configurable port is configurable by the Bike Dealer.
+        dbChecksum:
+          type: string
+          description: The checksum of the bike configuration database.
+        excludedFromProduction:
+          type: boolean
+          description: Indicates if the bike configuration is excluded from production.
+        folder:
+          type: string
+          description: The folder where the bike configuration is stored.
+        gearshiftTypeId:
+          type: string
+          description: The ID of the gearshift type used for this bike configuration.
+          example: G900MDEMA0
+        itemNumbers:
+          type: array
+          description: List of item numbers associated with the bike configuration.
+          items:
+            type: object
+            description: An item number associated with the bike configuration.
+            properties:
+              value:
+                type: string
+                description: The value of the item number.
+            required:
+              - value
+        regioSpeedId:
+          type: string
+          description: The ID of the speed region for this bike configuration.
+        productApplicationId:
+          type: string
+          description: The ID of the product application used for this bike configuration.
+        boschDiagnosisToolVersion:
+          type: string
+          description: The version of the BDP (Bosch Diagnosis Tool) used for this configuration.
+        dongleId:
+          type: string
+          description: 'Unique identifier for the manufacturer dongle, if applicable.'
+        connectBleDevices:
+          type: boolean
+          description: Indicates if the bike supports connecting BLE devices.
+        numberOfBleDevices:
+          type: integer
+          description: The number of BLE devices that can be connected to the bike.
+          format: int32
+          example: 5
+        oemTorqueLimitation:
+          type: integer
+          description: The maximum torque limitation set by the bike manufacturer in Nm.
+          format: int32
+          example: 85
+        oemTorqueLimitationStatus:
+          type: string
+          enum:
+            - UNINITIALIZED
+            - DISABLED
+            - ENABLED
+          description: The status of the maximum torque limitation set by the bike manufacturer.
+          example: ENABLED
+    AssistMode:
+      type: object
+      description: |
+        Represents the assist mode of an eBike.
+        This object contains information about the assist mode, including its ID, version, availability on remote control, and name.
+      properties:
+        id:
+          type: string
+          description: |
+            The unique identifier of the assist mode.
+            This ID is used to identify the assist mode in the production container.
+            It is a string that can be used to reference the assist mode in various contexts.
+        version:
+          type: integer
+          description: |
+            The version of the assist mode.
+            This integer represents the version number of the assist mode, which can be used to track changes or updates to the assist mode configuration.
+          format: int32
+        availableOnRemoteControl:
+          type: boolean
+          description: |
+            Indicates whether the assist mode is available on the remote control.
+            This boolean value specifies if the assist mode can be selected or activated using the bike's remote control interface.
+        availableOnBike:
+          type: boolean
+          description: |
+            Indicates whether the assist mode is available on the bike.
+            This boolean value specifies if the assist mode can be used directly on the bike without the remote control.
+        name:
+          type: string
+          description: |
+            The name of the assist mode.
+            This string represents the user-friendly name of the assist mode, which can be displayed to the user in the bike's interface or remote control.
+        assistance:
+          type: integer
+          description: |
+            The assistance value for the user defined assist mode to be available on the remote control
+          format: int32
+        dynamic:
+          type: integer
+          description: |
+            The dynamic value for the user defined assist mode to be available on the remote control
+          format: int32
+        maxSpeed:
+          type: integer
+          description: |
+            The maxSpeed value for the user defined assist mode to be available on the remote control
+          format: int32
+        maxTorque:
+          type: integer
+          description: |
+            The maxTorque value for the user defined assist mode to be available on the remote control
+          format: int32
+        maxPower:
+          type: integer
+          description: |
+            The maxPower value for the user defined assist mode to be available on the remote control
+          format: int32
+      required:
+        - id
+        - availableOnRemoteControl
+    Application:
+      type: object
+      description: |
+        The Application object describes an application that is used in the bike configuration. 
+        It contains an id and a version number. The id is a unique identifier for the application, 
+        and the version number indicates the version of the application.
+      properties:
+        id:
+          type: string
+          description: Identifier of the application
+        version:
+          type: integer
+          description: Version number of the application
+          format: int32
+      required:
+        - id
+        - version
+    UnitSystem:
+      type: string
+      enum:
+        - METRIC
+        - IMPERIAL
+      description: |
+        The unit system used for measurements in the eBike system.
+        It can be either METRIC or IMPERIAL.
+        - METRIC: Uses metric units (e.g., kilometers, kilograms).
+        - IMPERIAL: Uses imperial units (e.g., miles, pounds).
+      example: METRIC
+    BikeLightConfiguration:
+      type: string
+      enum:
+        - LIGHT_ALWAYS_OFF
+        - LIGHT_ALWAYS_ON
+        - LIGHT_ON_AFTER_STARTUP
+        - LIGHT_OFF_AFTER_STARTUP
+        - USE_LIGHT_STATUS_AT_SHUTDOWN
+      description: |
+        The configuration for the bike light system.
+    MultiPurposePortStatus:
+      type: string
+      enum:
+        - DEACTIVATED
+        - THIRD_PARTY
+        - LIGHT
+      description: |
+        The MultiPurposePortStatus describes the status of the multi-purpose port. 
+        DEACTIVATED means that the port is not used, THIRD_PARTY means that a third-party device is connected, 
+        LIGHT means that a light is connected to the port.
+    SpeedRegion:
+      type: object
+      description: |
+        The SpeedRegion object describes a speed region that is used in the bike configuration. 
+        It contains an id, a version number, and additional properties like maximum legal bike speed, 
+        maximum assistance speed, whether UDAM modification is possible, and whether walk assist is configurable.
+      properties:
+        id:
+          type: string
+          description: Identifier of the application
+        version:
+          type: integer
+          description: Version number of the application
+          format: int32
+        maximumLegalBikeSpeed:
+          type: number
+          description: Maximum legal speed of the bike in the region
+          format: double
+        maximumAssistanceSpeed:
+          type: number
+          description: Maximum speed at which the motor provides assistance in the region
+          format: double
+        udamModificationPossible:
+          type: boolean
+          description: Can the user modify the assistance settings in the region
+        walkAssistConfigurable:
+          type: boolean
+          description: Can the user configure the walk assist in the region
+      required:
+        - id
+        - version
+    SpeedSource:
+      type: string
+      enum:
+        - RIM_MAGNET
+        - REED
+        - ABS_FRONT
+        - ABS_REAR
+        - CADENCE
+        - SPEED_SOURCE_NOT_CONFIGURED
+      description: |
+        The SpeedSource describes the source of the speed measurement. 
+        RIM_MAGNET means that a magnet on the rim is used, REED means that a reed switch is used, 
+        ABS_FRONT and ABS_REAR mean that the speed is measured by the ABS system, 
+        CADENCE means that the speed is measured by the cadence sensor, 
+        SPEED_SOURCE_NOT_CONFIGURED means that no speed source is configured.
+    TimeFormat:
+      type: string
+      enum:
+        - HOUR24
+        - HOUR12
+    ThrottleReadiness:
+      type: string
+      enum:
+        - READY_ASSEMBLED
+        - READY_NOT_ASSEMBLED
+        - NOT_READY_NOT_ASSEMBLED
+      description: Indicates if the throttle is ready to use or not.
+    HubConfigurablePortConfiguration:
+      type: string
+      enum:
+        - UNUSED
+        - HPP
+        - LPP
+      description: Indicates the configuration of the hub configurable port.
+    FailureInformation:
+      type: object
+      description: 'Contains information about the failed upgrade. If the request is sent from the Flow app, the bikeId has to be contained.'
+      properties:
+        failedAt:
+          type: string
+          description: Timestamp of failed attempt to install configuration containers.
+          format: date-time
+          example: '2023-04-05T08:08:08.12345Z'
+        bikeId:
+          $ref: '#/components/schemas/SmartSystemBikeId'
+      required:
+        - failedAt
+    problem-1.0.0:
+      type: object
+      title: Problem
+      properties:
+        type:
+          type: string
+          description: |
+            A URI reference that uniquely identifies the problem type only in the context of the provided API. Opposed to the specification in RFC-7807, it is neither recommended to be dereferenceable and point to a human-readable documentation nor globally unique for the problem type.
+          format: uri-reference
+          default: 'about:blank'
+          example: /problems/connection-error
+        title:
+          type: string
+          description: |
+            A short summary of the problem type. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Service Unavailable
+        status:
+          type: integer
+          description: |
+            The HTTP status code generated by the origin server for this occurrence of the problem.
+          format: int32
+          minimum: 100
+          maximum: 599
+          example: 503
+        detail:
+          type: string
+          description: |
+            A human readable explanation specific to this occurrence of the problem that is helpful to locate the problem and give advice on how to proceed. Written in English and readable for engineers, usually not suited for non technical stakeholders and not localized.
+          example: Connection to database timed out
+        instance:
+          type: string
+          description: |
+            A URI reference that identifies the specific occurrence of the problem, e.g. by adding a fragment identifier or sub-path to the problem type. May be used to locate the root of this problem in the source code.
+          format: uri-reference
+          example: /problems/connection-error#token-info-read-timed-out
+        requestId:
+          type: string
+          description: ID for this request.
+          example: 075be661d3a4460b98dee5d66849dd5e
+      required:
+        - type
+        - detail
+        - requestId
+security:
+  - OIDC_PROD:
+      - offline_access

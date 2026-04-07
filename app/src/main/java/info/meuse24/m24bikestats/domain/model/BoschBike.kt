@@ -4,9 +4,18 @@ data class BoschBike(
     val id: String,
     val createdAt: String?,
     val language: String?,
+    val oemId: String? = null,
+    val serviceDueDate: String? = null,
+    val serviceDueOdometerMeters: Double? = null,
     val driveUnit: BoschDriveUnit?,
     val remoteControl: BoschComponent?,
     val headUnit: BoschComponent?,
+    val connectModule: BoschComponent? = null,
+    val antiLockBrakeSystems: List<BoschComponent> = emptyList(),
+    val bikePass: BoschBikePass? = null,
+    val theftReportLogs: List<BoschTheftReportLog> = emptyList(),
+    val serviceRecords: List<BoschServiceRecord> = emptyList(),
+    val registrations: List<BoschRegistration> = emptyList(),
     val batteries: List<BoschBattery>,
 )
 

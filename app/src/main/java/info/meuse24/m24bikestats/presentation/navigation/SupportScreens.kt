@@ -27,6 +27,7 @@ fun HelpScreen(modifier: Modifier = Modifier) {
         stringResource(R.string.help_login_label) to stringResource(R.string.help_login_text),
         stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text),
         stringResource(R.string.help_bike_label) to stringResource(R.string.help_bike_text),
+        stringResource(R.string.help_setup_label) to stringResource(R.string.help_setup_text),
         stringResource(R.string.help_functions_label) to stringResource(R.string.help_functions_text),
         stringResource(R.string.help_statistics_label) to stringResource(R.string.help_statistics_text),
         stringResource(R.string.help_diagnostics_label) to stringResource(R.string.help_diagnostics_text),

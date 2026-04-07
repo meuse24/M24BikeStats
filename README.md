@@ -25,6 +25,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
 - Kontodetails zeigen zusätzlich Bosch-`USERINFO`, OIDC-Discovery und das aktuell passende OIDC-Signaturzertifikat aus der JWKS-Antwort
+- Kontodetails zeigen zusätzlich Bike-Pass-, Service-Book- und Registrierungsdaten, sofern Bosch dafür Daten liefert
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
 - Release-Build nutzt R8-Minify + Resource-Shrinking
 - Android Auto-Backup und Device-Transfer-Backup sind deaktiviert, damit keine sensiblen Bosch-Daten aus App-Speicher oder Tokens unkontrolliert exportiert werden
@@ -76,7 +77,10 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - Aktivitäten werden über `limit`/`offset` paginiert geladen.
 - Aktivitätsdetails kommen über `/activity/smart-system/v1/activities/{activityId}/details`.
 - Bikes kommen über `/bike-profile/smart-system/v1/bikes` und `/bikes/{bikeId}`.
+- Zusätzliche Bike-Metadaten kommen über `/bike-pass/smart-system/v1/bike-passes?bikeId=...`, `/service-book/smart-system/v1/service-records?bikeId=...` und `/bike-registration/smart-system/v1/registrations`.
 - Kontodetails ergänzen diese Bike-Daten um `/userinfo`, `/.well-known/openid-configuration` und `/protocol/openid-connect/certs`.
+- Leere Antworten bei Bike Pass, Service Book oder Registrierungen sind fachlich möglich; `Service book = 0` ist daher kein technischer Fehler.
+- Schlägt einer dieser Zusatz-Calls temporär fehl, bleibt der vorhandene Cache erhalten und wird nicht durch leere Daten ersetzt.
 - Der separate `/track`-Endpunkt liefert aktuell `404`; Track, GPX und Profile basieren deshalb auf `/details`.
 - Detailpunkte mit `0/0`-Koordinaten oder redundanten aufeinanderfolgenden Duplikaten werden vor Karten-/GPX-Nutzung bereinigt.
 - Die Track-Karte blendet die Attribution kompakt direkt in der Karte ein: `© OSM • OFM • MapLibre`.
@@ -157,6 +161,9 @@ Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 | `GET /activity/smart-system/v1/activities/{activityId}/details` | `200` | Aktivitätsdetails |
 | `GET /bike-profile/smart-system/v1/bikes` | `200` | Bike-Liste |
 | `GET /bike-profile/smart-system/v1/bikes/{bikeId}` | `200` | Bike-Detail |
+| `GET /bike-pass/smart-system/v1/bike-passes?bikeId={bikeId}` | `200` | Bike-Pass und Theft-Logs |
+| `GET /service-book/smart-system/v1/service-records?bikeId={bikeId}` | `200` | Servicehistorie pro Bike, kann leer sein |
+| `GET /bike-registration/smart-system/v1/registrations` | `200` | Bike- und Komponentenregistrierungen |
 | `GET /activity/smart-system/v1/activities/{activityId}/track` | `404` | aktuell nicht verfügbar, `/details` wird stattdessen genutzt |
 | `GET .../userinfo` | `200` | OIDC Userinfo für den aktuell angemeldeten Bosch-Account |
 | `GET .../.well-known/openid-configuration` | `200` | OIDC Discovery-Metadaten für Kontodetails |

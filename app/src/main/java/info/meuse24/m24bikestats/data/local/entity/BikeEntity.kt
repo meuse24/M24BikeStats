@@ -9,6 +9,9 @@ data class BikeEntity(
     val createdAt: String?,
     val updatedAtEpochMillis: Long,
     val language: String?,
+    val oemId: String?,
+    val serviceDueDate: String?,
+    val serviceDueOdometerMeters: Double?,
     val driveUnitSerialNumber: String?,
     val driveUnitPartNumber: String?,
     val driveUnitProductName: String?,
@@ -25,4 +28,7 @@ data class BikeEntity(
     val headUnitSerialNumber: String?,
     val headUnitPartNumber: String?,
     val headUnitProductName: String?,
+    val connectModuleSerialNumber: String?,
+    val connectModulePartNumber: String?,
+    val connectModuleProductName: String?,
 )
