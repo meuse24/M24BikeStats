@@ -51,7 +51,6 @@ class GetStatisticsUseCase(
             avgDistanceKm = if (totalTours > 0) totalDistanceKm / totalTours else 0.0,
             avgDurationHours = if (totalTours > 0) totalDurationHours / totalTours else 0.0,
             highlights = buildHighlights(
-                activities = this,
                 periods = periods,
                 zoneId = zoneId,
                 locale = locale,
@@ -62,23 +61,20 @@ class GetStatisticsUseCase(
     }
 
     private fun List<BoschActivity>.buildHighlights(
-        activities: List<BoschActivity>,
         periods: List<ActivityStatisticsPeriod>,
         zoneId: ZoneId,
         locale: Locale,
         totalDistanceKm: Double,
         totalDurationHours: Double,
     ): ActivityStatisticsHighlights? {
-        if (activities.isEmpty()) return null
+        if (isEmpty()) return null
 
-        val dayOfWeekDistribution = activities
-            .mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
+        val dayOfWeekDistribution = mapNotNull { it.startTime.toLocalDate(zoneId)?.dayOfWeek }
             .groupingBy { it }
             .eachCount()
         val favoriteDayOfWeek = dayOfWeekDistribution.maxByOrNull(Map.Entry<DayOfWeek, Int>::value)?.key
 
-        val toursPerWeek = activities
-            .mapNotNull { it.startTime.toLocalDate(zoneId)?.toPeriodStart(StatisticsGrouping.WEEK, locale) }
+        val toursPerWeek = mapNotNull { it.startTime.toLocalDate(zoneId)?.toPeriodStart(StatisticsGrouping.WEEK, locale) }
             .groupingBy { it }
             .eachCount()
 
@@ -92,13 +88,13 @@ class GetStatisticsUseCase(
             .orEmpty()
 
         return ActivityStatisticsHighlights(
-            longestTourKm = activities.maxOf { it.distanceMeters } / 1000.0,
-            longestRideHours = activities.maxOf { it.durationWithoutStopsSeconds } / 3600.0,
-            totalElevationGainM = activities.sumOf { it.elevationGainMeters ?: 0 },
-            maxSpeedKmh = activities.mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull(),
-            fastestTourAvgSpeedKmh = activities.mapNotNull(BoschActivity::averageSpeedKmh).maxOrNull(),
-            maxRiderPowerWatts = activities.mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull(),
-            totalCaloriesBurned = activities.mapNotNull(BoschActivity::caloriesBurned).takeIf { it.isNotEmpty() }?.sum(),
+            longestTourKm = maxOf { it.distanceMeters } / 1000.0,
+            longestRideHours = maxOf { it.durationWithoutStopsSeconds } / 3600.0,
+            totalElevationGainM = sumOf { it.elevationGainMeters ?: 0 },
+            maxSpeedKmh = mapNotNull(BoschActivity::maxSpeedKmh).maxOrNull(),
+            fastestTourAvgSpeedKmh = mapNotNull(BoschActivity::averageSpeedKmh).maxOrNull(),
+            maxRiderPowerWatts = mapNotNull(BoschActivity::maxRiderPowerWatts).maxOrNull(),
+            totalCaloriesBurned = mapNotNull(BoschActivity::caloriesBurned).takeIf { it.isNotEmpty() }?.sum(),
             avgTravelSpeedKmh = if (totalDurationHours > 0.0) totalDistanceKm / totalDurationHours else null,
             mostActivePeriodStartEpochMillis = periods.maxWithOrNull(
                 compareBy<ActivityStatisticsPeriod> { it.distanceKm }
