@@ -18,6 +18,10 @@ data class DashboardUiState(
     val syncPhaseLabel: String? = null,
     val syncLoadedActivityCount: Int = 0,
     val syncTotalActivityCount: Int = 0,
+    val isSyncingPendingActivityDetails: Boolean = false,
+    val pendingActivityDetailSyncLabel: String? = null,
+    val pendingActivityDetailSyncLoadedCount: Int = 0,
+    val pendingActivityDetailSyncTotalCount: Int = 0,
     val cachedDetailActivityCount: Int = 0,
     val cachedDetailPointCount: Int = 0,
     val cachedGpsPointCount: Int = 0,
@@ -50,6 +54,7 @@ data class DashboardUiState(
     val selectedBikeId: String? = null,
     val isBikeDetailLoading: Boolean = false,
     val isBikeDetailRefreshing: Boolean = false,
+    val dataStatus: DataStatusUiModel? = null,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
@@ -73,9 +78,15 @@ data class HomeUiState(
     val syncPhaseLabel: String?,
     val syncLoadedActivityCount: Int,
     val syncTotalActivityCount: Int,
+    val isSyncingPendingActivityDetails: Boolean,
+    val pendingActivityDetailSyncLabel: String?,
+    val pendingActivityDetailSyncLoadedCount: Int,
+    val pendingActivityDetailSyncTotalCount: Int,
     val cachedDetailActivityCount: Int,
     val cachedDetailPointCount: Int,
     val cachedGpsPointCount: Int,
+    val dataStatus: DataStatusUiModel?,
+    val canStartSync: Boolean,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel?,
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
@@ -145,3 +156,12 @@ data class BikeDetailScreenUiState(
     val isBikeDetailLoading: Boolean,
     val isBikeDetailRefreshing: Boolean,
 )
+
+internal fun DashboardUiState.canRunBackgroundOperation(): Boolean =
+    !isInitialLoading &&
+        !isRefreshing &&
+        !isSyncingCloudData &&
+        !isSyncingPendingActivityDetails &&
+        !isExportingActivitiesCsv &&
+        !isExportingActivityDetailsCsv &&
+        !isExportingPdf

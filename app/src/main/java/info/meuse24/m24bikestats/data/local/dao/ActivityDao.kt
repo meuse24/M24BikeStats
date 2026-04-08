@@ -25,6 +25,9 @@ interface ActivityDao {
     @Query("SELECT updatedAtEpochMillis FROM activity_cache_state WHERE id = 0 LIMIT 1")
     suspend fun getCacheUpdatedAtEpochMillis(): Long?
 
+    @Query("SELECT updatedAtEpochMillis FROM activity_cache_state WHERE id = 0 LIMIT 1")
+    fun observeCacheUpdatedAtEpochMillis(): Flow<Long?>
+
     @Upsert
     suspend fun upsertCacheState(cacheState: ActivityCacheStateEntity)
 

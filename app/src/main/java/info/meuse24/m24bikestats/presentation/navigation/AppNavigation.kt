@@ -236,6 +236,9 @@ fun AppNavigation() {
                             uiState = dashboardUiState.toHomeUiState(),
                             onSyncCloudData = dashboardViewModel::syncCloudData,
                             onCancelSyncCloudData = dashboardViewModel::cancelCloudSync,
+                            onLoadMissingActivityDetails = dashboardViewModel::loadMissingActivityDetails,
+                            onRefreshStaleActivityDetails = dashboardViewModel::refreshStaleActivityDetails,
+                            onCancelPendingActivityDetailsSync = dashboardViewModel::cancelPendingActivityDetailsSync,
                             onNavigateToActivityDetail = { activityId ->
                                 shellNavController.navigate("activity/$activityId")
                             },

@@ -61,6 +61,15 @@ class BoschSmartSystemRepositoryImpl(
             )
         }
 
+    override fun observeActivityCacheUpdatedAtEpochMillis(): Flow<Long?> =
+        activityDao.observeCacheUpdatedAtEpochMillis()
+
+    override fun observeBikeCacheUpdatedAtEpochMillis(): Flow<Long?> =
+        bikeDao.observeCacheUpdatedAtEpochMillis()
+
+    override fun observeActivityDetailCacheUpdatedAtEpochMillis(): Flow<Long?> =
+        activityDetailDao.observeMaxUpdatedAtEpochMillis()
+
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
         activityDetailDao.observeByActivityId(activityId).map { detail ->
             detail?.toDomain()

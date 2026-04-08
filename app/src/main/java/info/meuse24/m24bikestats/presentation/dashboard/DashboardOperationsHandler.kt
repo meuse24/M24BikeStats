@@ -7,6 +7,7 @@ import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
 import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportFileUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -22,6 +23,7 @@ class DashboardOperationsHandler(
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val exportActivityDetailsCsv: ExportSmartSystemActivityDetailsCsvUseCase,
     private val exportPdfSummaryReportFileUseCase: ExportPdfSummaryReportFileUseCase,
+    private val refreshPendingSmartSystemActivityDetailsUseCase: RefreshPendingSmartSystemActivityDetailsUseCase,
     private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val stringResolver: DashboardStringResolver,
     private val pdfExportDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -30,6 +32,7 @@ class DashboardOperationsHandler(
     private var activityDetailsExportJob: Job? = null
     private var pdfExportJob: Job? = null
     private var cloudSyncJob: Job? = null
+    private var pendingActivityDetailSyncJob: Job? = null
 
     fun exportAllActivitiesCsv(
         scope: CoroutineScope,
@@ -324,6 +327,34 @@ class DashboardOperationsHandler(
         }
     }
 
+    fun loadMissingActivityDetails(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        syncPendingActivityDetails(
+            scope = scope,
+            currentState = currentState,
+            updateState = updateState,
+            phaseLabel = s(R.string.home_sync_phase_activity_details_missing_only),
+            action = refreshPendingSmartSystemActivityDetailsUseCase::refreshMissing,
+        )
+    }
+
+    fun refreshStaleActivityDetails(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        syncPendingActivityDetails(
+            scope = scope,
+            currentState = currentState,
+            updateState = updateState,
+            phaseLabel = s(R.string.home_sync_phase_activity_details_stale_only),
+            action = refreshPendingSmartSystemActivityDetailsUseCase::refreshStale,
+        )
+    }
+
     fun syncCloudData(
         scope: CoroutineScope,
         currentState: () -> DashboardUiState,
@@ -401,6 +432,22 @@ class DashboardOperationsHandler(
         }
     }
 
+    fun cancelPendingActivityDetailsSync(
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+    ) {
+        pendingActivityDetailSyncJob?.cancel()
+        pendingActivityDetailSyncJob = null
+        updateState {
+            it.copy(
+                isSyncingPendingActivityDetails = false,
+                pendingActivityDetailSyncLabel = null,
+                pendingActivityDetailSyncLoadedCount = 0,
+                pendingActivityDetailSyncTotalCount = 0,
+                error = s(R.string.dashboard_info_sync_cancelled),
+            )
+        }
+    }
+
     fun cancelCloudSync(
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
@@ -418,13 +465,72 @@ class DashboardOperationsHandler(
         }
     }
 
-    private fun DashboardUiState.canRunBackgroundOperation(): Boolean =
-        !isInitialLoading &&
-            !isRefreshing &&
-            !isSyncingCloudData &&
-            !isExportingActivitiesCsv &&
-            !isExportingActivityDetailsCsv &&
-            !isExportingPdf
+    private fun syncPendingActivityDetails(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
+        phaseLabel: String,
+        action: suspend ((processedCount: Int, totalCount: Int) -> Unit) -> Result<Int>,
+    ) {
+        if (!currentState().canRunBackgroundOperation()) return
+
+        pendingActivityDetailSyncJob = scope.launch {
+            updateState {
+                it.copy(
+                    isSyncingPendingActivityDetails = true,
+                    pendingActivityDetailSyncLabel = phaseLabel,
+                    pendingActivityDetailSyncLoadedCount = 0,
+                    pendingActivityDetailSyncTotalCount = 0,
+                    error = null,
+                )
+            }
+
+            action { processedCount, totalCount ->
+                updateState {
+                    it.copy(
+                        pendingActivityDetailSyncLoadedCount = processedCount,
+                        pendingActivityDetailSyncTotalCount = totalCount,
+                    )
+                }
+            }.getOrElse { error ->
+                if (error is CancellationException) {
+                    updateState {
+                        it.copy(
+                            isSyncingPendingActivityDetails = false,
+                            pendingActivityDetailSyncLabel = null,
+                            pendingActivityDetailSyncLoadedCount = 0,
+                            pendingActivityDetailSyncTotalCount = 0,
+                            error = s(R.string.dashboard_info_sync_cancelled),
+                        )
+                    }
+                    pendingActivityDetailSyncJob = null
+                    return@launch
+                }
+                updateState {
+                    it.copy(
+                        isSyncingPendingActivityDetails = false,
+                        pendingActivityDetailSyncLabel = null,
+                        pendingActivityDetailSyncLoadedCount = 0,
+                        pendingActivityDetailSyncTotalCount = 0,
+                        error = error.message ?: s(R.string.dashboard_error_cloud_sync),
+                    )
+                }
+                pendingActivityDetailSyncJob = null
+                return@launch
+            }
+
+            updateState {
+                it.copy(
+                    isSyncingPendingActivityDetails = false,
+                    pendingActivityDetailSyncLabel = null,
+                    pendingActivityDetailSyncLoadedCount = 0,
+                    pendingActivityDetailSyncTotalCount = 0,
+                    error = null,
+                )
+            }
+            pendingActivityDetailSyncJob = null
+        }
+    }
 
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)

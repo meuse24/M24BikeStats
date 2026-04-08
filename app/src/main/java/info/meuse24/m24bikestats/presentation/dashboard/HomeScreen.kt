@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,24 +12,25 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +44,9 @@ fun HomeScreen(
     uiState: HomeUiState,
     onSyncCloudData: () -> Unit,
     onCancelSyncCloudData: () -> Unit,
+    onLoadMissingActivityDetails: () -> Unit,
+    onRefreshStaleActivityDetails: () -> Unit,
+    onCancelPendingActivityDetailsSync: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToActivityTrack: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -58,110 +63,14 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            HeroCard(
-                eyebrow = "",
-                title = "",
-                subtitle = stringResource(R.string.home_hero_subtitle),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                HomeHeroMetricGrid(
-                    summary = listOf(
-                        stringResource(R.string.home_metric_tours) to uiState.loadedActivityCount.toString(),
-                        stringResource(R.string.home_metric_details) to uiState.cachedDetailActivityCount.toString(),
-                        stringResource(R.string.home_metric_gpx) to uiState.cachedGpsPointCount.toString(),
-                        stringResource(R.string.home_metric_bikes) to uiState.bikes.size.toString(),
-                        stringResource(R.string.home_metric_visible) to uiState.visibleActivityCount.toString(),
-                    ),
-                )
-            }
-        }
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    uiState.lastCloudSyncSummary?.let { summary ->
-                        SectionSurface {
-                            OptionalRow(stringResource(R.string.home_sync_last_sync), summary.syncedAtLabel)
-                            OptionalRow(stringResource(R.string.home_sync_activities), summary.activityCount.toString())
-                            OptionalRow(stringResource(R.string.home_sync_bikes), summary.bikeCount.toString())
-                        }
-                    }
-                    if (uiState.isSyncingCloudData) {
-                        val totalCount = uiState.syncTotalActivityCount
-                        val loadedCount = uiState.syncLoadedActivityCount
-                        val phaseProgress = if (totalCount > 0) {
-                            loadedCount.toFloat() / totalCount.toFloat()
-                        } else {
-                            0f
-                        }
-                        val overallProgress = when (uiState.syncPhase) {
-                            SmartSystemCloudSyncPhase.BIKES -> phaseProgress / 3f
-                            SmartSystemCloudSyncPhase.ACTIVITIES -> (1f + phaseProgress) / 3f
-                            SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> (2f + phaseProgress) / 3f
-                            null -> 0f
-                        }
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            uiState.syncPhaseLabel?.let { phaseLabel ->
-                                Text(
-                                    text = phaseLabel,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                            Text(
-                                text = if (totalCount > 0) {
-                                    stringResource(R.string.home_sync_progress, loadedCount, totalCount)
-                                } else {
-                                    stringResource(R.string.home_sync_starting)
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        LinearProgressIndicator(
-                            progress = { overallProgress.coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        OutlinedButton(
-                            onClick = onCancelSyncCloudData,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(stringResource(R.string.home_sync_cancel_button))
-                        }
-                    }
-                    Button(
-                        onClick = onSyncCloudData,
-                        enabled = !uiState.isSyncingCloudData &&
-                            !uiState.isRefreshing &&
-                            !uiState.isInitialLoading &&
-                            !uiState.isExportingActivitiesCsv &&
-                            !uiState.isExportingActivityDetailsCsv,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        if (uiState.isSyncingCloudData) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .width(18.dp)
-                                    .height(18.dp),
-                                strokeWidth = 2.dp,
-                            )
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Text(stringResource(R.string.home_sync_running))
-                        } else {
-                            Text(stringResource(R.string.home_sync_button))
-                        }
-                    }
-                }
-            }
+            DataStatusAndSyncCard(
+                uiState = uiState,
+                onSyncCloudData = onSyncCloudData,
+                onCancelSyncCloudData = onCancelSyncCloudData,
+                onLoadMissingActivityDetails = onLoadMissingActivityDetails,
+                onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
+                onCancelPendingActivityDetailsSync = onCancelPendingActivityDetailsSync,
+            )
         }
         item {
             if (latestActivity != null) {
@@ -285,27 +194,202 @@ fun HomeScreen(
 }
 
 @Composable
-private fun HomeHeroMetricGrid(
-    summary: List<Pair<String, String>>,
+private fun DataStatusAndSyncCard(
+    uiState: HomeUiState,
+    onSyncCloudData: () -> Unit,
+    onCancelSyncCloudData: () -> Unit,
+    onLoadMissingActivityDetails: () -> Unit,
+    onRefreshStaleActivityDetails: () -> Unit,
+    onCancelPendingActivityDetailsSync: () -> Unit,
 ) {
-    Column(
+    val dataStatus = uiState.dataStatus
+    val hasSyncMetadata = dataStatus?.lastActivitySyncLabel != null ||
+        dataStatus?.lastDetailSyncLabel != null ||
+        dataStatus?.lastBikeSyncLabel != null
+
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
     ) {
-        summary.chunked(3).forEach { rowItems ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            MaterialTheme.colorScheme.secondaryContainer,
+                        ),
+                    ),
+                )
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.Top,
             ) {
-                rowItems.forEach { (label, value) ->
-                    HeroMetricPill(
-                        label = label,
-                        value = value,
-                        modifier = Modifier.weight(1f),
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.home_data_status_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                    Text(
+                        text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
                     )
                 }
-                repeat(3 - rowItems.size) {
-                    Spacer(modifier = Modifier.weight(1f).alpha(0f))
+                dataStatus?.let { status ->
+                    DataStatusBadge(
+                        label = status.statusLabel,
+                        tone = status.statusTone,
+                    )
+                }
+            }
+
+            dataStatus?.coveredPeriodLabel?.let { coveredPeriodLabel ->
+                Text(
+                    text = stringResource(R.string.home_data_status_period_value, coveredPeriodLabel),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                )
+            }
+
+            dataStatus?.let { status ->
+                SummaryChipRow(
+                    summary = listOf(
+                        stringResource(R.string.home_data_status_activities) to status.cachedActivityCount.toString(),
+                        stringResource(R.string.home_data_status_details) to status.detailCoverageLabel,
+                        stringResource(R.string.home_data_status_missing) to status.missingDetailCount.toString(),
+                        stringResource(R.string.home_data_status_stale) to status.staleDetailCount.toString(),
+                        stringResource(R.string.home_data_status_gps_points) to status.gpsPointCount.toString(),
+                    ),
+                    itemContent = { label, value ->
+                        CompactMetricPill(label = label, value = value)
+                    },
+                )
+            }
+
+            if (hasSyncMetadata) {
+                SectionSurface {
+                    OptionalRow(stringResource(R.string.home_data_status_last_activity_sync), dataStatus?.lastActivitySyncLabel)
+                    OptionalRow(stringResource(R.string.home_data_status_last_detail_sync), dataStatus?.lastDetailSyncLabel)
+                    OptionalRow(stringResource(R.string.home_data_status_last_bike_sync), dataStatus?.lastBikeSyncLabel)
+                }
+            }
+
+            when {
+                uiState.isSyncingPendingActivityDetails -> {
+                    SyncProgressSection(
+                        phaseLabel = uiState.pendingActivityDetailSyncLabel,
+                        loadedCount = uiState.pendingActivityDetailSyncLoadedCount,
+                        totalCount = uiState.pendingActivityDetailSyncTotalCount,
+                        overallProgress = if (uiState.pendingActivityDetailSyncTotalCount > 0) {
+                            uiState.pendingActivityDetailSyncLoadedCount.toFloat() /
+                                uiState.pendingActivityDetailSyncTotalCount.toFloat()
+                        } else {
+                            0f
+                        },
+                        onCancel = onCancelPendingActivityDetailsSync,
+                    )
+                }
+
+                uiState.isSyncingCloudData -> {
+                    val totalCount = uiState.syncTotalActivityCount
+                    val loadedCount = uiState.syncLoadedActivityCount
+                    val phaseProgress = if (totalCount > 0) {
+                        loadedCount.toFloat() / totalCount.toFloat()
+                    } else {
+                        0f
+                    }
+                    val overallProgress = when (uiState.syncPhase) {
+                        SmartSystemCloudSyncPhase.BIKES -> phaseProgress / 3f
+                        SmartSystemCloudSyncPhase.ACTIVITIES -> (1f + phaseProgress) / 3f
+                        SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> (2f + phaseProgress) / 3f
+                        null -> 0f
+                    }
+                    SyncProgressSection(
+                        phaseLabel = uiState.syncPhaseLabel,
+                        loadedCount = loadedCount,
+                        totalCount = totalCount,
+                        overallProgress = overallProgress,
+                        onCancel = onCancelSyncCloudData,
+                    )
+                }
+            }
+
+            Column(
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                when {
+                    (dataStatus?.missingDetailCount ?: 0) > 0 && (dataStatus?.staleDetailCount ?: 0) > 0 -> {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = onLoadMissingActivityDetails,
+                                enabled = uiState.canStartSync,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.home_data_status_action_missing))
+                            }
+                            OutlinedButton(
+                                onClick = onRefreshStaleActivityDetails,
+                                enabled = uiState.canStartSync,
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(stringResource(R.string.home_data_status_action_stale))
+                            }
+                        }
+                    }
+
+                    (dataStatus?.missingDetailCount ?: 0) > 0 -> {
+                        OutlinedButton(
+                            onClick = onLoadMissingActivityDetails,
+                            enabled = uiState.canStartSync,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.home_data_status_action_missing))
+                        }
+                    }
+
+                    (dataStatus?.staleDetailCount ?: 0) > 0 -> {
+                        OutlinedButton(
+                            onClick = onRefreshStaleActivityDetails,
+                            enabled = uiState.canStartSync,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(R.string.home_data_status_action_stale))
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = onSyncCloudData,
+                    enabled = uiState.canStartSync,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    if (uiState.isSyncingCloudData) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .width(18.dp)
+                                .height(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(stringResource(R.string.home_sync_running))
+                    } else {
+                        Text(stringResource(R.string.home_sync_button))
+                    }
                 }
             }
         }
@@ -313,36 +397,73 @@ private fun HomeHeroMetricGrid(
 }
 
 @Composable
-private fun HeroMetricPill(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
+private fun SyncProgressSection(
+    phaseLabel: String?,
+    loadedCount: Int,
+    totalCount: Int,
+    overallProgress: Float,
+    onCancel: () -> Unit,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f),
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
+        phaseLabel?.let { label ->
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
             )
         }
+        Text(
+            text = if (totalCount > 0) {
+                stringResource(R.string.home_sync_progress, loadedCount, totalCount)
+            } else {
+                stringResource(R.string.home_sync_starting)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+        )
+        LinearProgressIndicator(
+            progress = { overallProgress.coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.home_sync_cancel_button))
+        }
+    }
+}
+
+@Composable
+private fun DataStatusBadge(
+    label: String,
+    tone: DataStatusTone,
+) {
+    val containerColor = when (tone) {
+        DataStatusTone.EMPTY -> MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)
+        DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer
+        DataStatusTone.STALE -> MaterialTheme.colorScheme.errorContainer
+        DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.secondaryContainer
+    }
+    val contentColor = when (tone) {
+        DataStatusTone.EMPTY -> MaterialTheme.colorScheme.onPrimaryContainer
+        DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.onTertiaryContainer
+        DataStatusTone.STALE -> MaterialTheme.colorScheme.onErrorContainer
+        DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    Surface(
+        shape = RoundedCornerShape(999.dp),
+        color = containerColor,
+        contentColor = contentColor,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        )
     }
 }
 
@@ -354,7 +475,7 @@ private fun HomeSummaryCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
         ),

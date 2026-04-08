@@ -52,12 +52,14 @@ import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivityDetailUseC
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
@@ -161,6 +163,7 @@ val appModule = module {
     factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { GetStatisticsUseCase(get()) }
+    factory { ObserveDataStatusOverviewUseCase(get(), get()) }
     factory { ObserveAppSettingsUseCase(get()) }
     factory { UpdateBackgroundSyncModeUseCase(get()) }
     factory { UpdateCloudSyncDetailModeUseCase(get()) }
@@ -175,6 +178,7 @@ val appModule = module {
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
     factory { RefreshSmartSystemActivitiesUseCase(get(), get(), get()) }
+    factory { RefreshPendingSmartSystemActivityDetailsUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemActivityDetailUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemBikesUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemBikeDetailUseCase(get(), get(), get()) }
@@ -186,6 +190,7 @@ val appModule = module {
             observeCachedActivities = get(),
             observeCachedBikes = get(),
             observeCachedActivityDetailCacheOverview = get(),
+            observeDataStatusOverview = get(),
             observeAppSettings = get(),
             getCachedActivityTotalCount = get(),
             getActivities = get(),
@@ -205,6 +210,7 @@ val appModule = module {
             exportActivitiesCsv = get(),
             exportActivityDetailsCsv = get(),
             exportPdfSummaryReportFileUseCase = get(),
+            refreshPendingSmartSystemActivityDetailsUseCase = get(),
             syncSmartSystemCloudUseCase = get(),
             stringResolver = get(),
         )

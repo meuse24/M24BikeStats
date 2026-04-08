@@ -8,6 +8,7 @@ import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
@@ -27,6 +28,7 @@ class DashboardFeedHandler(
     private val observeCachedActivities: ObserveCachedSmartSystemActivitiesUseCase,
     private val observeCachedBikes: ObserveCachedSmartSystemBikesUseCase,
     private val observeCachedActivityDetailCacheOverview: ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase,
+    private val observeDataStatusOverview: ObserveDataStatusOverviewUseCase,
     private val observeAppSettings: ObserveAppSettingsUseCase,
     private val getCachedActivityTotalCount: GetCachedSmartSystemActivityTotalCountUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
@@ -97,6 +99,16 @@ class DashboardFeedHandler(
                         cachedDetailActivityCount = overview.detailedActivityCount,
                         cachedDetailPointCount = overview.detailPointCount,
                         cachedGpsPointCount = overview.gpsPointCount,
+                    )
+                }
+            }
+        }
+
+        scope.launch {
+            observeDataStatusOverview().collectLatest { overview ->
+                updateState { current ->
+                    current.copy(
+                        dataStatus = uiModelMapper.toDataStatusUiModel(overview),
                     )
                 }
             }

@@ -12,6 +12,8 @@ import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 internal class FakeAuthRepository(
     private val tokenResult: Result<String> = Result.success("token"),
@@ -40,6 +42,10 @@ internal open class FakeBoschSmartSystemRepository :
     var cachedActivities: List<BoschActivity> = emptyList()
     var cachedActivityTotalCount: Int? = null
     var cachedActivityDetails: MutableMap<String, BoschActivityDetail> = mutableMapOf()
+    var staleActivityIds: MutableSet<String> = mutableSetOf()
+    val activityCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
+    val bikeCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
+    val activityDetailCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
 
     var getActivitiesCalls = mutableListOf<Pair<Int, Int>>()
     var getActivityDetailCalls = mutableListOf<String>()
@@ -58,6 +64,9 @@ internal open class FakeBoschSmartSystemRepository :
                 },
             )
         )
+    override fun observeActivityCacheUpdatedAtEpochMillis(): Flow<Long?> = activityCacheUpdatedAtFlow.asStateFlow()
+    override fun observeBikeCacheUpdatedAtEpochMillis(): Flow<Long?> = bikeCacheUpdatedAtFlow.asStateFlow()
+    override fun observeActivityDetailCacheUpdatedAtEpochMillis(): Flow<Long?> = activityDetailCacheUpdatedAtFlow.asStateFlow()
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> = emptyFlow()
     override fun observeCachedBike(bikeId: String): Flow<BoschBike?> = emptyFlow()
     override suspend fun getCachedActivities(): List<BoschActivity> = cachedActivities
@@ -76,7 +85,8 @@ internal open class FakeBoschSmartSystemRepository :
         val hasDetail = cachedActivityDetails.containsKey(activityId)
         when (detailMode) {
             CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
-            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail || !activityDetailFresh
+            CloudSyncDetailMode.MISSING_OR_STALE ->
+                !hasDetail || staleActivityIds.contains(activityId) || (staleActivityIds.isEmpty() && !activityDetailFresh)
         }
     }
 
@@ -95,13 +105,20 @@ internal open class FakeBoschSmartSystemRepository :
     override suspend fun getActivityDetail(accessToken: String, activityId: String): Result<BoschActivityDetail> {
         getActivityDetailCalls += activityId
         val result = activityDetailResultsById[activityId] ?: activityDetailResult
-        result.onSuccess { detail -> cachedActivityDetails[activityId] = detail }
+        result.onSuccess { detail ->
+            cachedActivityDetails[activityId] = detail
+            staleActivityIds.remove(activityId)
+            activityDetailCacheUpdatedAtFlow.value = activityDetailCacheUpdatedAtFlow.value ?: 1L
+        }
         return result
     }
 
     override suspend fun getBikes(accessToken: String): Result<List<BoschBike>> {
         getBikesCalls += 1
-        bikesResult.onSuccess { bikesFresh = true }
+        bikesResult.onSuccess {
+            bikesFresh = true
+            bikeCacheUpdatedAtFlow.value = bikeCacheUpdatedAtFlow.value ?: 1L
+        }
         return bikesResult
     }
 

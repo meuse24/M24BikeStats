@@ -36,6 +36,9 @@ interface BikeDao {
     @Query("SELECT updatedAtEpochMillis FROM bike_cache_state WHERE id = 0 LIMIT 1")
     suspend fun getCacheUpdatedAtEpochMillis(): Long?
 
+    @Query("SELECT updatedAtEpochMillis FROM bike_cache_state WHERE id = 0 LIMIT 1")
+    fun observeCacheUpdatedAtEpochMillis(): Flow<Long?>
+
     @Query("DELETE FROM bikes")
     suspend fun clearAll()
 

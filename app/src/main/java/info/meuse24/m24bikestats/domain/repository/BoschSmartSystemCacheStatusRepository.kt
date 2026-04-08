@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface BoschSmartSystemCacheStatusRepository {
     fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview>
+    fun observeActivityCacheUpdatedAtEpochMillis(): Flow<Long?>
+    fun observeBikeCacheUpdatedAtEpochMillis(): Flow<Long?>
+    fun observeActivityDetailCacheUpdatedAtEpochMillis(): Flow<Long?>
     suspend fun getCachedActivityTotalCount(): Int?
     suspend fun hasFreshActivities(maxAgeMillis: Long): Boolean
     suspend fun hasFreshActivityDetail(activityId: String, maxAgeMillis: Long): Boolean

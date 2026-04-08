@@ -155,8 +155,28 @@ class DashboardViewModel(
         )
     }
 
+    fun loadMissingActivityDetails() {
+        operationsHandler.loadMissingActivityDetails(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            updateState = _uiState::update,
+        )
+    }
+
+    fun refreshStaleActivityDetails() {
+        operationsHandler.refreshStaleActivityDetails(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            updateState = _uiState::update,
+        )
+    }
+
     fun cancelCloudSync() {
         operationsHandler.cancelCloudSync(_uiState::update)
+    }
+
+    fun cancelPendingActivityDetailsSync() {
+        operationsHandler.cancelPendingActivityDetailsSync(_uiState::update)
     }
 
     fun loadBikeDetail(bikeId: String) {

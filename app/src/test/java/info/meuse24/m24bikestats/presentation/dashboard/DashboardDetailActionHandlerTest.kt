@@ -228,6 +228,9 @@ private class HandlerFakeRepository :
             ?: Result.failure(IllegalStateException("missing bike"))
 
     override fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview> = emptyFlow()
+    override fun observeActivityCacheUpdatedAtEpochMillis(): Flow<Long?> = emptyFlow()
+    override fun observeBikeCacheUpdatedAtEpochMillis(): Flow<Long?> = emptyFlow()
+    override fun observeActivityDetailCacheUpdatedAtEpochMillis(): Flow<Long?> = emptyFlow()
     override suspend fun getCachedActivityTotalCount(): Int? = 0
     override suspend fun hasFreshActivities(maxAgeMillis: Long): Boolean = true
     override suspend fun hasFreshActivityDetail(activityId: String, maxAgeMillis: Long): Boolean = true

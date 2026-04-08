@@ -138,6 +138,29 @@ data class CloudSyncSummaryUiModel(
     val syncedAtLabel: String,
 )
 
+data class DataStatusUiModel(
+    val statusTone: DataStatusTone,
+    val statusLabel: String,
+    val statusSummary: String,
+    val coveredPeriodLabel: String?,
+    val cachedActivityCount: Int,
+    val detailedActivityCount: Int,
+    val detailCoverageLabel: String,
+    val missingDetailCount: Int,
+    val staleDetailCount: Int,
+    val gpsPointCount: Int,
+    val lastActivitySyncLabel: String?,
+    val lastBikeSyncLabel: String?,
+    val lastDetailSyncLabel: String?,
+)
+
+enum class DataStatusTone {
+    EMPTY,
+    PARTIAL,
+    STALE,
+    COMPLETE,
+}
+
 enum class ActivityDateRangeFilter(@param:StringRes val labelRes: Int) {
     ALL(R.string.date_filter_all),
     LAST_30_DAYS(R.string.date_filter_last_30_days),

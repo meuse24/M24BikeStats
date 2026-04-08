@@ -5,6 +5,8 @@ import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.DataStatusOverview
+import info.meuse24.m24bikestats.domain.model.DataStatusState
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetailPoint
@@ -24,12 +26,71 @@ import info.meuse24.m24bikestats.domain.model.estimateHealth
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 class DashboardUiModelMapper(
     private val stringResolver: DashboardStringResolver,
 ) {
+    fun toDataStatusUiModel(overview: DataStatusOverview): DataStatusUiModel {
+        val detailCoveragePercent = if (overview.cachedActivityCount > 0) {
+            (overview.detailedActivityCount.toDouble() / overview.cachedActivityCount.toDouble() * 100.0).roundToInt()
+        } else {
+            0
+        }
+        return DataStatusUiModel(
+            statusTone = when (overview.status) {
+                DataStatusState.EMPTY -> DataStatusTone.EMPTY
+                DataStatusState.PARTIAL -> DataStatusTone.PARTIAL
+                DataStatusState.STALE -> DataStatusTone.STALE
+                DataStatusState.COMPLETE -> DataStatusTone.COMPLETE
+            },
+            statusLabel = when (overview.status) {
+                DataStatusState.EMPTY -> s(R.string.home_data_status_state_empty)
+                DataStatusState.PARTIAL -> s(R.string.home_data_status_state_partial)
+                DataStatusState.STALE -> s(R.string.home_data_status_state_stale)
+                DataStatusState.COMPLETE -> s(R.string.home_data_status_state_complete)
+            },
+            statusSummary = when {
+                overview.status == DataStatusState.EMPTY ->
+                    s(R.string.home_data_status_summary_empty)
+                overview.missingDetailCount > 0 && overview.staleDetailCount > 0 ->
+                    s(
+                        R.string.home_data_status_summary_partial_stale,
+                        overview.missingDetailCount,
+                        overview.staleDetailCount,
+                    )
+                overview.missingDetailCount > 0 ->
+                    s(R.string.home_data_status_summary_partial, overview.missingDetailCount)
+                overview.staleDetailCount > 0 ->
+                    s(R.string.home_data_status_summary_stale, overview.staleDetailCount)
+                else ->
+                    s(R.string.home_data_status_summary_complete)
+            },
+            coveredPeriodLabel = overview.coveredActivityStartEpochMillis?.let { startEpochMillis ->
+                overview.coveredActivityEndEpochMillis?.let { endEpochMillis ->
+                    startEpochMillis.toReadableDateRange(endEpochMillis)
+                }
+            },
+            cachedActivityCount = overview.cachedActivityCount,
+            detailedActivityCount = overview.detailedActivityCount,
+            detailCoverageLabel = s(
+                R.string.home_data_status_detail_coverage,
+                overview.detailedActivityCount,
+                overview.cachedActivityCount,
+                detailCoveragePercent,
+            ),
+            missingDetailCount = overview.missingDetailCount,
+            staleDetailCount = overview.staleDetailCount,
+            gpsPointCount = overview.gpsPointCount,
+            lastActivitySyncLabel = overview.lastActivitySyncAtEpochMillis?.toReadableDateTime(),
+            lastBikeSyncLabel = overview.lastBikeSyncAtEpochMillis?.toReadableDateTime(),
+            lastDetailSyncLabel = overview.lastDetailSyncAtEpochMillis?.toReadableDateTime(),
+        )
+    }
+
     fun toActivityCardUiModel(activity: BoschActivity): ActivityCardUiModel =
         ActivityCardUiModel(
             id = activity.id,
@@ -736,6 +797,22 @@ class DashboardUiModelMapper(
                 .atZone(ZoneId.systemDefault())
                 .format(DATE_TIME_FORMATTER)
         }.getOrDefault(this)
+
+    private fun Long.toReadableDateTime(): String =
+        Instant.ofEpochMilli(this)
+            .atZone(ZoneId.systemDefault())
+            .format(DATE_TIME_FORMATTER)
+
+    private fun Long.toReadableDateRange(endEpochMillis: Long): String {
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(Locale.getDefault())
+        val startDate = Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()).toLocalDate()
+        val endDate = Instant.ofEpochMilli(endEpochMillis).atZone(ZoneId.systemDefault()).toLocalDate()
+        return if (startDate == endDate) {
+            startDate.format(formatter)
+        } else {
+            "${startDate.format(formatter)} - ${endDate.format(formatter)}"
+        }
+    }
 
     private fun String.toEpochMillis(): Long? =
         runCatching { Instant.parse(this).toEpochMilli() }.getOrNull()

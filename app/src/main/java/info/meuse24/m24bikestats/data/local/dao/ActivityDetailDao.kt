@@ -35,6 +35,9 @@ interface ActivityDetailDao {
     @Query("SELECT updatedAtEpochMillis FROM activity_details WHERE activityId = :activityId LIMIT 1")
     suspend fun getUpdatedAtEpochMillis(activityId: String): Long?
 
+    @Query("SELECT MAX(updatedAtEpochMillis) FROM activity_details")
+    fun observeMaxUpdatedAtEpochMillis(): Flow<Long?>
+
     @Query("SELECT * FROM activity_details")
     suspend fun getAllMetadata(): List<ActivityDetailEntity>
 

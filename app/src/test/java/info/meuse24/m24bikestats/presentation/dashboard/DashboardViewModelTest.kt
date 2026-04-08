@@ -37,6 +37,8 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivity
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
+import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
@@ -273,6 +275,69 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `home sync availability uses shared background operation guard`() {
+        val idleState = DashboardUiState()
+        val blockedState = DashboardUiState(isExportingPdf = true)
+
+        assertEquals(idleState.canRunBackgroundOperation(), idleState.toHomeUiState().canStartSync)
+        assertEquals(blockedState.canRunBackgroundOperation(), blockedState.toHomeUiState().canStartSync)
+        assertEquals(false, blockedState.toHomeUiState().canStartSync)
+    }
+
+    @Test
+    fun `home data status exposes missing and stale cache state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                listOf(
+                    testActivity(id = "a1", title = "Ride 1", startTime = "2026-04-01T08:00:00Z"),
+                    testActivity(id = "a2", title = "Ride 2", startTime = "2026-04-02T08:00:00Z"),
+                    testActivity(id = "a3", title = "Ride 3", startTime = "2026-04-03T08:00:00Z"),
+                ),
+                totalCount = 3,
+            )
+            setBikes(emptyList())
+            setActivityDetail("a1", BoschActivityDetail(activityId = "a1", points = emptyList()))
+            setStaleActivityIds(setOf("a1"))
+            setCacheTimestamps(activityUpdatedAt = 10L, bikeUpdatedAt = 20L, detailUpdatedAt = 30L)
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        val dataStatus = viewModel.uiState.value.toHomeUiState().dataStatus
+        assertNotNull(dataStatus)
+        assertEquals(3, dataStatus!!.cachedActivityCount)
+        assertEquals(1, dataStatus.detailedActivityCount)
+        assertEquals(2, dataStatus.missingDetailCount)
+        assertEquals(1, dataStatus.staleDetailCount)
+        assertEquals(DataStatusTone.PARTIAL, dataStatus.statusTone)
+    }
+
+    @Test
+    fun `loading missing activity details updates data status`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(
+                listOf(
+                    testActivity(id = "a1", title = "Ride 1"),
+                    testActivity(id = "a2", title = "Ride 2"),
+                ),
+                totalCount = 2,
+            )
+            setBikes(emptyList())
+        }
+        val viewModel = createViewModel(repository)
+        advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.toHomeUiState().dataStatus?.missingDetailCount)
+
+        viewModel.loadMissingActivityDetails()
+        advanceUntilIdle()
+
+        val dataStatus = viewModel.uiState.value.toHomeUiState().dataStatus
+        assertEquals(0, dataStatus?.missingDetailCount)
+        assertEquals(2, dataStatus?.detailedActivityCount)
+    }
+
+    @Test
     fun `cloud sync detail mode changes propagate into ui state`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(emptyList(), totalCount = 0)
@@ -392,6 +457,7 @@ class DashboardViewModelTest {
                 observeCachedActivities = ObserveCachedSmartSystemActivitiesUseCase(repository),
                 observeCachedBikes = ObserveCachedSmartSystemBikesUseCase(repository),
                 observeCachedActivityDetailCacheOverview = ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase(repository),
+                observeDataStatusOverview = ObserveDataStatusOverviewUseCase(repository, repository),
                 observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
                 getCachedActivityTotalCount = GetCachedSmartSystemActivityTotalCountUseCase(repository),
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
@@ -416,6 +482,11 @@ class DashboardViewModelTest {
                         repository = repository,
                     ),
                     pdfReportFileExporter = FakePdfReportFileExporter(),
+                ),
+                refreshPendingSmartSystemActivityDetailsUseCase = RefreshPendingSmartSystemActivityDetailsUseCase(
+                    repository = repository,
+                    cacheStatusRepository = repository,
+                    authRepository = authRepository,
                 ),
                 syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
                 stringResolver = TestStringResolver(),
@@ -519,11 +590,17 @@ private class DashboardFakeRepository :
     private val bikesFlow = MutableStateFlow<List<BoschBike>>(emptyList())
     private val activityDetails = mutableMapOf<String, MutableStateFlow<BoschActivityDetail?>>()
     private val bikeDetails = mutableMapOf<String, MutableStateFlow<BoschBike?>>()
+    private val detailOverviewFlow = MutableStateFlow(currentDetailOverview())
+    private val activityCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
+    private val bikeCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
+    private val activityDetailCacheUpdatedAtFlow = MutableStateFlow<Long?>(null)
     private var activityTotalCount: Int? = null
+    private var staleActivityIds: Set<String> = emptySet()
 
     fun setActivities(activities: List<BoschActivity>, totalCount: Int) {
         activitiesFlow.value = activities
         activityTotalCount = totalCount
+        detailOverviewFlow.value = currentDetailOverview()
     }
 
     fun setBikes(bikes: List<BoschBike>) {
@@ -532,12 +609,31 @@ private class DashboardFakeRepository :
 
     fun setActivityDetail(activityId: String, detail: BoschActivityDetail) {
         activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.value = detail
+        staleActivityIds = staleActivityIds - activityId
+        detailOverviewFlow.value = currentDetailOverview()
+    }
+
+    fun setStaleActivityIds(activityIds: Set<String>) {
+        staleActivityIds = activityIds
+    }
+
+    fun setCacheTimestamps(
+        activityUpdatedAt: Long? = activityCacheUpdatedAtFlow.value,
+        bikeUpdatedAt: Long? = bikeCacheUpdatedAtFlow.value,
+        detailUpdatedAt: Long? = activityDetailCacheUpdatedAtFlow.value,
+    ) {
+        activityCacheUpdatedAtFlow.value = activityUpdatedAt
+        bikeCacheUpdatedAtFlow.value = bikeUpdatedAt
+        activityDetailCacheUpdatedAtFlow.value = detailUpdatedAt
     }
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> = activitiesFlow.asStateFlow()
     override fun observeCachedBikes(): Flow<List<BoschBike>> = bikesFlow.asStateFlow()
     override fun observeCachedActivityDetailCacheOverview(): Flow<ActivityDetailCacheOverview> =
-        MutableStateFlow(currentDetailOverview()).asStateFlow()
+        detailOverviewFlow.asStateFlow()
+    override fun observeActivityCacheUpdatedAtEpochMillis(): Flow<Long?> = activityCacheUpdatedAtFlow.asStateFlow()
+    override fun observeBikeCacheUpdatedAtEpochMillis(): Flow<Long?> = bikeCacheUpdatedAtFlow.asStateFlow()
+    override fun observeActivityDetailCacheUpdatedAtEpochMillis(): Flow<Long?> = activityDetailCacheUpdatedAtFlow.asStateFlow()
     override fun observeCachedActivityDetail(activityId: String): Flow<BoschActivityDetail?> =
         activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.asStateFlow()
 
@@ -567,7 +663,7 @@ private class DashboardFakeRepository :
         val hasDetail = activityDetails[activityId]?.value != null
         when (detailMode) {
             CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
-            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail
+            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail || staleActivityIds.contains(activityId)
         }
     }
 
@@ -586,6 +682,9 @@ private class DashboardFakeRepository :
             ?: getCachedActivity(activityId)?.let {
                 val detail = BoschActivityDetail(activityId = activityId, points = emptyList())
                 activityDetails.getOrPut(activityId) { MutableStateFlow(null) }.value = detail
+                staleActivityIds = staleActivityIds - activityId
+                detailOverviewFlow.value = currentDetailOverview()
+                activityDetailCacheUpdatedAtFlow.value = activityDetailCacheUpdatedAtFlow.value ?: 1L
                 Result.success(detail)
             }
             ?: Result.failure(IllegalStateException("not needed"))
