@@ -36,7 +36,9 @@
     <string name="login_cancelled">Sign-in cancelled</string>
 
     <string name="setup_title">Setup</string>
-    <string name="setup_subtitle">This is where app settings live that directly affect export and usage.</string>
+    <string name="setup_subtitle">This is where app settings live that directly affect appearance, export and usage. The options are grouped into compact dropdown selections.</string>
+    <string name="setup_display_mode_title">Display mode</string>
+    <string name="setup_display_mode_subtitle">Choose whether the app follows the system appearance or always stays in light or dark mode.</string>
     <string name="setup_csv_title">CSV format</string>
     <string name="setup_csv_subtitle">Choose whether CSV exports use the automatic device-based format or a fixed export preset.</string>
     <string name="setup_sync_title">Cloud sync details</string>
@@ -45,6 +47,9 @@
     <string name="setup_background_sync_subtitle">Choose whether the app schedules a daily Smart System sync in the background and which network conditions it should require.</string>
     <string name="setup_csv_example">Example: %1$s</string>
     <string name="setup_csv_sample_activity">Morning ride</string>
+    <string name="display_mode_automatic_label">Automatic (default)</string>
+    <string name="display_mode_light_label">Light</string>
+    <string name="display_mode_dark_label">Dark</string>
     <string name="csv_export_format_system_default_label">Automatic</string>
     <string name="csv_export_format_system_default_description">Uses the device decimal conventions to choose a fitting CSV preset, for example semicolon plus decimal comma on German systems.</string>
     <string name="csv_export_format_excel_de_label">Excel/German</string>
@@ -69,18 +74,18 @@
     <string name="help_activities_label">Activities</string>
     <string name="help_activities_text">Here you can browse all saved rides, search in them and sort the list. “All tours on map” opens a world map with one point per ride. Tap a point to jump straight to that ride. If you go back, the map opens again where you left it.</string>
     <string name="help_bike_label">Account</string>
-    <string name="help_bike_text">The account area shows your connected Bosch Smart System bikes together with basic account information. The app works with the current Bosch Smart System and does not support eBike System 2 or eBike Connect.</string>
+    <string name="help_bike_text">The account area starts with a compact Account &amp; profile card, then shows the supported Bosch system and your connected Smart System bikes. Detailed OIDC cards stay available further down in the account details. The app works with the current Bosch Smart System and does not support eBike System 2 or eBike Connect.</string>
     <string name="help_setup_label">Setup</string>
-    <string name="help_setup_text">In Setup you choose the CSV format, how much detail cloud sync reloads, and whether background sync runs daily on Wi-Fi, on any network, or stays off.</string>
+    <string name="help_setup_text">In Setup you choose the display mode, the CSV format, how much detail cloud sync reloads, and whether background sync runs daily on Wi-Fi, on any network, or stays off. The options are shown as compact dropdown selections.</string>
     <string name="help_functions_label">Functions</string>
-    <string name="help_functions_text">In Functions you can export your saved data as CSV or as a PDF report. The exports use the data already available on your device and then open the normal Android share menu. The CSV format follows your setting from Setup, while the PDF uses your current app language and regional format.</string>
+    <string name="help_functions_text">In Functions you can export your saved data as CSV or as a PDF report. The exports use the data already available on your device and then open the normal Android share menu. The CSV format follows your setting from Setup, while the PDF uses your current app language and regional format and includes the compact account and profile summary.</string>
     <string name="help_statistics_label">Statistics</string>
-    <string name="help_statistics_text">The statistics screen groups your rides by week, month or year. You can quickly compare distance, ride time and number of rides, and you can tap a period to see the details below the chart. The highlights section also shows personal bests, your strongest period, your average riding speed and your usual riding rhythm.</string>
+    <string name="help_statistics_text">The statistics screen groups your rides by week, month or year. At the top you see the covered statistics period, and the chart starts on the newest part of the timeline so you can swipe left to older periods. Tap a period to see the details below the chart. The highlights section also shows personal bests, your strongest period, your average riding speed and your usual riding rhythm.</string>
     <string name="help_diagnostics_label">Diagnostics</string>
     <string name="help_diagnostics_text">The API test screen is meant for troubleshooting and development. That is why it is not part of the normal main navigation.</string>
 
     <string name="info_title">Info</string>
-    <string name="info_subtitle">Background information about the app, privacy, legal notes and the services it uses.</string>
+    <string name="info_subtitle">Background information about the app, privacy, legal notes, grouped libraries and credits.</string>
     <string name="info_section_project">Project</string>
     <string name="info_section_privacy">Privacy</string>
     <string name="info_section_legal">Legal</string>
@@ -91,9 +96,12 @@
     <string name="info_build_type_label">Build type</string>
     <string name="info_application_id_label">Application ID</string>
     <string name="info_license_label">License</string>
+    <string name="info_author_label">Author</string>
+    <string name="info_author_value">Guenther Meusburger</string>
+    <string name="info_website_label">Website</string>
     <string name="info_copyright_label">Copyright</string>
     <string name="info_repository_label">Repository</string>
-    <string name="info_copyright_value">(c) 2026 meuse24, Author: Guenther Meusburger</string>
+    <string name="info_copyright_value">(c) 2026 meuse24</string>
     <string name="info_privacy_auth_label">Authentication</string>
     <string name="info_privacy_auth_value">You sign in with your Bosch account. Your session stays on this device and is not stored by this app on an extra server.</string>
     <string name="info_privacy_storage_label">Local storage</string>
@@ -108,11 +116,16 @@
     <string name="info_legal_support_value">Questions, bugs and feature requests are handled through the project repository, not through Bosch support.</string>
     <string name="info_legal_data_act_label">Data access basis</string>
     <string name="info_legal_data_act_value">The app uses the Bosch account access provided for Smart System data so it can show the rides and bike information available to you.</string>
+    <string name="info_library_group_android">Android stack</string>
+    <string name="info_library_group_data">Data and auth</string>
+    <string name="info_library_group_visuals">Maps, charts and export</string>
     <string name="info_credit_bosch">Bosch eBike Systems provides the Smart System and the ride and bike data that can be shown in this app.</string>
     <string name="info_credit_data_act">The EU Data Act is part of the legal framework that makes this kind of data access possible.</string>
     <string name="info_credit_codex">OpenAI Codex helped with parts of the software development for this project.</string>
     <string name="info_credit_claude_code">Claude Code supported development work on this project.</string>
     <string name="info_credit_gemini_cli">Gemini CLI supported development work on this project.</string>
+    <string name="info_credit_cli_tools_label">CLI tools</string>
+    <string name="info_credit_cli_tools">OpenAI Codex, Claude Code and Gemini CLI supported development work on this project.</string>
     <string name="info_credit_openfreemap">OpenFreeMap provides the map background used in the app.</string>
 
     <string name="home_hero_subtitle">Quick overview of rides, details, GPS and bikes.</string>

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -132,6 +133,14 @@ class DashboardViewModel(
 
     fun updateBackgroundSyncMode(mode: BackgroundSyncMode) {
         feedHandler.updateBackgroundSyncMode(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            mode = mode,
+        )
+    }
+
+    fun updateDisplayMode(mode: DisplayMode) {
+        feedHandler.updateDisplayMode(
             scope = viewModelScope,
             currentState = _uiState::value,
             mode = mode,

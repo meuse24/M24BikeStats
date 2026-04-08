@@ -12,6 +12,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.model.PdfReportData
 import info.meuse24.m24bikestats.domain.model.PdfReportDiscoveryInfo
 import info.meuse24.m24bikestats.domain.model.PdfReportUserInfo
@@ -44,6 +45,7 @@ import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -303,6 +305,22 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `display mode changes propagate into ui state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository()
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateDisplayMode(DisplayMode.DARK)
+        advanceUntilIdle()
+
+        assertEquals(DisplayMode.DARK, viewModel.uiState.value.displayMode)
+    }
+
+    @Test
     fun `can load more activities when cached total exceeds first loaded page`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -382,6 +400,7 @@ class DashboardViewModelTest {
                 updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
                 updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
+                updateDisplayModeUseCase = UpdateDisplayModeUseCase(settingsRepository),
                 oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
                     override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
                 },

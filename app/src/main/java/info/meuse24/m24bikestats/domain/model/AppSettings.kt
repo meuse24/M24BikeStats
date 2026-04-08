@@ -12,6 +12,7 @@ data class AppSettings(
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
     val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
+    val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
 )
 
 enum class CsvSeparator(
@@ -72,6 +73,18 @@ enum class BackgroundSyncMode {
 
     companion object {
         fun fromStoredValue(value: String?): BackgroundSyncMode? =
+            entries.firstOrNull { mode -> mode.name == value }
+    }
+}
+
+enum class DisplayMode {
+    AUTOMATIC,
+    LIGHT,
+    DARK,
+    ;
+
+    companion object {
+        fun fromStoredValue(value: String?): DisplayMode? =
             entries.firstOrNull { mode -> mode.name == value }
     }
 }

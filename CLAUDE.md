@@ -88,8 +88,9 @@ Regeln:
 - Statistik-UI liegt separat in `presentation/statistics/`:
   - `StatisticsScreen.kt` = Compose-Screen (stateless)
   - `StatisticsViewModel.kt` = Grouping-State, Period-Selektion, `combine`-Pipeline
-  - `StatisticsUiModelMapper.kt` = `List<BoschActivity>` → `PeriodStats` und `StatisticsHighlights`, Android-frei
-  - `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsHighlights`, `StatisticsGrouping` plus testbare Formatierungs-Helfer
+- `StatisticsUiModelMapper.kt` = `ActivityStatisticsOverview` → lokalisierte `StatisticsUiState`, Android-frei
+- `StatisticsUiState.kt` = Datenmodelle `StatisticsUiState`, `PeriodStats`, `StatisticsHighlights`, `StatisticsGrouping` plus testbare Formatierungs-Helfer
+- Statistik-Aggregation liegt fachlich in `domain/usecase/GetStatisticsUseCase.kt` und liefert `ActivityStatisticsOverview` inkl. Highlights und abgedecktem Zeitraum; `StatisticsUiModelMapper` mappt dieses Aggregat in lokalisierte UI-Daten
 - Weltkarte liegt in `presentation/map/`:
   - `MapSummaryScreen.kt` = MapLibre-Composable, GeoJSON-CircleLayer, zoom-adaptive Tap-Erkennung
   - `MapSummaryViewModel.kt` = `GetActivityMapPointsUseCase`-Flow, Camera-State-Persistenz
@@ -119,6 +120,7 @@ Regeln:
 - CSV-Export für Aktivitäten, Details und Tracks
 - PDF-Zusammenfassungsbericht mit `PdfDocument`/`Canvas`, cache-only und mit teilbarem FileProvider-Export; enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
+- Anzeigemodus mit `Automatisch`, `Hell`, `Dunkel`; wird aus `AppSettings` gelesen und direkt im Root-Theme angewendet
 - Exporte sind cache-only und haben Cancel-Aktionen
 - Track-Screen mit MapLibre/OpenFreeMap, GPX und CSV
 - Weltkarte (route `map`) zeigt alle gecachten Touren als Kreise auf einer MapLibre/OpenFreeMap-Karte; Tap auf einen Kreis navigiert zur Aktivitätsdetailseite; Camera-State bleibt beim Zurücknavigieren erhalten
@@ -127,8 +129,10 @@ Regeln:
 - API-Test teilt große Ergebnisse als Datei über `FileProvider`
 - API-Test kann Ergebnisse zusätzlich nach `Downloads/M24BikeStats` speichern
 - Kontodetails zeigen Bosch-`USERINFO`, OIDC-Discovery und OIDC-Signaturzertifikats-Metadaten
-- Kontodetails ergänzen Bike-Profil jetzt auch um `oemId`, `serviceDue`, `connectModule`, ABS-Komponenten, Bike Pass, Service Book und Registrierungen
-- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
+- Kontodetails ergänzen Bike-Profil jetzt auch um `oemId`, `serviceDue`, `connectModule`, ABS-Komponenten, Bike Pass, Service Book und Registrierungen; starten mit `Konto & Profil`, zeigen nur das unterstützte System und hängen ausführliche OIDC-Karten unten an
+- Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; zeigt zusätzlich den abgedeckten Statistikzeitraum und startet horizontal beim neuesten Abschnitt; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
+- Setup nutzt kompakte Dropdown-Auswahl statt langer Radio-Listen; Änderungen an sichtbaren Optionen deshalb bevorzugt dort zentral halten
+- `SupportScreens.kt` enthält jetzt einen dedizierten, gruppierten Info-Screen mit Projekt-/Privacy-/Legal-Karten, kompakten Bibliotheksgruppen und zusammengefassten CLI-Tool-Credits
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
 - Android-Backups sind deaktiviert und die App erlaubt keinen Cleartext-Traffic
@@ -166,6 +170,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - `LiveOidcCertificateInfoProvider`
 - `AppSettingsRepositoryImpl`
 - alle UseCases
+- darunter `UpdateDisplayModeUseCase`
 - darunter `FetchBoschDataUseCase` (domain/usecase)
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
@@ -191,7 +196,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
 - Zusatzdaten pro Bike wie Bike Pass, Service Book und Registrierungen dürfen bei temporären API-Fehlern nicht aus dem Cache verschwinden; leere erfolgreiche Antworten dürfen den Cache dagegen leeren
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
-- Änderungen an `AppSettings` immer gegen drei Pfade prüfen: Setup-UI, Hintergrund-Scheduler und Dashboard-State
+- Änderungen an `AppSettings` immer gegen die relevanten Verbraucher prüfen: Setup-UI, Dashboard-State, Root-Theme und bei Sync-Settings zusätzlich Hintergrund-Scheduler
 - Periodischen Hintergrund-Sync nur über `BackgroundSyncScheduler` ändern; keine parallelen WorkManager-Namen oder konkurrierenden Schedules einführen
 - Bei Aktivitätsdetails keine rohe Punktliste blind verwenden; Track/Profile laufen über den bereinigten Mapper-Pfad
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen

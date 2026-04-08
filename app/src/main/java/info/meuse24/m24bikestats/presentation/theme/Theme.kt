@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -35,11 +36,16 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun M24BikeStatsTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    displayMode: DisplayMode = DisplayMode.AUTOMATIC,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (displayMode) {
+        DisplayMode.AUTOMATIC -> isSystemInDarkTheme()
+        DisplayMode.LIGHT -> false
+        DisplayMode.DARK -> true
+    }
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current

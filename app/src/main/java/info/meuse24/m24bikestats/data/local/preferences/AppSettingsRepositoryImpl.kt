@@ -7,6 +7,7 @@ import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.CsvSeparator
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.model.toLegacyExportFormat
 import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +49,13 @@ class AppSettingsRepositoryImpl(
         settingsState.value = settingsState.value.copy(backgroundSyncMode = mode)
     }
 
+    override suspend fun updateDisplayMode(mode: DisplayMode) {
+        preferences.edit()
+            .putString(KEY_DISPLAY_MODE, mode.name)
+            .apply()
+        settingsState.value = settingsState.value.copy(displayMode = mode)
+    }
+
     private fun readSettings(): AppSettings {
         val storedFormat = CsvExportFormat.fromStoredValue(
             preferences.getString(KEY_CSV_EXPORT_FORMAT, null),
@@ -61,10 +69,14 @@ class AppSettingsRepositoryImpl(
         val storedBackgroundSyncMode = BackgroundSyncMode.fromStoredValue(
             preferences.getString(KEY_BACKGROUND_SYNC_MODE, null),
         )
+        val storedDisplayMode = DisplayMode.fromStoredValue(
+            preferences.getString(KEY_DISPLAY_MODE, null),
+        )
         return AppSettings(
             csvExportFormat = storedFormat ?: legacySeparator?.toLegacyExportFormat() ?: CsvExportFormat.SYSTEM_DEFAULT,
             cloudSyncDetailMode = storedCloudSyncDetailMode ?: CloudSyncDetailMode.MISSING_ONLY,
             backgroundSyncMode = storedBackgroundSyncMode ?: BackgroundSyncMode.DISABLED,
+            displayMode = storedDisplayMode ?: DisplayMode.AUTOMATIC,
         )
     }
 
@@ -74,5 +86,6 @@ class AppSettingsRepositoryImpl(
         private const val KEY_CSV_SEPARATOR = "csv_separator"
         private const val KEY_CLOUD_SYNC_DETAIL_MODE = "cloud_sync_detail_mode"
         private const val KEY_BACKGROUND_SYNC_MODE = "background_sync_mode"
+        private const val KEY_DISPLAY_MODE = "display_mode"
     }
 }

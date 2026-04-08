@@ -4,6 +4,7 @@ import info.meuse24.m24bikestats.domain.model.AppSettings
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 import kotlinx.coroutines.flow.Flow
 
 interface AppSettingsRepository {
@@ -12,4 +13,5 @@ interface AppSettingsRepository {
     suspend fun updateCsvExportFormat(format: CsvExportFormat)
     suspend fun updateCloudSyncDetailMode(mode: CloudSyncDetailMode)
     suspend fun updateBackgroundSyncMode(mode: BackgroundSyncMode)
+    suspend fun updateDisplayMode(mode: DisplayMode)
 }

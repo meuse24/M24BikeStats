@@ -3,18 +3,25 @@ package info.meuse24.m24bikestats.presentation.navigation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -23,98 +30,147 @@ import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
+    displayMode: DisplayMode,
     csvExportFormat: CsvExportFormat,
     cloudSyncDetailMode: CloudSyncDetailMode,
     backgroundSyncMode: BackgroundSyncMode,
+    onDisplayModeSelected: (DisplayMode) -> Unit,
     onCsvExportFormatSelected: (CsvExportFormat) -> Unit,
     onCloudSyncDetailModeSelected: (CloudSyncDetailMode) -> Unit,
     onBackgroundSyncModeSelected: (BackgroundSyncMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val displayModeOptions = DisplayMode.entries.map { it to stringResource(it.labelRes()) }
+    val csvOptions = CsvExportFormat.entries.map { it to stringResource(it.labelRes()) }
+    val cloudSyncOptions = CloudSyncDetailMode.entries.map { it to stringResource(it.labelRes()) }
+    val backgroundSyncOptions = BackgroundSyncMode.entries.map { it to stringResource(it.labelRes()) }
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         item {
-            SetupSectionTitle(text = stringResource(R.string.setup_csv_title))
-        }
-        items(CsvExportFormat.entries) { format ->
-            SetupOptionCard(
-                selected = format == csvExportFormat,
-                label = stringResource(format.labelRes()),
-                onClick = { onCsvExportFormatSelected(format) },
-            )
-        }
-        item {
-            SetupSectionTitle(text = stringResource(R.string.setup_sync_title))
-        }
-        items(CloudSyncDetailMode.entries) { mode ->
-            SetupOptionCard(
-                selected = mode == cloudSyncDetailMode,
-                label = stringResource(mode.labelRes()),
-                onClick = { onCloudSyncDetailModeSelected(mode) },
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                ),
+            ) {
+                Text(
+                    text = stringResource(R.string.setup_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f),
+                    modifier = Modifier.padding(18.dp),
+                )
+            }
         }
         item {
-            SetupSectionTitle(text = stringResource(R.string.setup_background_sync_title))
-        }
-        items(BackgroundSyncMode.entries) { mode ->
-            SetupOptionCard(
-                selected = mode == backgroundSyncMode,
-                label = stringResource(mode.labelRes()),
-                onClick = { onBackgroundSyncModeSelected(mode) },
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                ),
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp),
+                ) {
+                    SetupDropdownPreference(
+                        title = stringResource(R.string.setup_display_mode_title),
+                        subtitle = stringResource(R.string.setup_display_mode_subtitle),
+                        selectedLabel = stringResource(displayMode.labelRes()),
+                        options = displayModeOptions,
+                        onOptionSelected = onDisplayModeSelected,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    SetupDropdownPreference(
+                        title = stringResource(R.string.setup_csv_title),
+                        subtitle = stringResource(R.string.setup_csv_subtitle),
+                        selectedLabel = stringResource(csvExportFormat.labelRes()),
+                        options = csvOptions,
+                        onOptionSelected = onCsvExportFormatSelected,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    SetupDropdownPreference(
+                        title = stringResource(R.string.setup_sync_title),
+                        subtitle = stringResource(R.string.setup_sync_subtitle),
+                        selectedLabel = stringResource(cloudSyncDetailMode.labelRes()),
+                        options = cloudSyncOptions,
+                        onOptionSelected = onCloudSyncDetailModeSelected,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    SetupDropdownPreference(
+                        title = stringResource(R.string.setup_background_sync_title),
+                        subtitle = stringResource(R.string.setup_background_sync_subtitle),
+                        selectedLabel = stringResource(backgroundSyncMode.labelRes()),
+                        options = backgroundSyncOptions,
+                        onOptionSelected = onBackgroundSyncModeSelected,
+                    )
+                }
+            }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SetupSectionTitle(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 2.dp, bottom = 2.dp),
-    )
-}
-
-@Composable
-private fun SetupOptionCard(
-    selected: Boolean,
-    label: String,
-    onClick: () -> Unit,
+private fun <T> SetupDropdownPreference(
+    title: String,
+    subtitle: String,
+    selectedLabel: String,
+    options: List<Pair<T, String>>,
+    onOptionSelected: (T) -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
-        colors = CardDefaults.cardColors(
-            containerColor = if (selected) {
-                MaterialTheme.colorScheme.secondaryContainer
-            } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
-            },
-        ),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+    var expanded by rememberSaveable(title) { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = !expanded },
         ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
-                modifier = Modifier.fillMaxWidth(0.82f),
+            OutlinedTextField(
+                value = selectedLabel,
+                onValueChange = {},
+                readOnly = true,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .menuAnchor(),
             )
-            RadioButton(
-                selected = selected,
-                onClick = onClick,
-            )
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+            ) {
+                options.forEach { (value, label) ->
+                    DropdownMenuItem(
+                        text = { Text(label) },
+                        onClick = {
+                            expanded = false
+                            onOptionSelected(value)
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -134,4 +190,10 @@ private fun BackgroundSyncMode.labelRes(): Int = when (this) {
     BackgroundSyncMode.DISABLED -> R.string.background_sync_mode_disabled_label
     BackgroundSyncMode.DAILY_UNMETERED -> R.string.background_sync_mode_daily_unmetered_label
     BackgroundSyncMode.DAILY_CONNECTED -> R.string.background_sync_mode_daily_connected_label
+}
+
+private fun DisplayMode.labelRes(): Int = when (this) {
+    DisplayMode.AUTOMATIC -> R.string.display_mode_automatic_label
+    DisplayMode.LIGHT -> R.string.display_mode_light_label
+    DisplayMode.DARK -> R.string.display_mode_dark_label
 }

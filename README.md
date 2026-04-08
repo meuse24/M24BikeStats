@@ -12,20 +12,24 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
 - mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
 - optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
+- Setup mit kompakten Dropdown-Einstellungen für Anzeigemodus, CSV-Format, Detail-Sync und Hintergrund-Sync
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
 - PDF-Zusammenfassungsbericht als cache-only Export mit Nutzerkonto, Bikes, Aktivitätsübersicht, Highlights sowie Wochen-, Monats- und Jahresdiagrammen
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
+- persistenter Anzeigemodus mit `Automatisch`, `Hell` und `Dunkel`
 - cache-only Exporte, damit keine zusätzlichen Cloud-Abfragen während des Exports nötig sind
 - GPX- und Track-Share-Funktionen
 - robuster API-Test-Share als Datei statt großer Binder-Texttransaktion
 - API-Test kann Ergebnisse zusätzlich direkt nach `Downloads/M24BikeStats` speichern
-- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monats-/Jahresaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
+- Statistikscreen mit interaktivem Vico-Kombidiagramm: Distanzbalken mit Tourenzahl-Labels, Fahrtzeit-Linie, Wochen-/Monats-/Jahresaggregation, Durchschnittslinien für Distanz und Fahrtzeit, zusätzliche Durchschnitts-Tiles pro Tour, abgedecktem Statistikzeitraum, initialem Fokus auf dem neuesten Diagrammabschnitt, aufklappbarer Period-Detail-Card sowie einer read-only Sektion `Highlights & Rhythmus`
 - MapLibre/OpenFreeMap-Kartenansicht mit roter Route, kompaktem Attribution-Overlay und klar getrennten Start-/Zielmarkern
 - Weltkarte mit allen gecachten Touren als anklickbare Kreise; Tap navigiert zur Aktivitätsdetailseite; Kameraposition bleibt beim Zurücknavigieren erhalten; GPS-Zentrum per Tour = am weitesten vom Startpunkt entfernte Koordinate
 - Profilcharts für Tracks
 - Bereinigung und Kompression redundanter Detailpunkte für Karte, GPX und Profile
+- Kontodetails starten mit einer kompakten Karte `Konto & Profil`, zeigen nur noch das unterstützte System und verschieben die ausführlichen OIDC-Karten an das Ende
 - Kontodetails zeigen zusätzlich Bosch-`USERINFO`, OIDC-Discovery und das aktuell passende OIDC-Signaturzertifikat aus der JWKS-Antwort
 - Kontodetails zeigen zusätzlich Bike-Pass-, Service-Book- und Registrierungsdaten, sofern Bosch dafür Daten liefert
+- Info-Screen mit gruppierten Bibliotheken, zusammengefassten CLI-Tool-Credits und Author-Website
 - aktive UI-Texte in Englisch und Deutsch lokalisiert
 - Release-Build nutzt R8-Minify + Resource-Shrinking
 - Android Auto-Backup und Device-Transfer-Backup sind deaktiviert, damit keine sensiblen Bosch-Daten aus App-Speicher oder Tokens unkontrolliert exportiert werden
@@ -64,10 +68,11 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Aktivitäten`: paginierte Aktivitätenliste mit Suche, Datumsfilter und Sortierung; enthält Button zur Weltkarte
 - `Weltkarte`: alle Touren als Kreise auf OpenFreeMap-Karte; Tap auf Kreis öffnet Aktivitätsdetail
 - `Konto`: Bike-Liste plus Konto-/OIDC-Details
+- `Konto`: Detailansicht startet mit `Konto & Profil`, danach `Unterstütztes System`, Bike-Daten und weiter unten OIDC-Details
 - `Funktionen`: CSV-Exporte und PDF-Zusammenfassungsbericht
-- `Statistiken`: Wochen-/Monats-/Jahresaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, Durchschnittslinien und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, distanzstärkstem Zeitraum, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
-- `Setup`: App-Einstellungen wie CSV-Format-Presets
-- `Setup`: zusätzlich Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
+- `Statistiken`: Wochen-/Monats-/Jahresaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, initialem Fokus auf dem neuesten Zeitachsenabschnitt, abgedecktem Statistikzeitraum und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, distanzstärkstem Zeitraum, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
+- `Setup`: kompakte Dropdown-Einstellungen für Anzeigemodus `Automatisch` / `Hell` / `Dunkel`
+- `Setup`: zusätzlich CSV-Format-Presets, Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
 - `API-Test` ist nur in Debug-Builds als Diagnoseziel verfügbar
@@ -106,10 +111,8 @@ api/           Bosch-Endpoint-Katalog für API-Test/Diagnose
 data/          API- und Repository-Implementierungen, Room-Zugriff
 auth/          OAuth2/AppAuth, Token-Verwaltung, OIDC-Helfer
 background/    WorkManager-Scheduling und Settings-Beobachtung
-presentation/  Compose-Screens, Navigation, ViewModels
+presentation/  Compose-Screens, Navigation, Theme, ViewModels
 shared/        gemeinsam genutzte Formatierungs-/Hilfscodecs
-support/       Diagnose- und API-Test-Helfer
-ui/            Theme und app-weite UI-Grundbausteine
 di/            Koin-Modul
 ```
 
@@ -120,7 +123,8 @@ Ergänzungen:
 - `data/export`: CSV-/PDF-Export-Helfer, PDF-Layout-Builder und Android-gebundene Report-Dateigenerierung
 - `domain/model/PdfReportData.kt`: Android-freies Aggregat für den PDF-Bericht
 - `domain/usecase/ExportPdfSummaryReportUseCase.kt`: baut den Bericht aus Cache-, Bike- und OIDC-Daten auf
-- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. formatierter Statistik-UI-Helfer, Wochen-/Monats-/Jahresaggregation, Durchschnittskennzahlen und read-only Highlights-/Rhythmus-Metriken aus gecachten `BoschActivity`-Daten
+- `domain/usecase/GetStatisticsUseCase.kt`: aggregiert gecachte `BoschActivity`-Daten zu `ActivityStatisticsOverview` mit Perioden, Highlights und abgedecktem Statistikzeitraum
+- `presentation/statistics`: `StatisticsScreen`, `StatisticsViewModel`, `StatisticsUiModelMapper`, `StatisticsUiState` inkl. lokalisierter Statistik-UI-Helfer, Mapping von `ActivityStatisticsOverview` nach UI und read-only Highlights-/Rhythmus-Darstellung
 - `presentation/dashboard/DashboardScreen.kt`: nur noch Dashboard-Shell mit Tabs, Snackbar und Screen-Auswahl
 - `presentation/dashboard/DashboardOverviewComponents.kt`: Karten-, Listen- und Filter-Komponenten für Aktivitäten und Bikes
 - `presentation/dashboard/DashboardDetailScreens.kt`: Aktivitäts- und Bike-Detailscreens inkl. Share-/Detail-Sektionen

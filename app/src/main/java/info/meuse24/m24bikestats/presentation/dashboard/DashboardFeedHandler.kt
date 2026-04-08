@@ -5,6 +5,7 @@ import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
@@ -16,6 +17,7 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
@@ -33,6 +35,7 @@ class DashboardFeedHandler(
     private val updateCloudSyncDetailModeUseCase: UpdateCloudSyncDetailModeUseCase,
     private val updateBackgroundSyncModeUseCase: UpdateBackgroundSyncModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
+    private val updateDisplayModeUseCase: UpdateDisplayModeUseCase,
     private val oidcCertificateInfoProvider: OidcCertificateInfoProvider,
     private val uiModelMapper: DashboardUiModelMapper,
     private val stringResolver: DashboardStringResolver,
@@ -106,6 +109,7 @@ class DashboardFeedHandler(
                         csvExportFormat = settings.csvExportFormat,
                         cloudSyncDetailMode = settings.cloudSyncDetailMode,
                         backgroundSyncMode = settings.backgroundSyncMode,
+                        displayMode = settings.displayMode,
                     )
                 }
             }
@@ -311,6 +315,17 @@ class DashboardFeedHandler(
         if (currentState().backgroundSyncMode == mode) return
         scope.launch {
             updateBackgroundSyncModeUseCase(mode)
+        }
+    }
+
+    fun updateDisplayMode(
+        scope: CoroutineScope,
+        currentState: () -> DashboardUiState,
+        mode: DisplayMode,
+    ) {
+        if (currentState().displayMode == mode) return
+        scope.launch {
+            updateDisplayModeUseCase(mode)
         }
     }
 

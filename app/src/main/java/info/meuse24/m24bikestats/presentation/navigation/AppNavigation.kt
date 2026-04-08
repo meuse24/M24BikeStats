@@ -326,9 +326,11 @@ fun AppNavigation() {
 
                     composable(DrawerDestination.SETUP.route!!) {
                         SetupScreen(
+                            displayMode = dashboardUiState.displayMode,
                             csvExportFormat = dashboardUiState.csvExportFormat,
                             cloudSyncDetailMode = dashboardUiState.cloudSyncDetailMode,
                             backgroundSyncMode = dashboardUiState.backgroundSyncMode,
+                            onDisplayModeSelected = dashboardViewModel::updateDisplayMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
                             onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
                             onBackgroundSyncModeSelected = dashboardViewModel::updateBackgroundSyncMode,
