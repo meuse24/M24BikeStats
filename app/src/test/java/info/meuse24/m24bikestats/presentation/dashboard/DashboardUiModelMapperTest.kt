@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
+import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
@@ -129,9 +130,10 @@ class DashboardUiModelMapperTest {
             ),
         )
 
-        assertEquals(2, uiModel.sections.first().rows.size)
+        assertEquals(1, uiModel.sections.first().rows.size)
         assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "active-kid" } })
         assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "CN=Bosch" } })
+        assertTrue(uiModel.sections.last().rows.any { (_, value) -> value == "active-kid" })
     }
 
     @Test
@@ -156,12 +158,16 @@ class DashboardUiModelMapperTest {
             ),
         )
 
+        assertEquals("res-${R.string.pdf_section_account}", uiModel.sections.first().title)
+        assertEquals(listOf("rider@example.com", "rider", "user-subject"), uiModel.sections.first().rows.map { it.second })
         assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "rider@example.com" } })
         assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "rider" } })
         assertTrue(uiModel.sections.any { section -> section.rows.any { (_, value) -> value == "https://issuer.example.com/token" } })
         assertTrue(uiModel.sections.any { section ->
             section.rows.any { (_, value) -> value == "authorization_code, refresh_token" }
         })
+        assertTrue(uiModel.sections.takeLast(2).any { section -> section.rows.any { (_, value) -> value == "rider@example.com" } })
+        assertTrue(uiModel.sections.takeLast(2).any { section -> section.rows.any { (_, value) -> value == "https://issuer.example.com/token" } })
     }
 
     private fun activity() = BoschActivity(

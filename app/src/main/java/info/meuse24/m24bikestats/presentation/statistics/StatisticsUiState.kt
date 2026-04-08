@@ -1,5 +1,6 @@
 package info.meuse24.m24bikestats.presentation.statistics
 
+import info.meuse24.m24bikestats.domain.model.StatisticsGrouping
 import java.time.DayOfWeek
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -8,6 +9,7 @@ data class StatisticsUiState(
     val periods: List<PeriodStats> = emptyList(),
     val selectedPeriod: PeriodStats? = null,
     val grouping: StatisticsGrouping = StatisticsGrouping.MONTH,
+    val coveredPeriodLabel: String? = null,
     val totalTours: Int = 0,
     val totalDistanceKm: Double = 0.0,
     val totalDurationHours: Double = 0.0,
@@ -48,12 +50,6 @@ data class PeriodStats(
     val distanceKm: Double,
     val durationMinutes: Int,
 )
-
-enum class StatisticsGrouping {
-    WEEK,
-    MONTH,
-    YEAR,
-}
 
 internal val PeriodStats.durationHours: Double
     get() = durationMinutes / 60.0

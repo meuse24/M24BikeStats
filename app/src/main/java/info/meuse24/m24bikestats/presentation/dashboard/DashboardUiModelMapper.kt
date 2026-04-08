@@ -203,16 +203,83 @@ class DashboardUiModelMapper(
         bike.run {
             val driveUnit = driveUnit
             val displayAssistModes = driveUnit?.activeAssistModes.orEmpty().toDisplayAssistModes()
+            val accountProfileRows = oidcUserInfo?.toAccountProfileRows().orEmpty()
+            val oidcSections = buildList {
+                if (accountProfileRows.isNotEmpty()) {
+                    add(
+                        DetailSectionUiModel(
+                            title = s(R.string.dashboard_section_oidc_userinfo),
+                            rows = accountProfileRows,
+                        ),
+                    )
+                }
+                oidcDiscoveryInfo?.let { discoveryInfo ->
+                    add(
+                        DetailSectionUiModel(
+                            title = s(R.string.dashboard_section_oidc_discovery),
+                            rows = buildList {
+                                discoveryInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_discovery_issuer) to it) }
+                                discoveryInfo.authorizationEndpoint?.let { add(s(R.string.dashboard_label_oidc_authorization_endpoint) to it) }
+                                discoveryInfo.tokenEndpoint?.let { add(s(R.string.dashboard_label_oidc_token_endpoint) to it) }
+                                discoveryInfo.userInfoEndpoint?.let { add(s(R.string.dashboard_label_oidc_userinfo_endpoint) to it) }
+                                discoveryInfo.jwksUri?.let { add(s(R.string.dashboard_label_oidc_jwks_uri) to it) }
+                                discoveryInfo.revocationEndpoint?.let { add(s(R.string.dashboard_label_oidc_revocation_endpoint) to it) }
+                                discoveryInfo.introspectionEndpoint?.let { add(s(R.string.dashboard_label_oidc_introspection_endpoint) to it) }
+                                discoveryInfo.endSessionEndpoint?.let { add(s(R.string.dashboard_label_oidc_end_session_endpoint) to it) }
+                                discoveryInfo.supportedGrantTypes
+                                    .takeIf { it.isNotEmpty() }
+                                    ?.let { add(s(R.string.dashboard_label_oidc_supported_grants) to it.joinToString()) }
+                            },
+                        ),
+                    )
+                }
+                oidcCertificateInfo?.let { certificateInfo ->
+                    add(
+                        DetailSectionUiModel(
+                            title = s(R.string.dashboard_section_oidc_certificate),
+                            rows = buildList {
+                                certificateInfo.tokenKeyId?.let { add(s(R.string.dashboard_label_token_key_id) to it) }
+                                add(s(R.string.dashboard_label_oidc_key_id) to certificateInfo.keyId)
+                                add(
+                                    s(R.string.dashboard_label_oidc_key_match) to
+                                        if (certificateInfo.matchesCurrentToken) {
+                                            s(R.string.dashboard_value_yes)
+                                        } else {
+                                            s(R.string.dashboard_value_no)
+                                        },
+                                )
+                                certificateInfo.keyType?.let { add(s(R.string.dashboard_label_oidc_key_type) to it) }
+                                certificateInfo.algorithm?.let { add(s(R.string.dashboard_label_oidc_algorithm) to it) }
+                                certificateInfo.usage?.let { add(s(R.string.dashboard_label_oidc_usage) to it) }
+                                certificateInfo.subject?.let { add(s(R.string.dashboard_label_oidc_subject) to it) }
+                                certificateInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_issuer) to it) }
+                                certificateInfo.validFrom?.let { add(s(R.string.dashboard_label_oidc_valid_from) to it) }
+                                certificateInfo.validUntil?.let { add(s(R.string.dashboard_label_oidc_valid_until) to it) }
+                                certificateInfo.sha1Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha1) to it) }
+                                certificateInfo.sha256Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha256) to it) }
+                                add(s(R.string.dashboard_label_oidc_chain_entries) to certificateInfo.certificateChainEntries.toString())
+                            },
+                        ),
+                    )
+                }
+            }
             BikeDetailUiModel(
                 title = driveUnit?.productName ?: s(R.string.dashboard_bike_fallback_title),
                 subtitle = headUnit?.productName,
                 sections = buildList {
+                    if (accountProfileRows.isNotEmpty()) {
+                        add(
+                            DetailSectionUiModel(
+                                title = s(R.string.pdf_section_account),
+                                rows = accountProfileRows,
+                            ),
+                        )
+                    }
                     add(
                         DetailSectionUiModel(
                             title = s(R.string.dashboard_section_system_support),
                             rows = buildList {
                                 add(s(R.string.dashboard_label_supported_platform) to s(R.string.dashboard_value_supported_platform))
-                                add(s(R.string.dashboard_label_unsupported_platform) to s(R.string.dashboard_value_unsupported_platform))
                             },
                         ),
                     )
@@ -238,67 +305,6 @@ class DashboardUiModelMapper(
                             },
                         ),
                     )
-                    oidcUserInfo?.let { userInfo ->
-                        add(
-                            DetailSectionUiModel(
-                                title = s(R.string.dashboard_section_oidc_userinfo),
-                                rows = buildList {
-                                    userInfo.email?.let { add(s(R.string.dashboard_label_oidc_user_email) to it) }
-                                    userInfo.username?.let { add(s(R.string.dashboard_label_oidc_user_username) to it) }
-                                    userInfo.subject?.let { add(s(R.string.dashboard_label_oidc_user_subject) to it) }
-                                },
-                            ),
-                        )
-                    }
-                    oidcDiscoveryInfo?.let { discoveryInfo ->
-                        add(
-                            DetailSectionUiModel(
-                                title = s(R.string.dashboard_section_oidc_discovery),
-                                rows = buildList {
-                                    discoveryInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_discovery_issuer) to it) }
-                                    discoveryInfo.authorizationEndpoint?.let { add(s(R.string.dashboard_label_oidc_authorization_endpoint) to it) }
-                                    discoveryInfo.tokenEndpoint?.let { add(s(R.string.dashboard_label_oidc_token_endpoint) to it) }
-                                    discoveryInfo.userInfoEndpoint?.let { add(s(R.string.dashboard_label_oidc_userinfo_endpoint) to it) }
-                                    discoveryInfo.jwksUri?.let { add(s(R.string.dashboard_label_oidc_jwks_uri) to it) }
-                                    discoveryInfo.revocationEndpoint?.let { add(s(R.string.dashboard_label_oidc_revocation_endpoint) to it) }
-                                    discoveryInfo.introspectionEndpoint?.let { add(s(R.string.dashboard_label_oidc_introspection_endpoint) to it) }
-                                    discoveryInfo.endSessionEndpoint?.let { add(s(R.string.dashboard_label_oidc_end_session_endpoint) to it) }
-                                    discoveryInfo.supportedGrantTypes
-                                        .takeIf { it.isNotEmpty() }
-                                        ?.let { add(s(R.string.dashboard_label_oidc_supported_grants) to it.joinToString()) }
-                                },
-                            ),
-                        )
-                    }
-                    oidcCertificateInfo?.let { certificateInfo ->
-                        add(
-                            DetailSectionUiModel(
-                                title = s(R.string.dashboard_section_oidc_certificate),
-                                rows = buildList {
-                                    certificateInfo.tokenKeyId?.let { add(s(R.string.dashboard_label_token_key_id) to it) }
-                                    add(s(R.string.dashboard_label_oidc_key_id) to certificateInfo.keyId)
-                                    add(
-                                        s(R.string.dashboard_label_oidc_key_match) to
-                                            if (certificateInfo.matchesCurrentToken) {
-                                                s(R.string.dashboard_value_yes)
-                                            } else {
-                                                s(R.string.dashboard_value_no)
-                                            },
-                                    )
-                                    certificateInfo.keyType?.let { add(s(R.string.dashboard_label_oidc_key_type) to it) }
-                                    certificateInfo.algorithm?.let { add(s(R.string.dashboard_label_oidc_algorithm) to it) }
-                                    certificateInfo.usage?.let { add(s(R.string.dashboard_label_oidc_usage) to it) }
-                                    certificateInfo.subject?.let { add(s(R.string.dashboard_label_oidc_subject) to it) }
-                                    certificateInfo.issuer?.let { add(s(R.string.dashboard_label_oidc_issuer) to it) }
-                                    certificateInfo.validFrom?.let { add(s(R.string.dashboard_label_oidc_valid_from) to it) }
-                                    certificateInfo.validUntil?.let { add(s(R.string.dashboard_label_oidc_valid_until) to it) }
-                                    certificateInfo.sha1Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha1) to it) }
-                                    certificateInfo.sha256Thumbprint?.let { add(s(R.string.dashboard_label_oidc_thumbprint_sha256) to it) }
-                                    add(s(R.string.dashboard_label_oidc_chain_entries) to certificateInfo.certificateChainEntries.toString())
-                                },
-                            ),
-                        )
-                    }
                     driveUnit?.let { driveUnit ->
                         add(
                             DetailSectionUiModel(
@@ -410,6 +416,7 @@ class DashboardUiModelMapper(
                                 .mapIndexed { index, registration -> registration.toDetailSection(index) }
                         )
                     }
+                    addAll(oidcSections)
                 }.filter { it.rows.isNotEmpty() },
             )
         }
@@ -611,6 +618,13 @@ class DashboardUiModelMapper(
                 serialNumber?.let { add(s(R.string.dashboard_label_serial_number) to it) }
             },
         )
+
+    private fun OidcUserInfoUiModel.toAccountProfileRows(): List<Pair<String, String>> =
+        buildList {
+            email?.let { add(s(R.string.dashboard_label_oidc_user_email) to it) }
+            username?.let { add(s(R.string.dashboard_label_oidc_user_username) to it) }
+            subject?.let { add(s(R.string.dashboard_label_oidc_user_subject) to it) }
+        }
 
     private fun BikeDetailUiModel.toShareText(): String =
         buildString {

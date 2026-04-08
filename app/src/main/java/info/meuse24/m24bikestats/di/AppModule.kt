@@ -34,6 +34,7 @@ import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
 import info.meuse24.m24bikestats.domain.repository.PdfReportMetadataRepository
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportFileUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
@@ -43,6 +44,7 @@ import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseC
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
+import info.meuse24.m24bikestats.domain.usecase.GetCurrentAccessTokenInfoUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetStatisticsUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
@@ -165,6 +167,8 @@ val appModule = module {
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
     factory { ExportPdfSummaryReportUseCase(get(), get()) }
+    factory { ExportPdfSummaryReportFileUseCase(get(), get()) }
+    factory { GetCurrentAccessTokenInfoUseCase(get()) }
     factory { GetSmartSystemActivityDetailUseCase(get(), get()) }
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
@@ -197,8 +201,7 @@ val appModule = module {
         DashboardOperationsHandler(
             exportActivitiesCsv = get(),
             exportActivityDetailsCsv = get(),
-            exportPdfSummaryReportUseCase = get(),
-            pdfReportFileExporter = get(),
+            exportPdfSummaryReportFileUseCase = get(),
             syncSmartSystemCloudUseCase = get(),
             stringResolver = get(),
         )

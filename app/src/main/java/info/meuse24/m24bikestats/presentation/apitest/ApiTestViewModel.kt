@@ -5,10 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import info.meuse24.m24bikestats.BuildConfig
 import info.meuse24.m24bikestats.api.BoschEndpoint
-import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
-import info.meuse24.m24bikestats.shared.TokenInfoFormat
-import info.meuse24.m24bikestats.shared.decodeJwtParts
+import info.meuse24.m24bikestats.domain.usecase.GetCurrentAccessTokenInfoUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +22,7 @@ data class ApiTestUiState(
 
 class ApiTestViewModel(
     private val fetchBoschData: FetchBoschDataUseCase,
-    private val authRepository: AuthRepository,
+    private val getCurrentAccessTokenInfo: GetCurrentAccessTokenInfoUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ApiTestUiState())
@@ -154,11 +152,5 @@ class ApiTestViewModel(
         return bikes.optJSONObject(0)?.optString("id")?.takeIf { it.isNotBlank() }
     }
 
-    private fun decodeAccessTokenInfo(): Result<String> = runCatching {
-        val token = authRepository.getAccessToken()
-            ?: error("Kein Access Token verfügbar")
-        val parts = decodeJwtParts(token)
-            ?: error("Kein gültiges JWT")
-        TokenInfoFormat.format(header = parts.header, payload = parts.payload)
-    }
+    private fun decodeAccessTokenInfo(): Result<String> = getCurrentAccessTokenInfo()
 }

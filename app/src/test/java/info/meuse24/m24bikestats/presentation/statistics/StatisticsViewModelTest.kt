@@ -4,6 +4,7 @@ import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
+import info.meuse24.m24bikestats.domain.model.StatisticsGrouping
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
 import info.meuse24.m24bikestats.domain.usecase.GetStatisticsUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.MainDispatcherRule
@@ -156,7 +157,11 @@ class StatisticsViewModelTest {
             setActivities(activities)
         }
         return StatisticsViewModel(
-            getStatisticsUseCase = GetStatisticsUseCase(repository),
+            getStatisticsUseCase = GetStatisticsUseCase(
+                repository = repository,
+                zoneIdProvider = { ZoneId.of("Europe/Vienna") },
+                localeProvider = { Locale.GERMAN },
+            ),
             uiModelMapper = StatisticsUiModelMapper(
                 zoneId = ZoneId.of("Europe/Vienna"),
                 locale = Locale.GERMAN,

@@ -16,6 +16,7 @@ import info.meuse24.m24bikestats.domain.model.PdfReportData
 import info.meuse24.m24bikestats.domain.model.PdfReportDiscoveryInfo
 import info.meuse24.m24bikestats.domain.model.PdfReportUserInfo
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportFileUseCase
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
@@ -390,11 +391,13 @@ class DashboardViewModelTest {
             operationsHandler = DashboardOperationsHandler(
                 exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
                 exportActivityDetailsCsv = ExportSmartSystemActivityDetailsCsvUseCase(repository, authRepository, settingsRepository),
-                exportPdfSummaryReportUseCase = ExportPdfSummaryReportUseCase(
-                    metadataRepository = FakePdfReportMetadataRepository(),
-                    repository = repository,
+                exportPdfSummaryReportFileUseCase = ExportPdfSummaryReportFileUseCase(
+                    exportPdfSummaryReportUseCase = ExportPdfSummaryReportUseCase(
+                        metadataRepository = FakePdfReportMetadataRepository(),
+                        repository = repository,
+                    ),
+                    pdfReportFileExporter = FakePdfReportFileExporter(),
                 ),
-                pdfReportFileExporter = FakePdfReportFileExporter(),
                 syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
                 stringResolver = TestStringResolver(),
                 pdfExportDispatcher = Dispatchers.Main,

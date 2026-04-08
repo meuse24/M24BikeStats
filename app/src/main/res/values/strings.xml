@@ -457,7 +457,7 @@
     <string name="dashboard_battery_cycles">%1$s • %2$s cycles</string>
     <string name="dashboard_battery_health_summary">%1$s • %2$d %% health</string>
     <string name="dashboard_battery_health_cycles">%1$s • %2$d %% health • %3$s cycles</string>
-    <string name="dashboard_section_system_support">System support</string>
+    <string name="dashboard_section_system_support">Supported system</string>
     <string name="dashboard_section_overview">Overview</string>
     <string name="dashboard_section_oidc_userinfo">OIDC user profile</string>
     <string name="dashboard_section_oidc_discovery">OIDC discovery</string>
@@ -492,9 +492,7 @@
     <string name="dashboard_label_registered_components">Registered components</string>
     <string name="dashboard_label_component_type">Component type</string>
     <string name="dashboard_label_supported_platform">Supported Bosch platform</string>
-    <string name="dashboard_label_unsupported_platform">Not supported</string>
     <string name="dashboard_value_supported_platform">Bosch Smart System</string>
-    <string name="dashboard_value_unsupported_platform">Bosch eBike System 2 / eBike Connect</string>
     <string name="dashboard_label_token_key_id">Token key ID</string>
     <string name="dashboard_label_oidc_user_email">Email</string>
     <string name="dashboard_label_oidc_user_username">Username</string>

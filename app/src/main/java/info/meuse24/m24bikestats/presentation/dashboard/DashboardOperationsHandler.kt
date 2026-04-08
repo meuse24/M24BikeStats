@@ -4,8 +4,7 @@ import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
-import info.meuse24.m24bikestats.domain.repository.PdfReportFileExporter
-import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportUseCase
+import info.meuse24.m24bikestats.domain.usecase.ExportPdfSummaryReportFileUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivityDetailsCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
@@ -22,8 +21,7 @@ import java.time.format.DateTimeFormatter
 class DashboardOperationsHandler(
     private val exportActivitiesCsv: ExportSmartSystemActivitiesCsvUseCase,
     private val exportActivityDetailsCsv: ExportSmartSystemActivityDetailsCsvUseCase,
-    private val exportPdfSummaryReportUseCase: ExportPdfSummaryReportUseCase,
-    private val pdfReportFileExporter: PdfReportFileExporter,
+    private val exportPdfSummaryReportFileUseCase: ExportPdfSummaryReportFileUseCase,
     private val syncSmartSystemCloudUseCase: SyncSmartSystemCloudUseCase,
     private val stringResolver: DashboardStringResolver,
     private val pdfExportDispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -203,7 +201,11 @@ class DashboardOperationsHandler(
                 )
             }
 
-            val reportData = exportPdfSummaryReportUseCase().getOrElse { error ->
+            val export = runCatching {
+                withContext(pdfExportDispatcher) {
+                    exportPdfSummaryReportFileUseCase().getOrThrow()
+                }
+            }.getOrElse { error ->
                 if (error is CancellationException) {
                     updateState {
                         it.copy(
@@ -224,31 +226,15 @@ class DashboardOperationsHandler(
                 return@launch
             }
 
-            val fileName = buildPdfFileName()
-            val file = runCatching {
-                withContext(pdfExportDispatcher) {
-                    pdfReportFileExporter.generate(reportData, fileName)
-                }
-            }.getOrElse { error ->
-                updateState {
-                    it.copy(
-                        isExportingPdf = false,
-                        error = error.message ?: s(R.string.dashboard_error_pdf_export),
-                    )
-                }
-                pdfExportJob = null
-                return@launch
-            }
-
             updateState {
                 it.copy(
                     isExportingPdf = false,
                     pendingPdfExport = PdfExportUiModel(
-                        fileName = fileName,
-                        filePath = file.absolutePath,
+                        fileName = export.fileName,
+                        filePath = export.filePath,
                     ),
                     lastPdfExport = PdfExportSummaryUiModel(
-                        fileName = fileName,
+                        fileName = export.fileName,
                         exportedAtLabel = LocalDateTime.now().format(EXPORT_DATE_TIME_FORMATTER),
                     ),
                     error = null,
@@ -458,8 +444,5 @@ class DashboardOperationsHandler(
     private companion object {
         private val EXPORT_DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-
-        fun buildPdfFileName(): String =
-            "m24-bericht-${LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}.pdf"
     }
 }
