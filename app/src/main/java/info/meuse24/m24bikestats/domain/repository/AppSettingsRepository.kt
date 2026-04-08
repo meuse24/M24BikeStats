@@ -14,4 +14,5 @@ interface AppSettingsRepository {
     suspend fun updateCloudSyncDetailMode(mode: CloudSyncDetailMode)
     suspend fun updateBackgroundSyncMode(mode: BackgroundSyncMode)
     suspend fun updateDisplayMode(mode: DisplayMode)
+    suspend fun updateShowExplanationTexts(show: Boolean)
 }

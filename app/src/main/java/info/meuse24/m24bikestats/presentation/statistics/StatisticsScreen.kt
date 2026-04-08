@@ -93,6 +93,7 @@ private val statisticsDistanceValueIndicesKey = ExtraStore.Key<Map<Double, Int>>
 @Composable
 fun StatisticsScreen(
     uiState: StatisticsUiState,
+    showExplanationTexts: Boolean,
     onGroupingSelected: (StatisticsGrouping) -> Unit,
     onPeriodSelected: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -125,6 +126,7 @@ fun StatisticsScreen(
         item {
             StatisticsChartCard(
                 periods = uiState.periods,
+                showExplanationTexts = showExplanationTexts,
                 onPeriodSelected = onPeriodSelected,
             )
         }
@@ -135,7 +137,12 @@ fun StatisticsScreen(
         }
         item {
             AnimatedVisibility(visible = uiState.highlights != null) {
-                uiState.highlights?.let { StatisticsHighlightsSection(highlights = it) }
+                uiState.highlights?.let {
+                    StatisticsHighlightsSection(
+                        highlights = it,
+                        showExplanationTexts = showExplanationTexts,
+                    )
+                }
             }
         }
     }
@@ -234,6 +241,7 @@ private fun GroupingSelector(
 @Composable
 private fun StatisticsChartCard(
     periods: List<PeriodStats>,
+    showExplanationTexts: Boolean,
     onPeriodSelected: (Long) -> Unit,
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -393,24 +401,27 @@ private fun StatisticsChartCard(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = chartSubtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (showExplanationTexts) {
+                Text(
+                    text = chartSubtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             StatisticsLegendRow(
                 distanceColor = distanceColor,
                 durationColor = durationColor,
                 tourCountOutlineColor = tourCountOutlineColor,
             )
             StatisticsAverageHintColumn(
+                showExplanationTexts = showExplanationTexts,
                 averageDistanceLabel = averageDistanceKm?.let { averageDistanceLabel },
                 averageDurationLabel = averageDurationHours?.let { averageDurationLabel },
                 distanceColor = distanceColor,
                 durationColor = durationColor,
             )
             if (periods.isEmpty()) {
-                EmptyStatisticsCard()
+                EmptyStatisticsCard(showExplanationTexts = showExplanationTexts)
             } else {
                 CartesianChartHost(
                     chart = rememberCartesianChart(
@@ -500,12 +511,13 @@ private fun StatisticsChartCard(
 
 @Composable
 private fun StatisticsAverageHintColumn(
+    showExplanationTexts: Boolean,
     averageDistanceLabel: String?,
     averageDurationLabel: String?,
     distanceColor: Color,
     durationColor: Color,
 ) {
-    if (averageDistanceLabel == null && averageDurationLabel == null) return
+    if (!showExplanationTexts || (averageDistanceLabel == null && averageDurationLabel == null)) return
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         averageDistanceLabel?.let {
@@ -652,6 +664,7 @@ private fun StatisticsDetailCard(
 @Composable
 private fun StatisticsHighlightsSection(
     highlights: StatisticsHighlights,
+    showExplanationTexts: Boolean,
 ) {
     val locale = Locale.getDefault()
 
@@ -668,10 +681,12 @@ private fun StatisticsHighlightsSection(
         StatisticsActivePeriodCard(
             highlights = highlights,
             locale = locale,
+            showExplanationTexts = showExplanationTexts,
         )
         StatisticsEfficiencyCard(
             highlights = highlights,
             locale = locale,
+            showExplanationTexts = showExplanationTexts,
         )
         StatisticsRhythmCard(
             highlights = highlights,
@@ -777,6 +792,7 @@ private fun StatisticsPersonalBestsCard(
 private fun StatisticsActivePeriodCard(
     highlights: StatisticsHighlights,
     locale: Locale,
+    showExplanationTexts: Boolean,
 ) {
     val mostActivePeriod = highlights.mostActivePeriod ?: return
 
@@ -819,11 +835,13 @@ private fun StatisticsActivePeriodCard(
                     modifier = Modifier.weight(1f),
                 )
             }
-            Text(
-                text = stringResource(R.string.statistics_highlights_active_period_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (showExplanationTexts) {
+                Text(
+                    text = stringResource(R.string.statistics_highlights_active_period_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -832,6 +850,7 @@ private fun StatisticsActivePeriodCard(
 private fun StatisticsEfficiencyCard(
     highlights: StatisticsHighlights,
     locale: Locale,
+    showExplanationTexts: Boolean,
 ) {
     val avgTravelSpeedKmh = highlights.avgTravelSpeedKmh ?: return
 
@@ -859,11 +878,13 @@ private fun StatisticsEfficiencyCard(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
             )
-            Text(
-                text = stringResource(R.string.statistics_highlights_avg_speed_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (showExplanationTexts) {
+                Text(
+                    text = stringResource(R.string.statistics_highlights_avg_speed_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -1094,7 +1115,9 @@ private fun LegendItem(
 }
 
 @Composable
-private fun EmptyStatisticsCard() {
+private fun EmptyStatisticsCard(
+    showExplanationTexts: Boolean,
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -1109,11 +1132,13 @@ private fun EmptyStatisticsCard() {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = stringResource(R.string.statistics_empty_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (showExplanationTexts) {
+                Text(
+                    text = stringResource(R.string.statistics_empty_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

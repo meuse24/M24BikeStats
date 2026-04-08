@@ -11,15 +11,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -33,6 +37,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
@@ -104,11 +109,13 @@ fun HomeScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        Text(
-                            text = stringResource(R.string.home_no_tours_text),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (uiState.showExplanationTexts) {
+                            Text(
+                                text = stringResource(R.string.home_no_tours_text),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -202,6 +209,8 @@ private fun DataStatusAndSyncCard(
     onCancelPendingActivityDetailsSync: () -> Unit,
 ) {
     val dataStatus = uiState.dataStatus
+    val showStatusSummary = uiState.showExplanationTexts ||
+        dataStatus?.statusSummary != stringResource(R.string.home_data_status_summary_complete)
     val hasSyncMetadata = dataStatus?.lastActivitySyncLabel != null ||
         dataStatus?.lastDetailSyncLabel != null ||
         dataStatus?.lastBikeSyncLabel != null
@@ -240,11 +249,13 @@ private fun DataStatusAndSyncCard(
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
-                    Text(
-                        text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
-                    )
+                    if (showStatusSummary) {
+                        Text(
+                            text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                        )
+                    }
                 }
                 dataStatus?.let { status ->
                     DataStatusBadge(
@@ -330,24 +341,21 @@ private fun DataStatusAndSyncCard(
             ) {
                 when {
                     (dataStatus?.missingDetailCount ?: 0) > 0 && (dataStatus?.staleDetailCount ?: 0) > 0 -> {
-                        Row(
+                        HomeActionButton(
+                            onClick = onLoadMissingActivityDetails,
+                            enabled = uiState.canStartSync,
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            emphasis = HomeActionButtonEmphasis.Secondary,
                         ) {
-                            HomeActionButton(
-                                onClick = onLoadMissingActivityDetails,
-                                enabled = uiState.canStartSync,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(stringResource(R.string.home_data_status_action_missing))
-                            }
-                            HomeActionButton(
-                                onClick = onRefreshStaleActivityDetails,
-                                enabled = uiState.canStartSync,
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(stringResource(R.string.home_data_status_action_stale))
-                            }
+                            Text(stringResource(R.string.home_data_status_action_missing))
+                        }
+                        HomeActionButton(
+                            onClick = onRefreshStaleActivityDetails,
+                            enabled = uiState.canStartSync,
+                            modifier = Modifier.fillMaxWidth(),
+                            emphasis = HomeActionButtonEmphasis.Secondary,
+                        ) {
+                            Text(stringResource(R.string.home_data_status_action_stale))
                         }
                     }
 
@@ -356,6 +364,7 @@ private fun DataStatusAndSyncCard(
                             onClick = onLoadMissingActivityDetails,
                             enabled = uiState.canStartSync,
                             modifier = Modifier.fillMaxWidth(),
+                            emphasis = HomeActionButtonEmphasis.Secondary,
                         ) {
                             Text(stringResource(R.string.home_data_status_action_missing))
                         }
@@ -366,6 +375,7 @@ private fun DataStatusAndSyncCard(
                             onClick = onRefreshStaleActivityDetails,
                             enabled = uiState.canStartSync,
                             modifier = Modifier.fillMaxWidth(),
+                            emphasis = HomeActionButtonEmphasis.Secondary,
                         ) {
                             Text(stringResource(R.string.home_data_status_action_stale))
                         }
@@ -376,6 +386,7 @@ private fun DataStatusAndSyncCard(
                     onClick = onSyncCloudData,
                     enabled = uiState.canStartSync,
                     modifier = Modifier.fillMaxWidth(),
+                    emphasis = HomeActionButtonEmphasis.Primary,
                 ) {
                     if (uiState.isSyncingCloudData) {
                         CircularProgressIndicator(
@@ -400,15 +411,72 @@ private fun HomeActionButton(
     onClick: () -> Unit,
     enabled: Boolean,
     modifier: Modifier = Modifier,
+    emphasis: HomeActionButtonEmphasis = HomeActionButtonEmphasis.Secondary,
     content: @Composable () -> Unit,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier,
-    ) {
-        content()
+    val buttonModifier = modifier.heightIn(min = 54.dp)
+    when (emphasis) {
+        HomeActionButtonEmphasis.Primary -> {
+            Button(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = buttonModifier,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f),
+                ),
+                contentPadding = ButtonDefaults.ContentPadding,
+            ) {
+                HomeActionButtonContent(content = content)
+            }
+        }
+
+        HomeActionButtonEmphasis.Secondary -> {
+            FilledTonalButton(
+                onClick = onClick,
+                enabled = enabled,
+                modifier = buttonModifier,
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+                ),
+                contentPadding = ButtonDefaults.ContentPadding,
+            ) {
+                HomeActionButtonContent(content = content)
+            }
+        }
     }
+}
+
+@Composable
+private fun HomeActionButtonContent(
+    content: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.ProvideTextStyle(
+            value = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+            ),
+        ) {
+            content()
+        }
+    }
+}
+
+private enum class HomeActionButtonEmphasis {
+    Primary,
+    Secondary,
 }
 
 @Composable

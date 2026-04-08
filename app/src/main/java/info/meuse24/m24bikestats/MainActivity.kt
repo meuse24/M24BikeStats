@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val appSettings = observeAppSettingsUseCase().collectAsStateWithLifecycle(initialValue = AppSettings()).value
             M24BikeStatsTheme(displayMode = appSettings.displayMode) {
-                AppNavigation()
+                AppNavigation(showExplanationTexts = appSettings.showExplanationTexts)
             }
         }
     }

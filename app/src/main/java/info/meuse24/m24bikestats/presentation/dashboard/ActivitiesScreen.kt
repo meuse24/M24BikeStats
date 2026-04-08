@@ -84,7 +84,9 @@ fun ActivitiesScreen(
             HeroCard(
                 eyebrow = stringResource(R.string.activities_hero_eyebrow),
                 title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
-                subtitle = stringResource(R.string.activities_hero_subtitle),
+                subtitle = stringResource(R.string.activities_hero_subtitle).takeIf {
+                    uiState.showExplanationTexts
+                },
             ) {
                 SummaryChipRow(
                     summary = listOf(
@@ -148,11 +150,13 @@ fun ActivitiesScreen(
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                         )
-                        Text(
-                            text = stringResource(R.string.activities_empty_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        if (uiState.showExplanationTexts) {
+                            Text(
+                                text = stringResource(R.string.activities_empty_subtitle),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
             }
@@ -192,11 +196,13 @@ fun ActivitiesScreen(
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                             )
-                            Text(
-                                text = stringResource(R.string.activities_loading_more_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            if (uiState.showExplanationTexts) {
+                                Text(
+                                    text = stringResource(R.string.activities_loading_more_subtitle),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }

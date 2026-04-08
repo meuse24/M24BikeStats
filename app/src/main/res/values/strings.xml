@@ -37,6 +37,8 @@
 
     <string name="setup_title">Setup</string>
     <string name="setup_subtitle">This is where app settings live that directly affect appearance, export and usage. The options are grouped into compact dropdown selections.</string>
+    <string name="setup_explanation_texts_title">Hint and explanation texts</string>
+    <string name="setup_explanation_texts_subtitle">Show or hide introductory helper texts on the login, setup, activity, bike, export and statistics screens.</string>
     <string name="setup_display_mode_title">Display mode</string>
     <string name="setup_display_mode_subtitle">Choose whether the app follows the system appearance or always stays in light or dark mode.</string>
     <string name="setup_csv_title">CSV format</string>
@@ -76,7 +78,7 @@
     <string name="help_bike_label">Account</string>
     <string name="help_bike_text">The account area starts with a compact Account &amp; profile card, then shows the supported Bosch system and your connected Smart System bikes. Detailed OIDC cards stay available further down in the account details. The app works with the current Bosch Smart System and does not support eBike System 2 or eBike Connect.</string>
     <string name="help_setup_label">Setup</string>
-    <string name="help_setup_text">In Setup you choose the display mode, the CSV format, how much detail cloud sync reloads, and whether background sync runs daily on Wi-Fi, on any network, or stays off. The options are shown as compact dropdown selections.</string>
+    <string name="help_setup_text">In Setup you choose the display mode, the CSV format, how much detail cloud sync reloads, whether background sync runs daily on Wi-Fi or any network, and whether introductory helper texts stay visible across the app.</string>
     <string name="help_functions_label">Functions</string>
     <string name="help_functions_text">In Functions you can export your saved data as CSV or as a PDF report. The exports use the data already available on your device and then open the normal Android share menu. The CSV format follows your setting from Setup, while the PDF uses your current app language and regional format and includes the compact account and profile summary.</string>
     <string name="help_statistics_label">Statistics</string>

@@ -29,6 +29,7 @@ fun DashboardUiState.toHomeUiState(): HomeUiState =
         lastActivitiesCsvExport = lastActivitiesCsvExport,
         lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
         lastPdfExport = lastPdfExport,
+        showExplanationTexts = showExplanationTexts,
     )
 
 fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =
@@ -43,6 +44,7 @@ fun DashboardUiState.toActivitiesUiState(): ActivitiesUiState =
         isRefreshing = isRefreshing,
         isLoadingMoreActivities = isLoadingMoreActivities,
         canLoadMoreActivities = canLoadMoreActivities,
+        showExplanationTexts = showExplanationTexts,
     )
 
 fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
@@ -67,6 +69,7 @@ fun DashboardUiState.toFunctionsUiState(): FunctionsUiState =
         lastActivitiesCsvExport = lastActivitiesCsvExport,
         lastActivityDetailsCsvExport = lastActivityDetailsCsvExport,
         lastPdfExport = lastPdfExport,
+        showExplanationTexts = showExplanationTexts,
     )
 
 fun DashboardUiState.toBikeListUiState(): BikeListUiState =
@@ -74,6 +77,7 @@ fun DashboardUiState.toBikeListUiState(): BikeListUiState =
         bikes = bikes,
         isRefreshing = isRefreshing,
         hasOidcCertificateInfo = hasOidcCertificateInfo,
+        showExplanationTexts = showExplanationTexts,
     )
 
 fun DashboardUiState.toActivityDetailScreenUiState(): ActivityDetailScreenUiState =
@@ -82,6 +86,7 @@ fun DashboardUiState.toActivityDetailScreenUiState(): ActivityDetailScreenUiStat
         selectedActivityId = selectedActivityId,
         isActivityDetailLoading = isActivityDetailLoading,
         isActivityDetailRefreshing = isActivityDetailRefreshing,
+        showExplanationTexts = showExplanationTexts,
     )
 
 fun DashboardUiState.toTrackUiState(): TrackUiState =
@@ -99,4 +104,5 @@ fun DashboardUiState.toBikeDetailScreenUiState(): BikeDetailScreenUiState =
         selectedBikeId = selectedBikeId,
         isBikeDetailLoading = isBikeDetailLoading,
         isBikeDetailRefreshing = isBikeDetailRefreshing,
+        showExplanationTexts = showExplanationTexts,
     )

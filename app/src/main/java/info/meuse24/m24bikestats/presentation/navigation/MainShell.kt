@@ -49,6 +49,7 @@ fun MainShell(
     currentMainDestination: MainDestination?,
     currentRoute: String?,
     topBarTitle: String,
+    showExplanationTexts: Boolean,
     onMainDestinationSelected: (MainDestination) -> Unit,
     onDrawerDestinationSelected: (DrawerDestination) -> Unit,
     onNavigateToOverview: () -> Unit,
@@ -197,6 +198,7 @@ fun MainShell(
             drawerContent = {
                 AppDrawer(
                     currentRoute = currentRoute,
+                    showExplanationTexts = showExplanationTexts,
                     onHomeClicked = {
                         coroutineScope.launch {
                             drawerState.close()

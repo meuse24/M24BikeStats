@@ -13,6 +13,7 @@ data class AppSettings(
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
     val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
+    val showExplanationTexts: Boolean = true,
 )
 
 enum class CsvSeparator(

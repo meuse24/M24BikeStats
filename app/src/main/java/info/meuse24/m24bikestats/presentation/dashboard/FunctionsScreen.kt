@@ -81,7 +81,9 @@ fun FunctionsScreen(
             HeroCard(
                 eyebrow = stringResource(R.string.functions_hero_eyebrow),
                 title = stringResource(R.string.functions_hero_title),
-                subtitle = stringResource(R.string.functions_hero_subtitle),
+                subtitle = stringResource(R.string.functions_hero_subtitle).takeIf {
+                    uiState.showExplanationTexts
+                },
             ) {
                 SummaryChipRow(
                     listOf(
@@ -95,7 +97,9 @@ fun FunctionsScreen(
         item {
             FunctionsExportCard(
                 title = stringResource(R.string.functions_export_pdf_title),
-                subtitle = stringResource(R.string.functions_export_pdf_subtitle),
+                subtitle = stringResource(R.string.functions_export_pdf_subtitle).takeIf {
+                    uiState.showExplanationTexts
+                },
                 summary = listOf(
                     stringResource(R.string.functions_chip_format) to stringResource(R.string.functions_chip_pdf),
                     stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_full_summary),
@@ -127,7 +131,9 @@ fun FunctionsScreen(
         item {
             FunctionsExportCard(
                 title = stringResource(R.string.functions_export_activities_title),
-                subtitle = stringResource(R.string.functions_export_activities_subtitle),
+                subtitle = stringResource(R.string.functions_export_activities_subtitle).takeIf {
+                    uiState.showExplanationTexts
+                },
                 summary = listOf(
                     stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
                     stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_all_activities),
@@ -160,7 +166,9 @@ fun FunctionsScreen(
         item {
             FunctionsExportCard(
                 title = stringResource(R.string.functions_export_details_title),
-                subtitle = stringResource(R.string.functions_export_details_subtitle),
+                subtitle = stringResource(R.string.functions_export_details_subtitle).takeIf {
+                    uiState.showExplanationTexts
+                },
                 summary = listOf(
                     stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
                     stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_visible_activities),
@@ -208,7 +216,7 @@ fun FunctionsScreen(
 @Composable
 private fun FunctionsExportCard(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     summary: List<Pair<String, String>>,
     isRunning: Boolean,
     progressCurrent: Int,
@@ -236,11 +244,13 @@ private fun FunctionsExportCard(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
                 )
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 SummaryChipRow(
                     summary = summary,
                     itemContent = { label, value ->

@@ -31,7 +31,10 @@ private const val AUTHOR_WEBSITE = "https://meuse24.info"
 private const val PROJECT_REPOSITORY = "https://github.com/meuse24/M24BikeStats"
 
 @Composable
-fun HelpScreen(modifier: Modifier = Modifier) {
+fun HelpScreen(
+    showExplanationTexts: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val sections = listOf(
         stringResource(R.string.help_login_label) to stringResource(R.string.help_login_text),
         stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text),
@@ -45,12 +48,16 @@ fun HelpScreen(modifier: Modifier = Modifier) {
         title = stringResource(R.string.help_title),
         subtitle = stringResource(R.string.help_subtitle),
         items = sections,
+        showHeroCard = showExplanationTexts,
         modifier = modifier,
     )
 }
 
 @Composable
-fun InfoScreen(modifier: Modifier = Modifier) {
+fun InfoScreen(
+    showExplanationTexts: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val projectInfo = listOf(
         InfoDetailRow(stringResource(R.string.info_app_label), stringResource(R.string.app_name)),
         InfoDetailRow(stringResource(R.string.info_author_label), stringResource(R.string.info_author_value)),
@@ -130,7 +137,7 @@ fun InfoScreen(modifier: Modifier = Modifier) {
         item {
             InfoHeroCard(
                 title = stringResource(R.string.info_title),
-                subtitle = stringResource(R.string.info_subtitle),
+                subtitle = stringResource(R.string.info_subtitle).takeIf { showExplanationTexts },
                 badges = listOf(
                     "${stringResource(R.string.info_version_label)} ${BuildConfig.VERSION_NAME}",
                     "${stringResource(R.string.info_build_type_label)} ${BuildConfig.BUILD_TYPE}",
@@ -192,7 +199,7 @@ private data class InfoLibraryGroup(
 @Composable
 private fun InfoHeroCard(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     badges: List<String>,
 ) {
     Card(
@@ -214,11 +221,13 @@ private fun InfoHeroCard(
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.SemiBold,
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
+                )
+            }
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -393,12 +402,14 @@ private fun InfoListScreen(
     title: String,
     subtitle: String,
     items: List<Pair<String, String>>,
+    showHeroCard: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     InfoSectionScreen(
         title = title,
         subtitle = subtitle,
         sections = listOf("" to items),
+        showHeroCard = showHeroCard,
         modifier = modifier,
     )
 }
@@ -408,6 +419,7 @@ private fun InfoSectionScreen(
     title: String,
     subtitle: String,
     sections: List<Pair<String, List<Pair<String, String>>>>,
+    showHeroCard: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     val uriHandler = LocalUriHandler.current
@@ -416,27 +428,29 @@ private fun InfoSectionScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+        if (showHeroCard) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
                 ) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                    )
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                        )
+                    }
                 }
             }
         }

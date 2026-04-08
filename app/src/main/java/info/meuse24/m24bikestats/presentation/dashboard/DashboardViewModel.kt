@@ -147,6 +147,14 @@ class DashboardViewModel(
         )
     }
 
+    fun updateShowExplanationTexts(show: Boolean) {
+        feedHandler.updateShowExplanationTexts(
+            scope = viewModelScope,
+            currentState = _uiState::value,
+            show = show,
+        )
+    }
+
     fun syncCloudData() {
         operationsHandler.syncCloudData(
             scope = viewModelScope,

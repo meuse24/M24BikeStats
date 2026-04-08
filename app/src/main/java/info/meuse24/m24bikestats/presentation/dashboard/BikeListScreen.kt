@@ -38,8 +38,10 @@ fun BikeListScreen(
                 },
                 subtitle = if (uiState.isRefreshing) {
                     stringResource(R.string.bike_list_refreshing_subtitle)
-                } else {
+                } else if (uiState.showExplanationTexts) {
                     stringResource(R.string.bike_list_default_subtitle)
+                } else {
+                    null
                 },
             )
         }

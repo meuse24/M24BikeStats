@@ -1,21 +1,25 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,17 +36,18 @@ import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetupScreen(
     displayMode: DisplayMode,
     csvExportFormat: CsvExportFormat,
     cloudSyncDetailMode: CloudSyncDetailMode,
     backgroundSyncMode: BackgroundSyncMode,
+    showExplanationTexts: Boolean,
     onDisplayModeSelected: (DisplayMode) -> Unit,
     onCsvExportFormatSelected: (CsvExportFormat) -> Unit,
     onCloudSyncDetailModeSelected: (CloudSyncDetailMode) -> Unit,
     onBackgroundSyncModeSelected: (BackgroundSyncMode) -> Unit,
+    onShowExplanationTextsChanged: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val displayModeOptions = DisplayMode.entries.map { it to stringResource(it.labelRes()) }
@@ -55,19 +60,21 @@ fun SetupScreen(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                ),
-            ) {
-                Text(
-                    text = stringResource(R.string.setup_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f),
-                    modifier = Modifier.padding(18.dp),
-                )
+        if (showExplanationTexts) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                ) {
+                    Text(
+                        text = stringResource(R.string.setup_subtitle),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.92f),
+                        modifier = Modifier.padding(18.dp),
+                    )
+                }
             }
         }
         item {
@@ -81,9 +88,20 @@ fun SetupScreen(
                     modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
+                    SetupTogglePreference(
+                        title = stringResource(R.string.setup_explanation_texts_title),
+                        subtitle = stringResource(R.string.setup_explanation_texts_subtitle).takeIf {
+                            showExplanationTexts
+                        },
+                        checked = showExplanationTexts,
+                        onCheckedChange = onShowExplanationTextsChanged,
+                    )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                     SetupDropdownPreference(
                         title = stringResource(R.string.setup_display_mode_title),
-                        subtitle = stringResource(R.string.setup_display_mode_subtitle),
+                        subtitle = stringResource(R.string.setup_display_mode_subtitle).takeIf {
+                            showExplanationTexts
+                        },
                         selectedLabel = stringResource(displayMode.labelRes()),
                         options = displayModeOptions,
                         onOptionSelected = onDisplayModeSelected,
@@ -91,7 +109,9 @@ fun SetupScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                     SetupDropdownPreference(
                         title = stringResource(R.string.setup_csv_title),
-                        subtitle = stringResource(R.string.setup_csv_subtitle),
+                        subtitle = stringResource(R.string.setup_csv_subtitle).takeIf {
+                            showExplanationTexts
+                        },
                         selectedLabel = stringResource(csvExportFormat.labelRes()),
                         options = csvOptions,
                         onOptionSelected = onCsvExportFormatSelected,
@@ -99,7 +119,9 @@ fun SetupScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                     SetupDropdownPreference(
                         title = stringResource(R.string.setup_sync_title),
-                        subtitle = stringResource(R.string.setup_sync_subtitle),
+                        subtitle = stringResource(R.string.setup_sync_subtitle).takeIf {
+                            showExplanationTexts
+                        },
                         selectedLabel = stringResource(cloudSyncDetailMode.labelRes()),
                         options = cloudSyncOptions,
                         onOptionSelected = onCloudSyncDetailModeSelected,
@@ -107,7 +129,9 @@ fun SetupScreen(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                     SetupDropdownPreference(
                         title = stringResource(R.string.setup_background_sync_title),
-                        subtitle = stringResource(R.string.setup_background_sync_subtitle),
+                        subtitle = stringResource(R.string.setup_background_sync_subtitle).takeIf {
+                            showExplanationTexts
+                        },
                         selectedLabel = stringResource(backgroundSyncMode.labelRes()),
                         options = backgroundSyncOptions,
                         onOptionSelected = onBackgroundSyncModeSelected,
@@ -118,11 +142,10 @@ fun SetupScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun <T> SetupDropdownPreference(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     selectedLabel: String,
     options: List<Pair<T, String>>,
     onOptionSelected: (T) -> Unit,
@@ -135,15 +158,14 @@ private fun <T> SetupDropdownPreference(
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
         )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
-        ) {
+        if (!subtitle.isNullOrBlank()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Box(modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = selectedLabel,
                 onValueChange = {},
@@ -151,13 +173,19 @@ private fun <T> SetupDropdownPreference(
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    Icon(
+                        imageVector = Icons.Default.ArrowDropDown,
+                        contentDescription = null,
+                    )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
+                modifier = Modifier.fillMaxWidth(),
             )
-            ExposedDropdownMenu(
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable { expanded = true },
+            )
+            DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
             ) {
@@ -171,6 +199,44 @@ private fun <T> SetupDropdownPreference(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SetupTogglePreference(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (!subtitle.isNullOrBlank()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Switch(
+                checked = checked,
+                onCheckedChange = onCheckedChange,
+            )
         }
     }
 }

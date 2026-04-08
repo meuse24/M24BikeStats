@@ -68,6 +68,7 @@ import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardDetailActionHandler
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardFeedHandler
@@ -169,6 +170,7 @@ val appModule = module {
     factory { UpdateCloudSyncDetailModeUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { UpdateDisplayModeUseCase(get()) }
+    factory { UpdateShowExplanationTextsUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
     factory { ExportPdfSummaryReportUseCase(get(), get()) }
@@ -200,6 +202,7 @@ val appModule = module {
             updateBackgroundSyncModeUseCase = get(),
             updateCsvExportFormatUseCase = get(),
             updateDisplayModeUseCase = get(),
+            updateShowExplanationTextsUseCase = get(),
             oidcCertificateInfoProvider = get(),
             uiModelMapper = get(),
             stringResolver = get(),

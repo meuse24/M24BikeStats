@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 internal fun HeroCard(
     eyebrow: String,
     title: String,
-    subtitle: String,
+    subtitle: String?,
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable (() -> Unit)? = null,
 ) {
@@ -75,12 +75,14 @@ internal fun HeroCard(
                     textAlign = textAlign,
                 )
             }
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
-                textAlign = textAlign,
-            )
+            if (!subtitle.isNullOrBlank()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    textAlign = textAlign,
+                )
+            }
             content?.invoke()
         }
     }

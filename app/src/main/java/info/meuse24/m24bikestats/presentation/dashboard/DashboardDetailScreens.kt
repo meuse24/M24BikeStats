@@ -119,6 +119,7 @@ fun ActivityDetailScreen(
                             section = section,
                             activity = activity,
                             onNavigateToTrack = onNavigateToTrack,
+                            showExplanationTexts = uiState.showExplanationTexts,
                         )
                     }
                 }
@@ -242,14 +243,21 @@ fun BikeDetailScreen(
                         }
                     }
                     item {
+                        val bikeDetailSubtitle = uiState.selectedBikeDetail.subtitle
+                            ?: stringResource(R.string.bike_detail_subtitle).takeIf {
+                                uiState.showExplanationTexts
+                            }
                         HeroCard(
                             eyebrow = stringResource(R.string.bike_detail_eyebrow),
                             title = uiState.selectedBikeDetail.title,
-                            subtitle = uiState.selectedBikeDetail.subtitle ?: stringResource(R.string.bike_detail_subtitle),
+                            subtitle = bikeDetailSubtitle,
                         )
                     }
                     items(uiState.selectedBikeDetail.sections) { section ->
-                        DetailSectionCard(section)
+                        DetailSectionCard(
+                            section = section,
+                            showExplanationTexts = uiState.showExplanationTexts,
+                        )
                     }
                 }
             }
@@ -273,6 +281,7 @@ private fun DetailSectionCard(
     section: DetailSectionUiModel,
     activity: ActivityDetailUiModel? = null,
     onNavigateToTrack: (String) -> Unit = {},
+    showExplanationTexts: Boolean = true,
 ) {
     var showExportDialog by rememberSaveable(activity?.id, section.title) { mutableStateOf(false) }
     val context = LocalContext.current
@@ -297,7 +306,10 @@ private fun DetailSectionCard(
                 fontWeight = FontWeight.SemiBold,
             )
             section.indicator?.let { indicator ->
-                SectionIndicator(indicator = indicator)
+                SectionIndicator(
+                    indicator = indicator,
+                    showExplanationTexts = showExplanationTexts,
+                )
             }
             section.rows.chunked(2).forEach { rowItems ->
                 Row(
@@ -366,6 +378,7 @@ private fun DetailSectionCard(
 @Composable
 private fun SectionIndicator(
     indicator: DetailSectionIndicatorUiModel,
+    showExplanationTexts: Boolean,
 ) {
     val progressColor = when (indicator.tone) {
         DetailSectionIndicatorTone.POSITIVE -> MaterialTheme.colorScheme.primary
@@ -403,7 +416,7 @@ private fun SectionIndicator(
                 color = progressColor,
                 trackColor = progressColor.copy(alpha = 0.18f),
             )
-            indicator.supportingText?.let { supportingText ->
+            indicator.supportingText?.takeIf { showExplanationTexts }?.let { supportingText ->
                 Text(
                     text = supportingText,
                     style = MaterialTheme.typography.bodySmall,

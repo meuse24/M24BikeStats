@@ -34,6 +34,7 @@ import info.meuse24.m24bikestats.R
 @Composable
 fun LoginScreen(
     status: LoginStatus,
+    showExplanationTexts: Boolean,
     onBuildAuthIntent: () -> Intent,
     onAuthResult: (resultCode: Int, data: Intent?) -> Unit,
     onAuthenticated: () -> Unit,
@@ -63,8 +64,10 @@ fun LoginScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(modifier = Modifier.height(24.dp))
-        SingleKeyHint()
-        Spacer(modifier = Modifier.height(48.dp))
+        if (showExplanationTexts) {
+            SingleKeyHint()
+            Spacer(modifier = Modifier.height(48.dp))
+        }
 
         when (status) {
             is LoginStatus.Loading -> {

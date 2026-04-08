@@ -48,6 +48,7 @@ import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -386,6 +387,22 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `show explanation texts changes propagate into ui state`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository(initialShowExplanationTexts = true)
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateShowExplanationTexts(false)
+        advanceUntilIdle()
+
+        assertEquals(false, viewModel.uiState.value.showExplanationTexts)
+    }
+
+    @Test
     fun `can load more activities when cached total exceeds first loaded page`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -467,6 +484,7 @@ class DashboardViewModelTest {
                 updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 updateDisplayModeUseCase = UpdateDisplayModeUseCase(settingsRepository),
+                updateShowExplanationTextsUseCase = UpdateShowExplanationTextsUseCase(settingsRepository),
                 oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
                     override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
                 },

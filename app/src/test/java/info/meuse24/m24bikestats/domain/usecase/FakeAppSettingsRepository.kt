@@ -15,6 +15,7 @@ class FakeAppSettingsRepository(
     initialCloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
     initialBackgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     initialDisplayMode: DisplayMode = DisplayMode.AUTOMATIC,
+    initialShowExplanationTexts: Boolean = true,
 ) : AppSettingsRepository {
     private val settingsState = MutableStateFlow(
         AppSettings(
@@ -22,6 +23,7 @@ class FakeAppSettingsRepository(
             cloudSyncDetailMode = initialCloudSyncDetailMode,
             backgroundSyncMode = initialBackgroundSyncMode,
             displayMode = initialDisplayMode,
+            showExplanationTexts = initialShowExplanationTexts,
         )
     )
 
@@ -43,5 +45,9 @@ class FakeAppSettingsRepository(
 
     override suspend fun updateDisplayMode(mode: DisplayMode) {
         settingsState.value = settingsState.value.copy(displayMode = mode)
+    }
+
+    override suspend fun updateShowExplanationTexts(show: Boolean) {
+        settingsState.value = settingsState.value.copy(showExplanationTexts = show)
     }
 }

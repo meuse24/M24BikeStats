@@ -60,6 +60,7 @@ data class DashboardUiState(
     val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
     val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
+    val showExplanationTexts: Boolean = true,
     val error: String? = null,
 )
 
@@ -91,6 +92,7 @@ data class HomeUiState(
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
     val lastPdfExport: PdfExportSummaryUiModel?,
+    val showExplanationTexts: Boolean,
 )
 
 data class ActivitiesUiState(
@@ -104,6 +106,7 @@ data class ActivitiesUiState(
     val isRefreshing: Boolean,
     val isLoadingMoreActivities: Boolean,
     val canLoadMoreActivities: Boolean,
+    val showExplanationTexts: Boolean,
 )
 
 data class FunctionsUiState(
@@ -127,12 +130,14 @@ data class FunctionsUiState(
     val lastActivitiesCsvExport: ActivitiesCsvExportSummaryUiModel?,
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
     val lastPdfExport: PdfExportSummaryUiModel?,
+    val showExplanationTexts: Boolean,
 )
 
 data class BikeListUiState(
     val bikes: List<BikeCardUiModel>,
     val isRefreshing: Boolean,
     val hasOidcCertificateInfo: Boolean,
+    val showExplanationTexts: Boolean,
 )
 
 data class ActivityDetailScreenUiState(
@@ -140,6 +145,7 @@ data class ActivityDetailScreenUiState(
     val selectedActivityId: String?,
     val isActivityDetailLoading: Boolean,
     val isActivityDetailRefreshing: Boolean,
+    val showExplanationTexts: Boolean,
 )
 
 data class TrackUiState(
@@ -155,6 +161,7 @@ data class BikeDetailScreenUiState(
     val selectedBikeId: String?,
     val isBikeDetailLoading: Boolean,
     val isBikeDetailRefreshing: Boolean,
+    val showExplanationTexts: Boolean,
 )
 
 internal fun DashboardUiState.canRunBackgroundOperation(): Boolean =

@@ -20,6 +20,7 @@ import info.meuse24.m24bikestats.presentation.navigation.model.DrawerDestination
 @Composable
 fun AppDrawer(
     currentRoute: String?,
+    showExplanationTexts: Boolean,
     onHomeClicked: () -> Unit,
     onDestinationClicked: (DrawerDestination) -> Unit,
     modifier: Modifier = Modifier,
@@ -33,12 +34,14 @@ fun AppDrawer(
                     .clickable(onClick = onHomeClicked)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
-            Text(
-                text = stringResource(R.string.drawer_subtitle),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
+            if (showExplanationTexts) {
+                Text(
+                    text = stringResource(R.string.drawer_subtitle),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
             DrawerDestination.availableEntries().forEach { destination ->
                 NavigationDrawerItem(
                     label = { Text(stringResource(destination.labelRes)) },

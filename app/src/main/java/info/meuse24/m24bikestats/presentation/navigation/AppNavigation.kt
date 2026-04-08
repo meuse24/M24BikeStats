@@ -74,7 +74,7 @@ private const val ROOT_MAIN_ROUTE = "main"
 internal const val MAP_ROUTE = "map"
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(showExplanationTexts: Boolean) {
     val rootNavController = rememberNavController()
     val loginViewModel: LoginViewModel = koinViewModel()
     val loginStatus by loginViewModel.status.collectAsStateWithLifecycle()
@@ -97,6 +97,7 @@ fun AppNavigation() {
         composable(ROOT_LOGIN_ROUTE) {
             LoginScreen(
                 status = loginStatus,
+                showExplanationTexts = showExplanationTexts,
                 onBuildAuthIntent = loginViewModel::buildAuthIntent,
                 onAuthResult = loginViewModel::handleAuthResult,
                 onAuthenticated = {
@@ -157,6 +158,7 @@ fun AppNavigation() {
                 currentMainDestination = currentMainDestination,
                 currentRoute = currentRoute,
                 topBarTitle = topBarTitle,
+                showExplanationTexts = dashboardUiState.showExplanationTexts,
                 onNavigateToOverview = {
                     if (currentRoute.isMapRoute()) {
                         shellNavController.popBackStack()
@@ -286,6 +288,7 @@ fun AppNavigation() {
                         val statisticsUiState by statisticsViewModel.uiState.collectAsStateWithLifecycle()
                         StatisticsScreen(
                             uiState = statisticsUiState,
+                            showExplanationTexts = dashboardUiState.showExplanationTexts,
                             onGroupingSelected = statisticsViewModel::updateGrouping,
                             onPeriodSelected = statisticsViewModel::toggleSelectedPeriod,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
@@ -324,7 +327,10 @@ fun AppNavigation() {
                     }
 
                     composable(DrawerDestination.HELP.route!!) {
-                        HelpScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
+                        HelpScreen(
+                            showExplanationTexts = dashboardUiState.showExplanationTexts,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
                     }
 
                     composable(DrawerDestination.SETUP.route!!) {
@@ -333,16 +339,21 @@ fun AppNavigation() {
                             csvExportFormat = dashboardUiState.csvExportFormat,
                             cloudSyncDetailMode = dashboardUiState.cloudSyncDetailMode,
                             backgroundSyncMode = dashboardUiState.backgroundSyncMode,
+                            showExplanationTexts = dashboardUiState.showExplanationTexts,
                             onDisplayModeSelected = dashboardViewModel::updateDisplayMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
                             onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
                             onBackgroundSyncModeSelected = dashboardViewModel::updateBackgroundSyncMode,
+                            onShowExplanationTextsChanged = dashboardViewModel::updateShowExplanationTexts,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }
 
                     composable(DrawerDestination.INFO.route!!) {
-                        InfoScreen(modifier = androidx.compose.ui.Modifier.padding(innerPadding))
+                        InfoScreen(
+                            showExplanationTexts = dashboardUiState.showExplanationTexts,
+                            modifier = androidx.compose.ui.Modifier.padding(innerPadding),
+                        )
                     }
 
                     if (BuildConfig.DEBUG) {
