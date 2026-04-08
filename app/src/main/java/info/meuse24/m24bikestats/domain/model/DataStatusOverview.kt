@@ -17,6 +17,5 @@ data class DataStatusOverview(
 enum class DataStatusState {
     EMPTY,
     PARTIAL,
-    STALE,
     COMPLETE,
 }

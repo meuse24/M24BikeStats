@@ -44,26 +44,26 @@ class DashboardUiModelMapper(
             statusTone = when (overview.status) {
                 DataStatusState.EMPTY -> DataStatusTone.EMPTY
                 DataStatusState.PARTIAL -> DataStatusTone.PARTIAL
-                DataStatusState.STALE -> DataStatusTone.STALE
                 DataStatusState.COMPLETE -> DataStatusTone.COMPLETE
             },
             statusLabel = when (overview.status) {
                 DataStatusState.EMPTY -> s(R.string.home_data_status_state_empty)
                 DataStatusState.PARTIAL -> s(R.string.home_data_status_state_partial)
-                DataStatusState.STALE -> s(R.string.home_data_status_state_stale)
                 DataStatusState.COMPLETE -> s(R.string.home_data_status_state_complete)
             },
             statusSummary = when {
                 overview.status == DataStatusState.EMPTY ->
                     s(R.string.home_data_status_summary_empty)
-                overview.missingDetailCount > 0 && overview.staleDetailCount > 0 ->
-                    s(
-                        R.string.home_data_status_summary_partial_stale,
-                        overview.missingDetailCount,
-                        overview.staleDetailCount,
-                    )
                 overview.missingDetailCount > 0 ->
-                    s(R.string.home_data_status_summary_partial, overview.missingDetailCount)
+                    if (overview.staleDetailCount > 0) {
+                        s(
+                            R.string.home_data_status_summary_partial_stale,
+                            overview.missingDetailCount,
+                            overview.staleDetailCount,
+                        )
+                    } else {
+                        s(R.string.home_data_status_summary_partial, overview.missingDetailCount)
+                    }
                 overview.staleDetailCount > 0 ->
                     s(R.string.home_data_status_summary_stale, overview.staleDetailCount)
                 else ->

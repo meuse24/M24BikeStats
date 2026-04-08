@@ -75,7 +75,6 @@ class ObserveDataStatusOverviewUseCase(
                 status = when {
                     inputs.activities.isEmpty() -> DataStatusState.EMPTY
                     missingDetailCount > 0 -> DataStatusState.PARTIAL
-                    staleDetailCount > 0 -> DataStatusState.STALE
                     else -> DataStatusState.COMPLETE
                 },
             )

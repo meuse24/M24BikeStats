@@ -18,6 +18,8 @@ import info.meuse24.m24bikestats.domain.model.BoschServiceRecord
 import info.meuse24.m24bikestats.domain.model.BoschSoftwareUpdateSummary
 import info.meuse24.m24bikestats.domain.model.BoschTheftLocation
 import info.meuse24.m24bikestats.domain.model.BoschTheftReportLog
+import info.meuse24.m24bikestats.domain.model.DataStatusOverview
+import info.meuse24.m24bikestats.domain.model.DataStatusState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -168,6 +170,30 @@ class DashboardUiModelMapperTest {
         })
         assertTrue(uiModel.sections.takeLast(2).any { section -> section.rows.any { (_, value) -> value == "rider@example.com" } })
         assertTrue(uiModel.sections.takeLast(2).any { section -> section.rows.any { (_, value) -> value == "https://issuer.example.com/token" } })
+    }
+
+    @Test
+    fun `data status stays complete when only existing details can be refreshed`() {
+        val uiModel = mapper.toDataStatusUiModel(
+            DataStatusOverview(
+                cachedActivityCount = 12,
+                coveredActivityStartEpochMillis = null,
+                coveredActivityEndEpochMillis = null,
+                detailedActivityCount = 12,
+                missingDetailCount = 0,
+                staleDetailCount = 4,
+                gpsPointCount = 4800,
+                lastActivitySyncAtEpochMillis = null,
+                lastBikeSyncAtEpochMillis = null,
+                lastDetailSyncAtEpochMillis = null,
+                status = DataStatusState.COMPLETE,
+            )
+        )
+
+        assertEquals(DataStatusTone.COMPLETE, uiModel.statusTone)
+        assertEquals("res-${R.string.home_data_status_state_complete}", uiModel.statusLabel)
+        assertEquals("res-${R.string.home_data_status_summary_stale}:4", uiModel.statusSummary)
+        assertEquals(4, uiModel.staleDetailCount)
     }
 
     private fun activity() = BoschActivity(

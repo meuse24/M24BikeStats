@@ -157,7 +157,6 @@ data class DataStatusUiModel(
 enum class DataStatusTone {
     EMPTY,
     PARTIAL,
-    STALE,
     COMPLETE,
 }
 

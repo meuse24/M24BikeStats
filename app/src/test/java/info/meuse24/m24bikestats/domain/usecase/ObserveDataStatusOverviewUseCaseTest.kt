@@ -87,7 +87,7 @@ class ObserveDataStatusOverviewUseCaseTest {
     }
 
     @Test
-    fun `returns stale state when all details exist but some are stale`() = runTest {
+    fun `keeps complete state when all details exist but some can be refreshed`() = runTest {
         val repository = DataStatusRepository().apply {
             setActivities(
                 listOf(
@@ -107,7 +107,7 @@ class ObserveDataStatusOverviewUseCaseTest {
 
         assertEquals(0, overview.missingDetailCount)
         assertEquals(1, overview.staleDetailCount)
-        assertEquals(DataStatusState.STALE, overview.status)
+        assertEquals(DataStatusState.COMPLETE, overview.status)
     }
 
     @Test

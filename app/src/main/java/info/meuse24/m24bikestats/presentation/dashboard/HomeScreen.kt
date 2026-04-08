@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -335,14 +334,14 @@ private fun DataStatusAndSyncCard(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                         ) {
-                            OutlinedButton(
+                            HomeActionButton(
                                 onClick = onLoadMissingActivityDetails,
                                 enabled = uiState.canStartSync,
                                 modifier = Modifier.weight(1f),
                             ) {
                                 Text(stringResource(R.string.home_data_status_action_missing))
                             }
-                            OutlinedButton(
+                            HomeActionButton(
                                 onClick = onRefreshStaleActivityDetails,
                                 enabled = uiState.canStartSync,
                                 modifier = Modifier.weight(1f),
@@ -353,7 +352,7 @@ private fun DataStatusAndSyncCard(
                     }
 
                     (dataStatus?.missingDetailCount ?: 0) > 0 -> {
-                        OutlinedButton(
+                        HomeActionButton(
                             onClick = onLoadMissingActivityDetails,
                             enabled = uiState.canStartSync,
                             modifier = Modifier.fillMaxWidth(),
@@ -363,7 +362,7 @@ private fun DataStatusAndSyncCard(
                     }
 
                     (dataStatus?.staleDetailCount ?: 0) > 0 -> {
-                        OutlinedButton(
+                        HomeActionButton(
                             onClick = onRefreshStaleActivityDetails,
                             enabled = uiState.canStartSync,
                             modifier = Modifier.fillMaxWidth(),
@@ -373,7 +372,7 @@ private fun DataStatusAndSyncCard(
                     }
                 }
 
-                Button(
+                HomeActionButton(
                     onClick = onSyncCloudData,
                     enabled = uiState.canStartSync,
                     modifier = Modifier.fillMaxWidth(),
@@ -393,6 +392,22 @@ private fun DataStatusAndSyncCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun HomeActionButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier,
+    ) {
+        content()
     }
 }
 
@@ -445,13 +460,11 @@ private fun DataStatusBadge(
     val containerColor = when (tone) {
         DataStatusTone.EMPTY -> MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)
         DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer
-        DataStatusTone.STALE -> MaterialTheme.colorScheme.errorContainer
         DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.secondaryContainer
     }
     val contentColor = when (tone) {
         DataStatusTone.EMPTY -> MaterialTheme.colorScheme.onPrimaryContainer
         DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.onTertiaryContainer
-        DataStatusTone.STALE -> MaterialTheme.colorScheme.onErrorContainer
         DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.onSecondaryContainer
     }
     Surface(
