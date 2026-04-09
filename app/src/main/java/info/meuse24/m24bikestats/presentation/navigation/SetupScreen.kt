@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -36,6 +37,7 @@ import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
+import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
 
 @Composable
 fun SetupScreen(
@@ -44,17 +46,27 @@ fun SetupScreen(
     cloudSyncDetailMode: CloudSyncDetailMode,
     backgroundSyncMode: BackgroundSyncMode,
     showExplanationTexts: Boolean,
+    explanationTextsPromptTiming: ExplanationTextsPromptTiming,
     onDisplayModeSelected: (DisplayMode) -> Unit,
     onCsvExportFormatSelected: (CsvExportFormat) -> Unit,
     onCloudSyncDetailModeSelected: (CloudSyncDetailMode) -> Unit,
     onBackgroundSyncModeSelected: (BackgroundSyncMode) -> Unit,
     onShowExplanationTextsChanged: (Boolean) -> Unit,
+    onExplanationTextsPromptTimingSelected: (ExplanationTextsPromptTiming) -> Unit,
+    onResetExplanationTextsPrompt: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val displayModeOptions = DisplayMode.entries.map { it to stringResource(it.labelRes()) }
     val csvOptions = CsvExportFormat.entries.map { it to stringResource(it.labelRes()) }
     val cloudSyncOptions = CloudSyncDetailMode.entries.map { it to stringResource(it.labelRes()) }
     val backgroundSyncOptions = BackgroundSyncMode.entries.map { it to stringResource(it.labelRes()) }
+    val explanationPromptOptions = ExplanationTextsPromptTiming.entries.map { it to stringResource(it.labelRes()) }
+    val explanationPromptSubtitleRes = when {
+        !showExplanationTexts -> R.string.setup_explanation_prompt_subtitle_hidden
+        explanationTextsPromptTiming == ExplanationTextsPromptTiming.NEVER ->
+            R.string.setup_explanation_prompt_subtitle_disabled
+        else -> R.string.setup_explanation_prompt_subtitle
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -97,6 +109,32 @@ fun SetupScreen(
                         checked = showExplanationTexts,
                         onCheckedChange = onShowExplanationTextsChanged,
                     )
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SetupDropdownPreference(
+                            title = stringResource(R.string.setup_explanation_prompt_title),
+                            subtitle = stringResource(explanationPromptSubtitleRes),
+                            selectedLabel = stringResource(explanationTextsPromptTiming.labelRes()),
+                            options = explanationPromptOptions,
+                            onOptionSelected = onExplanationTextsPromptTimingSelected,
+                        )
+                        if (showExplanationTexts && explanationTextsPromptTiming != ExplanationTextsPromptTiming.NEVER) {
+                            OutlinedButton(
+                                onClick = onResetExplanationTextsPrompt,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(16.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                )
+                                Text(
+                                    text = stringResource(R.string.setup_explanation_prompt_reset_button),
+                                    modifier = Modifier.padding(start = 8.dp),
+                                )
+                            }
+                        }
+                    }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
                     SetupDropdownPreference(
                         title = stringResource(R.string.setup_display_mode_title),
@@ -257,6 +295,13 @@ private fun BackgroundSyncMode.labelRes(): Int = when (this) {
     BackgroundSyncMode.DISABLED -> R.string.background_sync_mode_disabled_label
     BackgroundSyncMode.DAILY_UNMETERED -> R.string.background_sync_mode_daily_unmetered_label
     BackgroundSyncMode.DAILY_CONNECTED -> R.string.background_sync_mode_daily_connected_label
+}
+
+private fun ExplanationTextsPromptTiming.labelRes(): Int = when (this) {
+    ExplanationTextsPromptTiming.EARLY -> R.string.explanation_texts_prompt_timing_early_label
+    ExplanationTextsPromptTiming.STANDARD -> R.string.explanation_texts_prompt_timing_standard_label
+    ExplanationTextsPromptTiming.LATE -> R.string.explanation_texts_prompt_timing_late_label
+    ExplanationTextsPromptTiming.NEVER -> R.string.explanation_texts_prompt_timing_never_label
 }
 
 private fun DisplayMode.labelRes(): Int = when (this) {

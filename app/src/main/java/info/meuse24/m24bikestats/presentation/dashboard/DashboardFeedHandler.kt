@@ -6,6 +6,7 @@ import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
+import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
@@ -19,6 +20,9 @@ import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
+import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCase
+import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
@@ -39,6 +43,9 @@ class DashboardFeedHandler(
     private val updateBackgroundSyncModeUseCase: UpdateBackgroundSyncModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
     private val updateDisplayModeUseCase: UpdateDisplayModeUseCase,
+    private val updateExplanationTextsPromptTimingUseCase: UpdateExplanationTextsPromptTimingUseCase,
+    private val resetExplanationTextsPromptUseCase: ResetExplanationTextsPromptUseCase,
+    private val markExplanationTextsPromptHandledUseCase: MarkExplanationTextsPromptHandledUseCase,
     private val updateShowExplanationTextsUseCase: UpdateShowExplanationTextsUseCase,
     private val oidcCertificateInfoProvider: OidcCertificateInfoProvider,
     private val uiModelMapper: DashboardUiModelMapper,
@@ -352,6 +359,27 @@ class DashboardFeedHandler(
         if (currentState().showExplanationTexts == show) return
         scope.launch {
             updateShowExplanationTextsUseCase(show)
+        }
+    }
+
+    fun updateExplanationTextsPromptTiming(
+        scope: CoroutineScope,
+        timing: ExplanationTextsPromptTiming,
+    ) {
+        scope.launch {
+            updateExplanationTextsPromptTimingUseCase(timing)
+        }
+    }
+
+    fun resetExplanationTextsPrompt(scope: CoroutineScope) {
+        scope.launch {
+            resetExplanationTextsPromptUseCase()
+        }
+    }
+
+    fun markExplanationTextsPromptHandled(scope: CoroutineScope) {
+        scope.launch {
+            markExplanationTextsPromptHandledUseCase()
         }
     }
 

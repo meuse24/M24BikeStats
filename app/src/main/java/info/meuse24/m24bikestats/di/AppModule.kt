@@ -63,11 +63,15 @@ import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivit
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.RecordExplanationTextsPromptForegroundUsageUseCase
+import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
+import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import info.meuse24.m24bikestats.presentation.dashboard.AndroidDashboardStringResolver
 import info.meuse24.m24bikestats.presentation.dashboard.DashboardDetailActionHandler
@@ -170,6 +174,10 @@ val appModule = module {
     factory { UpdateCloudSyncDetailModeUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { UpdateDisplayModeUseCase(get()) }
+    factory { UpdateExplanationTextsPromptTimingUseCase(get()) }
+    factory { ResetExplanationTextsPromptUseCase(get()) }
+    factory { MarkExplanationTextsPromptHandledUseCase(get()) }
+    factory { RecordExplanationTextsPromptForegroundUsageUseCase(get()) }
     factory { UpdateShowExplanationTextsUseCase(get()) }
     factory { ExportSmartSystemActivitiesCsvUseCase(get(), get(), get()) }
     factory { ExportSmartSystemActivityDetailsCsvUseCase(get(), get(), get()) }
@@ -202,6 +210,9 @@ val appModule = module {
             updateBackgroundSyncModeUseCase = get(),
             updateCsvExportFormatUseCase = get(),
             updateDisplayModeUseCase = get(),
+            updateExplanationTextsPromptTimingUseCase = get(),
+            resetExplanationTextsPromptUseCase = get(),
+            markExplanationTextsPromptHandledUseCase = get(),
             updateShowExplanationTextsUseCase = get(),
             oidcCertificateInfoProvider = get(),
             uiModelMapper = get(),

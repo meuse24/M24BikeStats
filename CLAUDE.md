@@ -117,6 +117,8 @@ Regeln:
 - cache-first Aktivitäten-, Detail- und Bike-Flows
 - mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
 - optionaler täglicher Hintergrund-Sync über WorkManager mit einstellbarer Netzbedingung
+- konfigurierbare Hinweis-/Erklärungstexte mit Nachfrage-Timing `EARLY`, `STANDARD`, `LATE`, `NEVER`
+- Nachfrage zum Ausblenden von Hinweistexten basiert auf Installationsalter plus akkumulierte Foreground-Nutzung; sie erscheint nur am Sitzungsstart oder mit sehr kurzem Inline-Delay
 - CSV-Export für Aktivitäten, Details und Tracks
 - PDF-Zusammenfassungsbericht mit `PdfDocument`/`Canvas`, cache-only und mit teilbarem FileProvider-Export; enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch`, `Standard/International`
@@ -132,6 +134,8 @@ Regeln:
 - Kontodetails ergänzen Bike-Profil jetzt auch um `oemId`, `serviceDue`, `connectModule`, ABS-Komponenten, Bike Pass, Service Book und Registrierungen; starten mit `Konto & Profil`, zeigen nur das unterstützte System und hängen ausführliche OIDC-Karten unten an
 - Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; zeigt zusätzlich den abgedeckten Statistikzeitraum und startet horizontal beim neuesten Abschnitt; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
 - Setup nutzt kompakte Dropdown-Auswahl statt langer Radio-Listen; Änderungen an sichtbaren Optionen deshalb bevorzugt dort zentral halten
+- `AppSettings` enthält zusätzlich Prompt-Timing, Tracking-Start, akkumulierte Foreground-Nutzung und `handled`-Status für die Hinweistext-Nachfrage
+- `MainActivity` misst Foreground-Sitzungen via `SystemClock.elapsedRealtime()` und schreibt die Nutzungsdauer beim `onStop`
 - `SupportScreens.kt` enthält jetzt einen dedizierten, gruppierten Info-Screen mit Projekt-/Privacy-/Legal-Karten, kompakten Bibliotheksgruppen und zusammengefassten CLI-Tool-Credits
 - aktive EN/DE-Lokalisierung für Navigation, Setup, Home, Funktionen, Statistiken und die sichtbaren Detail-/Track-Flows
 - Release-Build läuft mit `isMinifyEnabled = true` und `isShrinkResources = true`
@@ -197,6 +201,8 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Zusatzdaten pro Bike wie Bike Pass, Service Book und Registrierungen dürfen bei temporären API-Fehlern nicht aus dem Cache verschwinden; leere erfolgreiche Antworten dürfen den Cache dagegen leeren
 - Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
 - Änderungen an `AppSettings` immer gegen die relevanten Verbraucher prüfen: Setup-UI, Dashboard-State, Root-Theme und bei Sync-Settings zusätzlich Hintergrund-Scheduler
+- Änderungen an der Hinweistext-Nachfrage immer über alle Pfade prüfen: `AppSettingsRepository`, `MainActivity`, `AppNavigation`, `SetupScreen`, `DashboardViewModel`
+- Prompt-UX bewusst nicht wieder zu einem langen `delay(...)` innerhalb laufender Sitzungen zurückbauen; Ziel ist ein erwartbarer Anzeigezeitpunkt beim Sitzungsstart
 - Periodischen Hintergrund-Sync nur über `BackgroundSyncScheduler` ändern; keine parallelen WorkManager-Namen oder konkurrierenden Schedules einführen
 - Bei Aktivitätsdetails keine rohe Punktliste blind verwenden; Track/Profile laufen über den bereinigten Mapper-Pfad
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
@@ -216,6 +222,7 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Statistik-Mapper (`StatisticsUiModelMapperTest`): Gruppierung, Timezone-Grenzfälle, Highlights-/Rhythmus-Berechnung
 - Statistik-ViewModel (`StatisticsViewModelTest`): Toggle, Grouping-Wechsel, Stale-Reference
 - Statistik-UI-Helfer (`StatisticsUiStateFormattingTest`): formatierte Distanz/Stunden, `durationHours`
+- Prompt-Logik (`AppSettingsTest`, `AppNavigationPromptTest`): Dual-Schwelle, `handled`/`hidden`, kurzer Sitzungsstart-Delay
 - Karten-Datenschicht (`ActivityCenterCalculatorTest`): leere Liste, Null-Koordinaten, Einzelpunkt, Kosinus-Korrektur
 - Karten-GeoJSON-Mapper (`ActivityMapPointGeoJsonMapperTest`): Koordinatenreihenfolge, leere Liste
 - Routing/Navigations-Mapping

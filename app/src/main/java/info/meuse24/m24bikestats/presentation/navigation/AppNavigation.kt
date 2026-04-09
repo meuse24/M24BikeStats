@@ -1,8 +1,11 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
+import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import info.meuse24.m24bikestats.BuildConfig
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.domain.model.AppSettings
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestContent
 import info.meuse24.m24bikestats.presentation.apitest.ApiTestViewModel
 import info.meuse24.m24bikestats.presentation.dashboard.ActivitiesScreen
@@ -66,15 +70,20 @@ import info.meuse24.m24bikestats.presentation.map.MapSummaryScreen
 import info.meuse24.m24bikestats.presentation.map.MapSummaryViewModel
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsScreen
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 
 private const val ROOT_LOGIN_ROUTE = "login"
 private const val ROOT_MAIN_ROUTE = "main"
 internal const val MAP_ROUTE = "map"
+internal const val EXPLANATION_TEXTS_PROMPT_INLINE_DELAY_THRESHOLD_MILLIS = 5_000L
 
 @Composable
-fun AppNavigation(showExplanationTexts: Boolean) {
+fun AppNavigation(
+    appSettings: AppSettings,
+    foregroundSessionStartedAtElapsedRealtime: Long?,
+) {
     val rootNavController = rememberNavController()
     val loginViewModel: LoginViewModel = koinViewModel()
     val loginStatus by loginViewModel.status.collectAsStateWithLifecycle()
@@ -97,7 +106,7 @@ fun AppNavigation(showExplanationTexts: Boolean) {
         composable(ROOT_LOGIN_ROUTE) {
             LoginScreen(
                 status = loginStatus,
-                showExplanationTexts = showExplanationTexts,
+                showExplanationTexts = appSettings.showExplanationTexts,
                 onBuildAuthIntent = loginViewModel::buildAuthIntent,
                 onAuthResult = loginViewModel::handleAuthResult,
                 onAuthenticated = {
@@ -122,6 +131,11 @@ fun AppNavigation(showExplanationTexts: Boolean) {
             val dashboardUiState by dashboardViewModel.uiState.collectAsStateWithLifecycle()
             var pendingPdfDialogExport by remember { mutableStateOf<PdfExportUiModel?>(null) }
             var pendingPdfSaveExport by remember { mutableStateOf<PdfExportUiModel?>(null) }
+            val showExplanationTextsPrompt by rememberExplanationTextsPromptVisibility(
+                appSettings = appSettings,
+                currentRoute = currentRoute,
+                foregroundSessionStartedAtElapsedRealtime = foregroundSessionStartedAtElapsedRealtime,
+            )
             val savePdfLauncher = rememberLauncherForActivityResult(
                 contract = ActivityResultContracts.CreateDocument("application/pdf"),
             ) { uri ->
@@ -335,16 +349,19 @@ fun AppNavigation(showExplanationTexts: Boolean) {
 
                     composable(DrawerDestination.SETUP.route!!) {
                         SetupScreen(
-                            displayMode = dashboardUiState.displayMode,
-                            csvExportFormat = dashboardUiState.csvExportFormat,
-                            cloudSyncDetailMode = dashboardUiState.cloudSyncDetailMode,
-                            backgroundSyncMode = dashboardUiState.backgroundSyncMode,
-                            showExplanationTexts = dashboardUiState.showExplanationTexts,
+                            displayMode = appSettings.displayMode,
+                            csvExportFormat = appSettings.csvExportFormat,
+                            cloudSyncDetailMode = appSettings.cloudSyncDetailMode,
+                            backgroundSyncMode = appSettings.backgroundSyncMode,
+                            showExplanationTexts = appSettings.showExplanationTexts,
+                            explanationTextsPromptTiming = appSettings.explanationTextsPromptTiming,
                             onDisplayModeSelected = dashboardViewModel::updateDisplayMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
                             onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
                             onBackgroundSyncModeSelected = dashboardViewModel::updateBackgroundSyncMode,
                             onShowExplanationTextsChanged = dashboardViewModel::updateShowExplanationTexts,
+                            onExplanationTextsPromptTimingSelected = dashboardViewModel::updateExplanationTextsPromptTiming,
+                            onResetExplanationTextsPrompt = dashboardViewModel::resetExplanationTextsPrompt,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }
@@ -454,6 +471,34 @@ fun AppNavigation(showExplanationTexts: Boolean) {
                     },
                 )
             }
+
+            if (pendingPdfDialogExport == null && showExplanationTextsPrompt) {
+                AlertDialog(
+                    onDismissRequest = dashboardViewModel::resetExplanationTextsPrompt,
+                    title = { Text(stringResource(R.string.explanation_texts_prompt_title)) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(stringResource(R.string.explanation_texts_prompt_text))
+                            TextButton(
+                                onClick = dashboardViewModel::resetExplanationTextsPrompt,
+                                contentPadding = PaddingValues(0.dp),
+                            ) {
+                                Text(stringResource(R.string.explanation_texts_prompt_action_later))
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { dashboardViewModel.updateShowExplanationTexts(false) }) {
+                            Text(stringResource(R.string.explanation_texts_prompt_action_hide))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = dashboardViewModel::markExplanationTextsPromptHandled) {
+                            Text(stringResource(R.string.explanation_texts_prompt_action_keep))
+                        }
+                    },
+                )
+            }
         }
     }
 }
@@ -504,3 +549,60 @@ private fun DashboardUiState.canStartPdfExport(): Boolean =
         !isExportingActivitiesCsv &&
         !isExportingActivityDetailsCsv &&
         !isExportingPdf
+
+@Composable
+private fun rememberExplanationTextsPromptVisibility(
+    appSettings: AppSettings,
+    currentRoute: String?,
+    foregroundSessionStartedAtElapsedRealtime: Long?,
+): androidx.compose.runtime.State<Boolean> {
+    val visibleState = remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        appSettings.showExplanationTexts,
+        appSettings.explanationTextsPromptTiming,
+        appSettings.explanationTextsPromptTrackingStartedAtEpochMillis,
+        appSettings.explanationTextsPromptForegroundUsageMillis,
+        appSettings.explanationTextsPromptHandled,
+        currentRoute,
+        foregroundSessionStartedAtElapsedRealtime,
+    ) {
+        visibleState.value = false
+
+        if (foregroundSessionStartedAtElapsedRealtime == null) return@LaunchedEffect
+        if (currentRoute == null) return@LaunchedEffect
+        if (currentRoute == DrawerDestination.SETUP.route) return@LaunchedEffect
+
+        val sessionElapsedMillis =
+            (SystemClock.elapsedRealtime() - foregroundSessionStartedAtElapsedRealtime).coerceAtLeast(0L)
+        val sessionStartEpochMillis = (System.currentTimeMillis() - sessionElapsedMillis).coerceAtLeast(0L)
+        val remainingMillis = remainingExplanationTextsPromptDelayForForegroundSession(
+            appSettings = appSettings,
+            sessionElapsedMillis = sessionElapsedMillis,
+            sessionStartEpochMillis = sessionStartEpochMillis,
+        ) ?: return@LaunchedEffect
+
+        if (remainingMillis > 0L) delay(remainingMillis)
+        visibleState.value = true
+    }
+
+    return visibleState
+}
+
+internal fun remainingExplanationTextsPromptDelayForForegroundSession(
+    appSettings: AppSettings,
+    sessionElapsedMillis: Long,
+    sessionStartEpochMillis: Long,
+    inlineDelayThresholdMillis: Long = EXPLANATION_TEXTS_PROMPT_INLINE_DELAY_THRESHOLD_MILLIS,
+): Long? {
+    if (sessionElapsedMillis !in 0L..inlineDelayThresholdMillis) return null
+
+    val remainingAtSessionStart = appSettings.remainingMillisUntilExplanationTextsSuggestion(
+        nowEpochMillis = sessionStartEpochMillis,
+        currentForegroundUsageMillis = 0L,
+    ) ?: return null
+
+    if (remainingAtSessionStart > inlineDelayThresholdMillis) return null
+
+    return (remainingAtSessionStart - sessionElapsedMillis).coerceAtLeast(0L)
+}

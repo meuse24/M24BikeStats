@@ -13,6 +13,7 @@ import info.meuse24.m24bikestats.domain.model.BoschBike
 import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
+import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
 import info.meuse24.m24bikestats.domain.model.PdfReportData
 import info.meuse24.m24bikestats.domain.model.PdfReportDiscoveryInfo
 import info.meuse24.m24bikestats.domain.model.PdfReportUserInfo
@@ -38,16 +39,19 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDeta
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
+import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
+import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
+import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -403,6 +407,46 @@ class DashboardViewModelTest {
     }
 
     @Test
+    fun `prompt timing changes propagate into settings repository`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository()
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.updateExplanationTextsPromptTiming(ExplanationTextsPromptTiming.LATE)
+        advanceUntilIdle()
+
+        assertEquals(
+            ExplanationTextsPromptTiming.LATE,
+            settingsRepository.getSettings().explanationTextsPromptTiming,
+        )
+    }
+
+    @Test
+    fun `reset explanation prompt clears handled state and usage`() = runTest {
+        val repository = DashboardFakeRepository().apply {
+            setActivities(emptyList(), totalCount = 0)
+            setBikes(emptyList())
+        }
+        val settingsRepository = FakeAppSettingsRepository(
+            initialExplanationTextsPromptForegroundUsageMillis = 5_000L,
+            initialExplanationTextsPromptHandled = true,
+        )
+        val viewModel = createViewModel(repository, settingsRepository)
+        advanceUntilIdle()
+
+        viewModel.resetExplanationTextsPrompt()
+        advanceUntilIdle()
+
+        val settings = settingsRepository.getSettings()
+        assertEquals(0L, settings.explanationTextsPromptForegroundUsageMillis)
+        assertEquals(false, settings.explanationTextsPromptHandled)
+    }
+
+    @Test
     fun `can load more activities when cached total exceeds first loaded page`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
@@ -484,6 +528,9 @@ class DashboardViewModelTest {
                 updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 updateDisplayModeUseCase = UpdateDisplayModeUseCase(settingsRepository),
+                updateExplanationTextsPromptTimingUseCase = UpdateExplanationTextsPromptTimingUseCase(settingsRepository),
+                resetExplanationTextsPromptUseCase = ResetExplanationTextsPromptUseCase(settingsRepository),
+                markExplanationTextsPromptHandledUseCase = MarkExplanationTextsPromptHandledUseCase(settingsRepository),
                 updateShowExplanationTextsUseCase = UpdateShowExplanationTextsUseCase(settingsRepository),
                 oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
                     override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null

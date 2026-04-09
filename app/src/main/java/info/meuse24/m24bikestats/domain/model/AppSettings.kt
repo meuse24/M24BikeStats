@@ -14,22 +14,69 @@ data class AppSettings(
     val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
     val showExplanationTexts: Boolean = true,
-    val installedAtEpochMillis: Long = 0L,
-    val accumulatedForegroundUsageMillis: Long = 0L,
+    val explanationTextsPromptTiming: ExplanationTextsPromptTiming = ExplanationTextsPromptTiming.STANDARD,
+    val explanationTextsPromptTrackingStartedAtEpochMillis: Long = 0L,
+    val explanationTextsPromptForegroundUsageMillis: Long = 0L,
     val explanationTextsPromptHandled: Boolean = false,
 ) {
     fun shouldSuggestHidingExplanationTexts(
         nowEpochMillis: Long = System.currentTimeMillis(),
+        currentForegroundUsageMillis: Long = 0L,
     ): Boolean =
-        showExplanationTexts &&
-            !explanationTextsPromptHandled &&
-            installedAtEpochMillis > 0L &&
-            nowEpochMillis - installedAtEpochMillis >= EXPLANATION_TEXTS_PROMPT_MIN_INSTALL_AGE_MILLIS &&
-            accumulatedForegroundUsageMillis >= EXPLANATION_TEXTS_PROMPT_MIN_USAGE_MILLIS
+        remainingMillisUntilExplanationTextsSuggestion(
+            nowEpochMillis = nowEpochMillis,
+            currentForegroundUsageMillis = currentForegroundUsageMillis,
+        ) == 0L
+
+    fun remainingMillisUntilExplanationTextsSuggestion(
+        nowEpochMillis: Long = System.currentTimeMillis(),
+        currentForegroundUsageMillis: Long = 0L,
+    ): Long? {
+        if (!showExplanationTexts || explanationTextsPromptHandled) return null
+        if (explanationTextsPromptTiming == ExplanationTextsPromptTiming.NEVER) return null
+        if (explanationTextsPromptTrackingStartedAtEpochMillis <= 0L) return null
+
+        val installAgeMillis = (nowEpochMillis - explanationTextsPromptTrackingStartedAtEpochMillis)
+            .coerceAtLeast(0L)
+        val totalForegroundUsageMillis = (
+            explanationTextsPromptForegroundUsageMillis + currentForegroundUsageMillis
+            ).coerceAtLeast(0L)
+        val installRemainingMillis = (
+            explanationTextsPromptTiming.minInstallAgeMillis - installAgeMillis
+            ).coerceAtLeast(0L)
+        val usageRemainingMillis = (
+            explanationTextsPromptTiming.minForegroundUsageMillis - totalForegroundUsageMillis
+            ).coerceAtLeast(0L)
+
+        return maxOf(installRemainingMillis, usageRemainingMillis)
+    }
+}
+
+enum class ExplanationTextsPromptTiming(
+    val minInstallAgeMillis: Long,
+    val minForegroundUsageMillis: Long,
+) {
+    EARLY(
+        minInstallAgeMillis = 1L * 24L * 60L * 60L * 1000L,
+        minForegroundUsageMillis = 30L * 60L * 1000L,
+    ),
+    STANDARD(
+        minInstallAgeMillis = 3L * 24L * 60L * 60L * 1000L,
+        minForegroundUsageMillis = 90L * 60L * 1000L,
+    ),
+    LATE(
+        minInstallAgeMillis = 7L * 24L * 60L * 60L * 1000L,
+        minForegroundUsageMillis = 180L * 60L * 1000L,
+    ),
+    NEVER(
+        minInstallAgeMillis = Long.MAX_VALUE,
+        minForegroundUsageMillis = Long.MAX_VALUE,
+    ),
+    ;
 
     companion object {
-        const val EXPLANATION_TEXTS_PROMPT_MIN_INSTALL_AGE_MILLIS: Long = 3L * 24L * 60L * 60L * 1000L
-        const val EXPLANATION_TEXTS_PROMPT_MIN_USAGE_MILLIS: Long = 90L * 60L * 1000L
+        fun fromStoredValue(value: String?): ExplanationTextsPromptTiming? =
+            entries.firstOrNull { timing -> timing.name == value }
     }
 }
 

@@ -6,6 +6,7 @@ import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.DisplayMode
+import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -153,6 +154,21 @@ class DashboardViewModel(
             currentState = _uiState::value,
             show = show,
         )
+    }
+
+    fun updateExplanationTextsPromptTiming(timing: ExplanationTextsPromptTiming) {
+        feedHandler.updateExplanationTextsPromptTiming(
+            scope = viewModelScope,
+            timing = timing,
+        )
+    }
+
+    fun resetExplanationTextsPrompt() {
+        feedHandler.resetExplanationTextsPrompt(scope = viewModelScope)
+    }
+
+    fun markExplanationTextsPromptHandled() {
+        feedHandler.markExplanationTextsPromptHandled(scope = viewModelScope)
     }
 
     fun syncCloudData() {

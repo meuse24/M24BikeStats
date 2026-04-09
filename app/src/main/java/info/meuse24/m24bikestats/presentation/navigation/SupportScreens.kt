@@ -35,15 +35,17 @@ fun HelpScreen(
     showExplanationTexts: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val sections = listOf(
-        stringResource(R.string.help_login_label) to stringResource(R.string.help_login_text),
-        stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text),
-        stringResource(R.string.help_bike_label) to stringResource(R.string.help_bike_text),
-        stringResource(R.string.help_setup_label) to stringResource(R.string.help_setup_text),
-        stringResource(R.string.help_functions_label) to stringResource(R.string.help_functions_text),
-        stringResource(R.string.help_statistics_label) to stringResource(R.string.help_statistics_text),
-        stringResource(R.string.help_diagnostics_label) to stringResource(R.string.help_diagnostics_text),
-    )
+    val sections = buildList {
+        add(stringResource(R.string.help_login_label) to stringResource(R.string.help_login_text))
+        add(stringResource(R.string.help_activities_label) to stringResource(R.string.help_activities_text))
+        add(stringResource(R.string.help_bike_label) to stringResource(R.string.help_bike_text))
+        add(stringResource(R.string.help_setup_label) to stringResource(R.string.help_setup_text))
+        add(stringResource(R.string.help_functions_label) to stringResource(R.string.help_functions_text))
+        add(stringResource(R.string.help_statistics_label) to stringResource(R.string.help_statistics_text))
+        if (BuildConfig.DEBUG) {
+            add(stringResource(R.string.help_diagnostics_label) to stringResource(R.string.help_diagnostics_text))
+        }
+    }
     InfoListScreen(
         title = stringResource(R.string.help_title),
         subtitle = stringResource(R.string.help_subtitle),
@@ -97,6 +99,7 @@ fun InfoScreen(
                 "Lifecycle Runtime / Compose 2.10.0",
                 "Activity Compose 1.13.0",
                 "AndroidX Window 1.4.0",
+                "WorkManager 2.10.2",
             ),
         ),
         InfoLibraryGroup(

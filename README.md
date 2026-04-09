@@ -12,7 +12,9 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
 - mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
 - optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
-- Setup mit kompakten Dropdown-Einstellungen für Anzeigemodus, CSV-Format, Detail-Sync und Hintergrund-Sync
+- Setup mit kompakten Dropdown-Einstellungen für Anzeigemodus, CSV-Format, Detail-Sync, Hintergrund-Sync sowie Hinweis-/Erklärungstexte
+- konfigurierbare Nachfrage zum Ausblenden von Hinweistexten mit Zeitstufen `Früh`, `Standard`, `Spät`, `Nie`
+- Nachfrage erscheint erst nach ausreichender Installationsdauer und aktiver Foreground-Nutzung; bestehende Sitzungen werden nicht mit langen Delays unterbrochen
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
 - PDF-Zusammenfassungsbericht als cache-only Export mit Nutzerkonto, Bikes, Aktivitätsübersicht, Highlights sowie Wochen-, Monats- und Jahresdiagrammen
 - CSV-Format mit Presets `Automatisch`, `Excel/Deutsch` und `Standard/International`
@@ -74,6 +76,8 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Setup`: kompakte Dropdown-Einstellungen für Anzeigemodus `Automatisch` / `Hell` / `Dunkel`
 - `Setup`: zusätzlich CSV-Format-Presets, Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
 - `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
+- `Setup`: zusätzlich Hinweis-/Erklärungstexte sowie Nachfrage-Timing `früh`, `standard`, `spät`, `nie`
+- `Setup`: Nachfrage kann sichtbar ab `jetzt` neu gestartet werden; bei bereits ausgeblendeten Hinweistexten bleibt das Timing gespeichert
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
 - `API-Test` ist nur in Debug-Builds als Diagnoseziel verfügbar
 
@@ -95,6 +99,7 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
 - Der optionale Hintergrund-Sync plant genau einen eindeutigen periodischen WorkManager-Job und übernimmt dabei den im Setup gewählten Detail-Sync-Modus.
+- Die Nachfrage zum Ausblenden von Hinweistexten nutzt den echten Installationszeitpunkt plus akkumulierte Foreground-Nutzung als gemeinsame Schwelle.
 - Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
 - Der PDF-Bericht nutzt ebenfalls nur bereits lokal gecachte Daten und ergänzt sie um OIDC-UserInfo-/Discovery-Metadaten.
 - Der PDF-Bericht enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme mit jeweils passendem distanzstärkstem Zeitraum.
@@ -119,6 +124,7 @@ di/            Koin-Modul
 Ergänzungen:
 
 - `presentation/navigation`: Root- und Shell-Navigation, adaptive Top-Bar/Drawer-Logik
+- `presentation/navigation`: enthält zusätzlich die Hinweistext-Nachfrage inklusive sitzungsabhängigem Anzeigezeitpunkt
 - `presentation/dashboard`: Home, Aktivitäten, Konto, Funktionen sowie Detail- und Track-Screens
 - `data/export`: CSV-/PDF-Export-Helfer, PDF-Layout-Builder und Android-gebundene Report-Dateigenerierung
 - `domain/model/PdfReportData.kt`: Android-freies Aggregat für den PDF-Bericht
@@ -132,6 +138,7 @@ Ergänzungen:
 - `presentation/dashboard/DashboardSharedUi.kt`: wiederverwendete Hero-/Metric-/Section-Komponenten
 - `presentation/dashboard/DashboardStringResolver`: UI-Strings für ViewModels testbar auflösbar ohne Android-`Context` direkt im ViewModel
 - `presentation/login/LoginStringResolver`: sichtbare Login-Statusmeldungen bleiben ebenfalls resource-basiert und testbar ohne Android-`Context` direkt im ViewModel
+- `MainActivity.kt`: akkumuliert Foreground-Nutzungszeit für die Hinweistext-Nachfrage über `onStart`/`onStop`
 - `api/`: Endpoint-Definitionen für API-Test-/Diagnose-Flows; `BoschApiRequest`/`FetchBoschDataUseCase` liegen in `domain/`
 - `auth/AuthFlowCoordinator`: Android-spezifischer Login-/Logout-Intent-Flow außerhalb der Präsentationsschicht
 - `auth/OidcAccountInfo`: produktive OIDC-UserInfo-/Discovery-Logik für Kontodetails
@@ -176,6 +183,7 @@ Stand: 4. April 2026, live mit echtem Smart-System-Token getestet.
 ## Testabdeckung
 
 - Unit-Tests für Mapper, UseCases und ViewModels (inkl. Statistik-Mapper und -ViewModel)
+- Unit-Tests für `AppSettings`-Timinglogik und das sitzungsabhängige Prompt-Verhalten der Hinweistext-Nachfrage
 - Navigation- und Routing-Tests
 - Repository- und Cache-Tests
 - Room- und Migrations-Tests auf Android

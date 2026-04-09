@@ -47,6 +47,11 @@
     <string name="setup_sync_subtitle">Lege fest, ob der Cloud-Sync nur fehlende Aktivitätsdetails lädt oder bei späteren Abgleichen zusätzlich vorhandene Details auffrischt.</string>
     <string name="setup_background_sync_title">Hintergrund-Sync</string>
     <string name="setup_background_sync_subtitle">Lege fest, ob die App täglich einen Smart-System-Abgleich im Hintergrund plant und welche Netzwerkbedingung dafür gelten soll.</string>
+    <string name="setup_explanation_prompt_title">Nachfrage zu Hinweistexten</string>
+    <string name="setup_explanation_prompt_subtitle">Lege fest, wann die App bei einem späteren App-Start fragen soll, ob die Hinweistexte ausgeblendet werden können. Die Aktion unten startet das Timing ab jetzt neu.</string>
+    <string name="setup_explanation_prompt_subtitle_disabled">Es ist keine aktive Nachfrage geplant. Wechsle von Nie zurück, wenn die App später wieder fragen soll.</string>
+    <string name="setup_explanation_prompt_subtitle_hidden">Die Hinweistexte sind aktuell ausgeblendet. Die gewählte Zeitstufe bleibt gespeichert und gilt wieder, wenn du sie später erneut anzeigst.</string>
+    <string name="setup_explanation_prompt_reset_button">Ab jetzt neu starten</string>
     <string name="setup_csv_example">Beispiel: %1$s</string>
     <string name="setup_csv_sample_activity">Morgenrunde</string>
     <string name="display_mode_automatic_label">Automatisch (Standard)</string>
@@ -68,9 +73,18 @@
     <string name="background_sync_mode_daily_unmetered_description">Plant ungefähr alle 24 Stunden einen Hintergrund-Sync und verlangt ein unlimitiertes Netzwerk.</string>
     <string name="background_sync_mode_daily_connected_label">Täglich in jedem Netz</string>
     <string name="background_sync_mode_daily_connected_description">Plant ungefähr alle 24 Stunden einen Hintergrund-Sync in jedem verbundenen Netzwerk.</string>
+    <string name="explanation_texts_prompt_timing_early_label">Früh</string>
+    <string name="explanation_texts_prompt_timing_standard_label">Standard</string>
+    <string name="explanation_texts_prompt_timing_late_label">Spät</string>
+    <string name="explanation_texts_prompt_timing_never_label">Nie</string>
+    <string name="explanation_texts_prompt_title">Hinweistexte ausblenden?</string>
+    <string name="explanation_texts_prompt_text">Du nutzt die App jetzt schon eine Weile. Wenn sich alles inzwischen vertraut anfühlt, kannst du die Hinweis- und Erklärungstexte ausblenden. Im Setup kannst du sie später wieder einschalten.</string>
+    <string name="explanation_texts_prompt_action_later">Später erneut fragen</string>
+    <string name="explanation_texts_prompt_action_keep">Weiter anzeigen</string>
+    <string name="explanation_texts_prompt_action_hide">Jetzt ausblenden</string>
 
     <string name="help_title">Hilfe</string>
-    <string name="help_subtitle">Kurzübersicht zu Navigation, Datenfluss und Diagnose.</string>
+    <string name="help_subtitle">Kurzübersicht zu Navigation, Datenfluss und zentralen Funktionen.</string>
     <string name="help_login_label">Login</string>
     <string name="help_login_text">Melde dich mit deinem Bosch-Konto an. Danach öffnet die App die wichtigsten Bereiche und kann deine Bikes und Touren laden.</string>
     <string name="help_activities_label">Aktivitäten</string>
@@ -78,9 +92,9 @@
     <string name="help_bike_label">Konto</string>
     <string name="help_bike_text">Im Kontobereich steht zuerst eine kompakte Karte Konto &amp; Profil. Danach siehst du das unterstützte Bosch-System und deine verbundenen Smart-System-Bikes. Die ausführlichen OIDC-Karten bleiben weiter unten in den Kontodetails sichtbar. Die App funktioniert mit dem aktuellen Bosch Smart System, unterstützt aber nicht eBike System 2 oder eBike Connect.</string>
     <string name="help_setup_label">Setup</string>
-    <string name="help_setup_text">Im Setup legst du den Anzeigemodus, das CSV-Format, die Detailtiefe des Cloud-Abgleichs, den täglichen Hintergrund-Sync und die Sichtbarkeit einführender Hilfetexte in der App fest.</string>
+    <string name="help_setup_text">Im Setup legst du den Anzeigemodus, das CSV-Format, die Detailtiefe des Cloud-Abgleichs, den täglichen Hintergrund-Sync sowie fest, ob Hinweistexte sichtbar bleiben und wann die App erneut nach ihrem Ausblenden fragen soll.</string>
     <string name="help_functions_label">Funktionen</string>
-    <string name="help_functions_text">Unter Funktionen kannst du deine gespeicherten Daten als CSV oder als PDF-Bericht exportieren. Die Exporte verwenden nur die Daten, die bereits auf deinem Gerät vorhanden sind, und öffnen danach das normale Android-Teilen-Menü. Das CSV-Format folgt deiner Einstellung aus dem Setup, das PDF richtet sich nach Sprache und Region auf deinem Gerät und enthält zusätzlich die kompakte Konto-&amp;-Profil-Zusammenfassung.</string>
+    <string name="help_functions_text">Unter Funktionen kannst du deine gespeicherten Daten als CSV oder als PDF-Bericht exportieren. Die Exporte verwenden nur die Daten, die bereits auf deinem Gerät vorhanden sind. CSV-Exporte öffnen direkt das Android-Teilen-Menü. Bei PDF fragt die App zuerst, ob der fertige Bericht geteilt oder gespeichert werden soll. Das CSV-Format folgt deiner Einstellung aus dem Setup, das PDF richtet sich nach Sprache und Region auf deinem Gerät und enthält zusätzlich die kompakte Konto-&amp;-Profil-Zusammenfassung.</string>
     <string name="help_statistics_label">Statistiken</string>
     <string name="help_statistics_text">Der Statistikbereich ordnet deine Touren nach Woche, Monat oder Jahr. Oben siehst du den abgedeckten Statistikzeitraum, und das Diagramm startet direkt beim neuesten Teil der Zeitachse, sodass du für ältere Zeiträume nach links wischst. Tippe auf einen Zeitraum, um die Details darunter zu sehen. In den Highlights findest du außerdem persönliche Bestwerte, deinen stärksten Zeitraum, deine durchschnittliche Fahrgeschwindigkeit und deinen typischen Fahr-Rhythmus.</string>
     <string name="help_diagnostics_label">Diagnose</string>
@@ -111,7 +125,7 @@
     <string name="info_privacy_backup_label">Backup-Regel</string>
     <string name="info_privacy_backup_value">Das automatische Android-Backup ist für diese App ausgeschaltet, damit sensible Fahrtdaten und Anmeldeinformationen nicht in System-Backups landen.</string>
     <string name="info_privacy_sync_label">Netzwerkzugriffe</string>
-    <string name="info_privacy_sync_value">Die App spricht nur dann mit Bosch, wenn du dich anmeldest oder deine Daten aktualisierst. Ein Hintergrundabgleich läuft nur, wenn du ihn im Setup ausdrücklich einschaltest.</string>
+    <string name="info_privacy_sync_value">Die App spricht mit Bosch, wenn du dich anmeldest oder deine Daten aktualisierst. Kartenansichten laden Kacheln von OpenFreeMap. Ein Hintergrundabgleich läuft nur, wenn du ihn im Setup ausdrücklich einschaltest.</string>
     <string name="info_legal_status_label">Status</string>
     <string name="info_legal_status_value">Dies ist eine unabhängige Begleit-App. Sie wird nicht von Bosch eBike Systems betrieben oder offiziell unterstützt.</string>
     <string name="info_legal_support_label">Support</string>
