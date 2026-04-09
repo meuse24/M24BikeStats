@@ -5,16 +5,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -25,10 +28,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
+import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 
 @Composable
 fun FunctionsScreen(
@@ -74,139 +80,195 @@ fun FunctionsScreen(
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(
+            horizontal = DesignTokens.ScreenHorizontalPadding,
+            vertical = DesignTokens.ScreenVerticalPadding,
+        ),
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.SectionSpacing),
     ) {
         item {
-            HeroCard(
-                eyebrow = stringResource(R.string.functions_hero_eyebrow),
-                title = stringResource(R.string.functions_hero_title),
-                subtitle = stringResource(R.string.functions_hero_subtitle).takeIf {
-                    uiState.showExplanationTexts
-                },
-            ) {
-                SummaryChipRow(
-                    listOf(
-                        stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
-                        stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
-                        stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
-                    )
-                )
-            }
-        }
-        item {
-            FunctionsExportCard(
-                title = stringResource(R.string.functions_export_pdf_title),
-                subtitle = stringResource(R.string.functions_export_pdf_subtitle).takeIf {
-                    uiState.showExplanationTexts
-                },
-                summary = listOf(
-                    stringResource(R.string.functions_chip_format) to stringResource(R.string.functions_chip_pdf),
-                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_full_summary),
-                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_pdf_sections),
-                ),
-                isRunning = uiState.isExportingPdf,
-                progressCurrent = 0,
-                progressTotal = 0,
-                onClick = onExportPdf,
-                onCancel = onCancelPdfExport,
-                enabled = !uiState.isExportingActivitiesCsv &&
-                    !uiState.isExportingActivityDetailsCsv &&
-                    !uiState.isExportingPdf &&
-                    !uiState.isInitialLoading &&
-                    !uiState.isRefreshing,
-                idleButtonLabel = stringResource(R.string.functions_export_pdf_button),
-                runningButtonLabel = stringResource(R.string.functions_export_pdf_running),
-            ) {
-                uiState.lastPdfExport?.let { exportSummary ->
-                    ExportSummarySection(
-                        rows = listOf(
-                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
-                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+            DashboardPageContainer {
+                HeroCard(
+                    eyebrow = stringResource(R.string.functions_hero_eyebrow),
+                    title = stringResource(R.string.functions_hero_title),
+                    subtitle = stringResource(R.string.functions_hero_subtitle).takeIf {
+                        uiState.showExplanationTexts
+                    },
+                ) {
+                    SummaryChipRow(
+                        listOf(
+                            stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
+                            stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
+                            stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
                         )
                     )
                 }
             }
         }
         item {
-            FunctionsExportCard(
-                title = stringResource(R.string.functions_export_activities_title),
-                subtitle = stringResource(R.string.functions_export_activities_subtitle).takeIf {
-                    uiState.showExplanationTexts
-                },
-                summary = listOf(
-                    stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
-                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_all_activities),
-                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_one_per_activity),
-                ),
-                isRunning = uiState.isExportingActivitiesCsv,
-                progressCurrent = uiState.exportLoadedActivityCount,
-                progressTotal = uiState.exportTotalActivityCount,
-                onClick = onExportActivitiesCsv,
-                onCancel = onCancelActivitiesCsvExport,
-                enabled = !uiState.isExportingActivitiesCsv &&
-                    !uiState.isExportingActivityDetailsCsv &&
-                    !uiState.isExportingPdf &&
-                    !uiState.isInitialLoading &&
-                    !uiState.isRefreshing,
-                idleButtonLabel = stringResource(R.string.functions_export_button),
-                runningButtonLabel = stringResource(R.string.functions_export_running),
-            ) {
-                uiState.lastActivitiesCsvExport?.let { exportSummary ->
-                    ExportSummarySection(
-                        rows = listOf(
-                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
-                            stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
-                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+            DashboardPageContainer {
+                FunctionsExportCard(
+                    title = stringResource(R.string.functions_export_pdf_title),
+                    subtitle = stringResource(R.string.functions_export_pdf_subtitle).takeIf {
+                        uiState.showExplanationTexts
+                    },
+                    summary = listOf(
+                        stringResource(R.string.functions_chip_format) to stringResource(R.string.functions_chip_pdf),
+                        stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_full_summary),
+                        stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_pdf_sections),
+                    ),
+                    isRunning = uiState.isExportingPdf,
+                    progressCurrent = 0,
+                    progressTotal = 0,
+                    onClick = onExportPdf,
+                    onCancel = onCancelPdfExport,
+                    enabled = !uiState.isExportingActivitiesCsv &&
+                        !uiState.isExportingActivityDetailsCsv &&
+                        !uiState.isExportingPdf &&
+                        !uiState.isInitialLoading &&
+                        !uiState.isRefreshing,
+                    buttonIcon = {
+                        Icon(
+                            imageVector = Icons.Default.PictureAsPdf,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
                         )
-                    )
+                    },
+                    cancelIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
+                        )
+                    },
+                    showButtonLabels = uiState.showExplanationTexts,
+                    idleButtonLabel = stringResource(R.string.functions_export_pdf_button),
+                    runningButtonLabel = stringResource(R.string.functions_export_pdf_running),
+                ) {
+                    uiState.lastPdfExport?.let { exportSummary ->
+                        ExportSummarySection(
+                            rows = listOf(
+                                stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                                stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+                            )
+                        )
+                    }
                 }
             }
         }
         item {
-            FunctionsExportCard(
-                title = stringResource(R.string.functions_export_details_title),
-                subtitle = stringResource(R.string.functions_export_details_subtitle).takeIf {
-                    uiState.showExplanationTexts
-                },
-                summary = listOf(
-                    stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
-                    stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_visible_activities),
-                    stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_detail_points),
-                ),
-                isRunning = uiState.isExportingActivityDetailsCsv,
-                progressCurrent = uiState.exportDetailedLoadedActivityCount,
-                progressTotal = uiState.exportDetailedTotalActivityCount,
-                onClick = onExportActivityDetailsCsv,
-                onCancel = onCancelActivityDetailsCsvExport,
-                enabled = uiState.visibleActivityCount > 0 &&
-                    !uiState.isExportingActivitiesCsv &&
-                    !uiState.isExportingActivityDetailsCsv &&
-                    !uiState.isExportingPdf &&
-                    !uiState.isInitialLoading &&
-                    !uiState.isRefreshing,
-                idleButtonLabel = stringResource(R.string.functions_detail_export_button),
-                runningButtonLabel = stringResource(R.string.functions_detail_export_running),
-            ) {
-                SectionSurface {
-                    OptionalRow(
-                        stringResource(R.string.functions_label_visible_activities),
-                        uiState.visibleActivityCount.toString(),
-                    )
-                    OptionalRow(
-                        stringResource(R.string.functions_label_loaded_activities),
-                        uiState.loadedActivityCount.toString(),
-                    )
-                }
-                uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
-                    ExportSummarySection(
-                        rows = listOf(
-                            stringResource(R.string.functions_label_file) to exportSummary.fileName,
-                            stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
-                            stringResource(R.string.functions_label_detail_points) to exportSummary.detailPointCount.toString(),
-                            stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+            DashboardPageContainer {
+                FunctionsExportCard(
+                    title = stringResource(R.string.functions_export_activities_title),
+                    subtitle = stringResource(R.string.functions_export_activities_subtitle).takeIf {
+                        uiState.showExplanationTexts
+                    },
+                    summary = listOf(
+                        stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
+                        stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_all_activities),
+                        stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_one_per_activity),
+                    ),
+                    isRunning = uiState.isExportingActivitiesCsv,
+                    progressCurrent = uiState.exportLoadedActivityCount,
+                    progressTotal = uiState.exportTotalActivityCount,
+                    onClick = onExportActivitiesCsv,
+                    onCancel = onCancelActivitiesCsvExport,
+                    enabled = !uiState.isExportingActivitiesCsv &&
+                        !uiState.isExportingActivityDetailsCsv &&
+                        !uiState.isExportingPdf &&
+                        !uiState.isInitialLoading &&
+                        !uiState.isRefreshing,
+                    buttonIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
                         )
-                    )
+                    },
+                    cancelIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
+                        )
+                    },
+                    showButtonLabels = uiState.showExplanationTexts,
+                    idleButtonLabel = stringResource(R.string.functions_export_button),
+                    runningButtonLabel = stringResource(R.string.functions_export_running),
+                ) {
+                    uiState.lastActivitiesCsvExport?.let { exportSummary ->
+                        ExportSummarySection(
+                            rows = listOf(
+                                stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                                stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
+                                stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+                            )
+                        )
+                    }
+                }
+            }
+        }
+        item {
+            DashboardPageContainer {
+                FunctionsExportCard(
+                    title = stringResource(R.string.functions_export_details_title),
+                    subtitle = stringResource(R.string.functions_export_details_subtitle).takeIf {
+                        uiState.showExplanationTexts
+                    },
+                    summary = listOf(
+                        stringResource(R.string.functions_chip_csv) to stringResource(uiState.csvExportFormat.labelRes()),
+                        stringResource(R.string.functions_chip_scope) to stringResource(R.string.functions_scope_visible_activities),
+                        stringResource(R.string.functions_chip_rows) to stringResource(R.string.functions_rows_detail_points),
+                    ),
+                    isRunning = uiState.isExportingActivityDetailsCsv,
+                    progressCurrent = uiState.exportDetailedLoadedActivityCount,
+                    progressTotal = uiState.exportDetailedTotalActivityCount,
+                    onClick = onExportActivityDetailsCsv,
+                    onCancel = onCancelActivityDetailsCsvExport,
+                    enabled = uiState.visibleActivityCount > 0 &&
+                        !uiState.isExportingActivitiesCsv &&
+                        !uiState.isExportingActivityDetailsCsv &&
+                        !uiState.isExportingPdf &&
+                        !uiState.isInitialLoading &&
+                        !uiState.isRefreshing,
+                    buttonIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
+                        )
+                    },
+                    cancelIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            modifier = Modifier.height(18.dp),
+                        )
+                    },
+                    showButtonLabels = uiState.showExplanationTexts,
+                    idleButtonLabel = stringResource(R.string.functions_detail_export_button),
+                    runningButtonLabel = stringResource(R.string.functions_detail_export_running),
+                ) {
+                    SectionSurface {
+                        OptionalRow(
+                            stringResource(R.string.functions_label_visible_activities),
+                            uiState.visibleActivityCount.toString(),
+                        )
+                        OptionalRow(
+                            stringResource(R.string.functions_label_loaded_activities),
+                            uiState.loadedActivityCount.toString(),
+                        )
+                    }
+                    uiState.lastActivityDetailsCsvExport?.let { exportSummary ->
+                        ExportSummarySection(
+                            rows = listOf(
+                                stringResource(R.string.functions_label_file) to exportSummary.fileName,
+                                stringResource(R.string.functions_label_activities) to exportSummary.activityCount.toString(),
+                                stringResource(R.string.functions_label_detail_points) to exportSummary.detailPointCount.toString(),
+                                stringResource(R.string.functions_label_exported_at) to exportSummary.exportedAtLabel,
+                            )
+                        )
+                    }
                 }
             }
         }
@@ -224,10 +286,15 @@ private fun FunctionsExportCard(
     onClick: () -> Unit,
     onCancel: () -> Unit,
     enabled: Boolean,
+    buttonIcon: @Composable () -> Unit,
+    cancelIcon: @Composable () -> Unit,
+    showButtonLabels: Boolean,
     idleButtonLabel: String,
     runningButtonLabel: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val cancelButtonLabel = stringResource(R.string.functions_cancel_button)
+
     OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = androidx.compose.foundation.shape.RoundedCornerShape(28.dp),
@@ -267,28 +334,52 @@ private fun FunctionsExportCard(
                     }
                     OutlinedButton(
                         onClick = onCancel,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (showButtonLabels) {
+                                    Modifier
+                                } else {
+                                    Modifier.semantics { contentDescription = cancelButtonLabel }
+                                }
+                            ),
                     ) {
-                        Text(stringResource(R.string.functions_cancel_button))
+                        DashboardButtonContent(
+                            label = cancelButtonLabel,
+                            icon = cancelIcon,
+                            showLabel = showButtonLabels,
+                        )
                     }
                 }
                 Button(
                     onClick = onClick,
                     enabled = enabled && !isRunning,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (showButtonLabels) {
+                                Modifier
+                            } else {
+                                Modifier.semantics {
+                                    contentDescription = if (isRunning) runningButtonLabel else idleButtonLabel
+                                }
+                            }
+                        ),
                 ) {
-                    if (isRunning) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .width(18.dp)
-                                .height(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(runningButtonLabel)
-                    } else {
-                        Text(idleButtonLabel)
-                    }
+                    DashboardButtonContent(
+                        label = if (isRunning) runningButtonLabel else idleButtonLabel,
+                        showLabel = showButtonLabels,
+                        icon = {
+                            if (isRunning) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.height(18.dp),
+                                    strokeWidth = 2.dp,
+                                )
+                            } else {
+                                buttonIcon()
+                            }
+                        },
+                    )
                 }
             },
         )

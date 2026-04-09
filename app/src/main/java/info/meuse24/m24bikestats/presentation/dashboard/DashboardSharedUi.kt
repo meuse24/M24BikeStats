@@ -1,8 +1,7 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,20 +11,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -36,25 +33,10 @@ internal fun HeroCard(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     content: @Composable (() -> Unit)? = null,
 ) {
-    val colorScheme = MaterialTheme.colorScheme
     val textAlign = if (horizontalAlignment == Alignment.CenterHorizontally) TextAlign.Center else TextAlign.Start
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
-    ) {
+    DashboardHeroSurface {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            colorScheme.primaryContainer,
-                            colorScheme.secondaryContainer,
-                        ),
-                    ),
-                )
-                .padding(20.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = horizontalAlignment,
         ) {
@@ -62,7 +44,7 @@ internal fun HeroCard(
                 Text(
                     text = eyebrow,
                     style = MaterialTheme.typography.labelLarge,
-                    color = colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = textAlign,
                 )
             }
@@ -70,7 +52,7 @@ internal fun HeroCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = colorScheme.onPrimaryContainer,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     textAlign = textAlign,
                 )
@@ -79,7 +61,7 @@ internal fun HeroCard(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = colorScheme.onPrimaryContainer.copy(alpha = 0.85f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = textAlign,
                 )
             }
@@ -137,7 +119,7 @@ internal fun MetricPill(
 ) {
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.3f),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -167,7 +149,7 @@ internal fun CompactMetricPill(
 ) {
     Surface(
         shape = RoundedCornerShape(999.dp),
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
+        color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -191,35 +173,107 @@ internal fun CompactMetricPill(
 }
 
 @Composable
-internal fun StatusBadge(value: String) {
-    Box(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    ) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-        )
+internal fun DashboardAdaptiveIconLabel(
+    label: String,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    showLabel: Boolean = true,
+    compactBreakpoint: Dp = 128.dp,
+    iconSpacing: Dp = 6.dp,
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        if (!showLabel) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                icon()
+            }
+            return@BoxWithConstraints
+        }
+
+        val isCompact = maxWidth < compactBreakpoint
+
+        if (isCompact) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(iconSpacing),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                icon()
+                Text(
+                    text = label,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MaterialTheme.typography.labelLarge,
+                    minLines = 2,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                icon()
+                Spacer(modifier = Modifier.width(iconSpacing))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    minLines = 1,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
     }
 }
 
 @Composable
-internal fun SectionSurface(content: @Composable () -> Unit) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+internal fun DashboardButtonContent(
+    label: String,
+    icon: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    showLabel: Boolean = true,
+    iconSpacing: Dp = 8.dp,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            content()
+        icon()
+        if (showLabel) {
+            Spacer(modifier = Modifier.width(iconSpacing))
+            ProvideTextStyle(
+                value = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    textAlign = TextAlign.Center,
+                ),
+            ) {
+                Text(text = label)
+            }
         }
+    }
+}
+
+@Composable
+internal fun StatusBadge(value: String) {
+    DashboardStatusBadge(label = value)
+}
+
+@Composable
+internal fun SectionSurface(content: @Composable () -> Unit) {
+    DashboardSectionCard(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        content()
     }
 }
 
@@ -229,21 +283,5 @@ internal fun OptionalRow(
     value: String?,
 ) {
     if (value == null) return
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Medium,
-        )
-    }
+    DashboardMetaRow(label = label, value = value)
 }

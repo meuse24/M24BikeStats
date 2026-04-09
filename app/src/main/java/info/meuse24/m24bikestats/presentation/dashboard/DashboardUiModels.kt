@@ -152,7 +152,35 @@ data class DataStatusUiModel(
     val lastActivitySyncLabel: String?,
     val lastBikeSyncLabel: String?,
     val lastDetailSyncLabel: String?,
-)
+) {
+    val isComplete: Boolean
+        get() = statusTone == DataStatusTone.COMPLETE && missingDetailCount == 0
+
+    val hasMissingDetails: Boolean
+        get() = missingDetailCount > 0
+
+    val hasStaleDetails: Boolean
+        get() = staleDetailCount > 0
+
+    val detailCoveragePercent: Int
+        get() = if (cachedActivityCount > 0) {
+            (detailedActivityCount * 100) / cachedActivityCount
+        } else {
+            0
+        }
+
+    @get:StringRes
+    val statusHeadlineRes: Int
+        get() = when {
+            statusTone == DataStatusTone.EMPTY -> R.string.home_data_status_headline_empty
+            hasMissingDetails -> R.string.home_data_status_headline_missing
+            else -> R.string.home_data_status_headline_ready
+        }
+
+    @get:StringRes
+    val primaryActionLabelRes: Int
+        get() = R.string.home_sync_button
+}
 
 enum class DataStatusTone {
     EMPTY,

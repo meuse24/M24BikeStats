@@ -48,6 +48,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,21 +107,28 @@ fun ActivityDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(
+                        horizontal = DesignTokens.ScreenHorizontalPadding,
+                        vertical = DesignTokens.ScreenVerticalPadding,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.SectionSpacing),
                 ) {
                     if (uiState.isActivityDetailRefreshing) {
                         item {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            DashboardPageContainer {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
                     items(activity.sections) { section ->
-                        DetailSectionCard(
-                            section = section,
-                            activity = activity,
-                            onNavigateToTrack = onNavigateToTrack,
-                            showExplanationTexts = uiState.showExplanationTexts,
-                        )
+                        DashboardPageContainer {
+                            DetailSectionCard(
+                                section = section,
+                                activity = activity,
+                                onNavigateToTrack = onNavigateToTrack,
+                                showExplanationTexts = uiState.showExplanationTexts,
+                            )
+                        }
                     }
                 }
             }
@@ -234,30 +242,39 @@ fun BikeDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(
+                        horizontal = DesignTokens.ScreenHorizontalPadding,
+                        vertical = DesignTokens.ScreenVerticalPadding,
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(DesignTokens.SectionSpacing),
                 ) {
                     if (uiState.isBikeDetailRefreshing) {
                         item {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            DashboardPageContainer {
+                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            }
                         }
                     }
                     item {
-                        val bikeDetailSubtitle = uiState.selectedBikeDetail.subtitle
-                            ?: stringResource(R.string.bike_detail_subtitle).takeIf {
-                                uiState.showExplanationTexts
-                            }
-                        HeroCard(
-                            eyebrow = stringResource(R.string.bike_detail_eyebrow),
-                            title = uiState.selectedBikeDetail.title,
-                            subtitle = bikeDetailSubtitle,
-                        )
+                        DashboardPageContainer {
+                            val bikeDetailSubtitle = uiState.selectedBikeDetail.subtitle
+                                ?: stringResource(R.string.bike_detail_subtitle).takeIf {
+                                    uiState.showExplanationTexts
+                                }
+                            HeroCard(
+                                eyebrow = stringResource(R.string.bike_detail_eyebrow),
+                                title = uiState.selectedBikeDetail.title,
+                                subtitle = bikeDetailSubtitle,
+                            )
+                        }
                     }
                     items(uiState.selectedBikeDetail.sections) { section ->
-                        DetailSectionCard(
-                            section = section,
-                            showExplanationTexts = uiState.showExplanationTexts,
-                        )
+                        DashboardPageContainer {
+                            DetailSectionCard(
+                                section = section,
+                                showExplanationTexts = uiState.showExplanationTexts,
+                            )
+                        }
                     }
                 }
             }
@@ -355,6 +372,7 @@ private fun DetailSectionCard(
                                     }
                                 }
                             },
+                            showLabel = showExplanationTexts,
                             modifier = Modifier.weight(1f),
                         )
                     }

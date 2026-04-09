@@ -193,7 +193,34 @@ class DashboardUiModelMapperTest {
         assertEquals(DataStatusTone.COMPLETE, uiModel.statusTone)
         assertEquals("res-${R.string.home_data_status_state_complete}", uiModel.statusLabel)
         assertEquals("res-${R.string.home_data_status_summary_stale}:4", uiModel.statusSummary)
+        assertEquals(R.string.home_data_status_headline_ready, uiModel.statusHeadlineRes)
         assertEquals(4, uiModel.staleDetailCount)
+    }
+
+    @Test
+    fun `data status exposes derived helpers for incomplete cache`() {
+        val uiModel = mapper.toDataStatusUiModel(
+            DataStatusOverview(
+                cachedActivityCount = 20,
+                coveredActivityStartEpochMillis = null,
+                coveredActivityEndEpochMillis = null,
+                detailedActivityCount = 15,
+                missingDetailCount = 5,
+                staleDetailCount = 2,
+                gpsPointCount = 640,
+                lastActivitySyncAtEpochMillis = null,
+                lastBikeSyncAtEpochMillis = null,
+                lastDetailSyncAtEpochMillis = null,
+                status = DataStatusState.PARTIAL,
+            )
+        )
+
+        assertEquals(75, uiModel.detailCoveragePercent)
+        assertTrue(uiModel.hasMissingDetails)
+        assertTrue(uiModel.hasStaleDetails)
+        assertFalse(uiModel.isComplete)
+        assertEquals(R.string.home_data_status_headline_missing, uiModel.statusHeadlineRes)
+        assertEquals(R.string.home_sync_button, uiModel.primaryActionLabelRes)
     }
 
     private fun activity() = BoschActivity(

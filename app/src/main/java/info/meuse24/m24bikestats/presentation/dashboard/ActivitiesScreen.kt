@@ -29,9 +29,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
+import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 
 @Composable
 fun ActivitiesScreen(
@@ -77,85 +80,109 @@ fun ActivitiesScreen(
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = listState,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(
+            horizontal = DesignTokens.ScreenHorizontalPadding,
+            vertical = DesignTokens.ScreenVerticalPadding,
+        ),
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.SectionSpacing),
     ) {
         item {
-            HeroCard(
-                eyebrow = stringResource(R.string.activities_hero_eyebrow),
-                title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
-                subtitle = stringResource(R.string.activities_hero_subtitle).takeIf {
-                    uiState.showExplanationTexts
-                },
-            ) {
-                SummaryChipRow(
-                    summary = listOf(
-                        stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
-                        stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
-                        stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
-                        stringResource(R.string.activities_metric_status) to if (uiState.isRefreshing) {
-                            stringResource(R.string.activities_status_refreshing)
-                        } else {
-                            stringResource(R.string.activities_status_ready)
-                        },
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    itemContent = { label, value ->
-                        CompactMetricPill(label = label, value = value)
+            DashboardPageContainer {
+                HeroCard(
+                    eyebrow = stringResource(R.string.activities_hero_eyebrow),
+                    title = stringResource(R.string.activities_hero_title, uiState.visibleActivityCount, uiState.loadedActivityCount),
+                    subtitle = stringResource(R.string.activities_hero_subtitle).takeIf {
+                        uiState.showExplanationTexts
                     },
-                )
+                ) {
+                    SummaryChipRow(
+                        summary = listOf(
+                            stringResource(R.string.activities_metric_visible) to uiState.visibleActivityCount.toString(),
+                            stringResource(R.string.activities_metric_loaded) to uiState.loadedActivityCount.toString(),
+                            stringResource(R.string.activities_metric_total) to uiState.activityTotalCount.toString(),
+                            stringResource(R.string.activities_metric_status) to if (uiState.isRefreshing) {
+                                stringResource(R.string.activities_status_refreshing)
+                            } else {
+                                stringResource(R.string.activities_status_ready)
+                            },
+                        ),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        itemContent = { label, value ->
+                            CompactMetricPill(label = label, value = value)
+                        },
+                    )
+                }
             }
         }
 
         item {
-            Button(
-                onClick = onNavigateToMap,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Map,
-                    contentDescription = null,
-                    modifier = Modifier.padding(end = 8.dp),
-                )
-                Text(stringResource(R.string.activities_map_button))
+            DashboardPageContainer {
+                val mapButtonLabel = stringResource(R.string.activities_map_button)
+                Button(
+                    onClick = onNavigateToMap,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (uiState.showExplanationTexts) {
+                                Modifier
+                            } else {
+                                Modifier.semantics { contentDescription = mapButtonLabel }
+                            }
+                        ),
+                ) {
+                    DashboardButtonContent(
+                        label = mapButtonLabel,
+                        showLabel = uiState.showExplanationTexts,
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Default.Map,
+                                contentDescription = null,
+                            )
+                        },
+                    )
+                }
             }
         }
 
         item {
-            ActivityFilterSection(
-                searchQuery = uiState.activitySearchQuery,
-                onSearchQueryChanged = onActivitySearchQueryChanged,
-                selectedDateRange = uiState.activityDateRangeFilter,
-                selectedSortOption = uiState.activitySortOption,
-                onDateRangeSelected = onActivityDateRangeFilterChanged,
-                onSortOptionSelected = onActivitySortOptionChanged,
-            )
+            DashboardPageContainer {
+                ActivityFilterSection(
+                    searchQuery = uiState.activitySearchQuery,
+                    onSearchQueryChanged = onActivitySearchQueryChanged,
+                    selectedDateRange = uiState.activityDateRangeFilter,
+                    selectedSortOption = uiState.activitySortOption,
+                    onDateRangeSelected = onActivityDateRangeFilterChanged,
+                    onSortOptionSelected = onActivitySortOptionChanged,
+                )
+            }
         }
 
         if (uiState.activities.isEmpty()) {
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                ) {
-                    androidx.compose.foundation.layout.Column(
-                        modifier = Modifier.padding(18.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                DashboardPageContainer {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ),
                     ) {
-                        Text(
-                            text = stringResource(R.string.activities_empty_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                        if (uiState.showExplanationTexts) {
+                        androidx.compose.foundation.layout.Column(
+                            modifier = Modifier.padding(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
                             Text(
-                                text = stringResource(R.string.activities_empty_subtitle),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                text = stringResource(R.string.activities_empty_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
                             )
+                            if (uiState.showExplanationTexts) {
+                                Text(
+                                    text = stringResource(R.string.activities_empty_subtitle),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -163,45 +190,50 @@ fun ActivitiesScreen(
         }
 
         items(uiState.activities, key = { it.id }) { activity ->
-            ActivityCard(
-                activity = activity,
-                onClick = { onActivityClick(activity.id) },
-                onMapClick = { onActivityMapClick(activity.id) },
-                onShareClick = { shareActivitySummary(context, activity) },
-            )
+            DashboardPageContainer {
+                ActivityCard(
+                    activity = activity,
+                    onClick = { onActivityClick(activity.id) },
+                    onMapClick = { onActivityMapClick(activity.id) },
+                    onShareClick = { shareActivitySummary(context, activity) },
+                    showActionLabels = uiState.showExplanationTexts,
+                )
+            }
         }
 
         item {
             if (uiState.isLoadingMoreActivities) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 18.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                DashboardPageContainer {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ),
                     ) {
-                        CircularProgressIndicator()
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 18.dp, vertical = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = stringResource(R.string.activities_loading_more_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            if (uiState.showExplanationTexts) {
+                            CircularProgressIndicator()
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
                                 Text(
-                                    text = stringResource(R.string.activities_loading_more_subtitle),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    text = stringResource(R.string.activities_loading_more_title),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold,
                                 )
+                                if (uiState.showExplanationTexts) {
+                                    Text(
+                                        text = stringResource(R.string.activities_loading_more_subtitle),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }

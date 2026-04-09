@@ -1,47 +1,43 @@
 package info.meuse24.m24bikestats.presentation.dashboard
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
+import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 
 @Composable
 fun HomeScreen(
@@ -60,58 +56,133 @@ fun HomeScreen(
         uiState.allActivities.maxByOrNull { it.startedAtEpochMillis ?: Long.MIN_VALUE }
     }
     val primaryBike = uiState.bikes.firstOrNull()
+    val syncProgress = remember(
+        uiState.isSyncingCloudData,
+        uiState.syncPhase,
+        uiState.syncPhaseLabel,
+        uiState.syncLoadedActivityCount,
+        uiState.syncTotalActivityCount,
+        uiState.isSyncingPendingActivityDetails,
+        uiState.pendingActivityDetailSyncLabel,
+        uiState.pendingActivityDetailSyncLoadedCount,
+        uiState.pendingActivityDetailSyncTotalCount,
+    ) {
+        uiState.toSyncProgressUi(
+            onCancelSyncCloudData = onCancelSyncCloudData,
+            onCancelPendingActivityDetailsSync = onCancelPendingActivityDetailsSync,
+        )
+    }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(
+            horizontal = DesignTokens.ScreenHorizontalPadding,
+            vertical = DesignTokens.ScreenVerticalPadding,
+        ),
+        verticalArrangement = Arrangement.spacedBy(DesignTokens.SectionSpacing),
     ) {
         item {
-            DataStatusAndSyncCard(
-                uiState = uiState,
-                onSyncCloudData = onSyncCloudData,
-                onCancelSyncCloudData = onCancelSyncCloudData,
-                onLoadMissingActivityDetails = onLoadMissingActivityDetails,
-                onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
-                onCancelPendingActivityDetailsSync = onCancelPendingActivityDetailsSync,
-            )
+            DashboardPageContainer {
+                HomeStatusHeroCard(
+                    uiState = uiState,
+                    onSyncCloudData = onSyncCloudData,
+                )
+            }
         }
-        item {
-            if (latestActivity != null) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_latest_tour),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    ActivityCard(
-                        activity = latestActivity,
-                        onClick = { onNavigateToActivityDetail(latestActivity.id) },
-                        onMapClick = { onNavigateToActivityTrack(latestActivity.id) },
-                        onShareClick = { shareActivitySummary(context, latestActivity) },
-                    )
+
+        uiState.dataStatus?.let { dataStatus ->
+            item {
+                DashboardPageContainer {
+                    HomeStatusMetricGrid(dataStatus = dataStatus)
                 }
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_no_tours_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+            }
+        }
+
+        item {
+            DashboardPageContainer {
+                HomeSyncMetaCard(
+                    uiState = uiState,
+                    progress = syncProgress,
+                    onLoadMissingActivityDetails = onLoadMissingActivityDetails,
+                    onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
+                )
+            }
+        }
+
+        item {
+            DashboardPageContainer {
+                HomeSection(title = stringResource(R.string.home_latest_tour)) {
+                    if (latestActivity != null) {
+                        ActivityCard(
+                            activity = latestActivity,
+                            onClick = { onNavigateToActivityDetail(latestActivity.id) },
+                            onMapClick = { onNavigateToActivityTrack(latestActivity.id) },
+                            onShareClick = { shareActivitySummary(context, latestActivity) },
+                            showActionLabels = uiState.showExplanationTexts,
                         )
-                        if (uiState.showExplanationTexts) {
+                    } else {
+                        HomeEmptyStateCard(
+                            title = stringResource(R.string.home_no_tours_title),
+                            description = stringResource(R.string.home_no_tours_text).takeIf {
+                                uiState.showExplanationTexts
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            DashboardPageContainer {
+                HomeSection(title = stringResource(R.string.home_bike_status)) {
+                    DashboardSectionCard {
+                        if (primaryBike != null) {
                             Text(
-                                text = stringResource(R.string.home_no_tours_text),
+                                text = primaryBike.title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            primaryBike.subtitle?.let { subtitle ->
+                                Text(
+                                    text = subtitle,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            DashboardMetricGrid(
+                                items = buildList {
+                                    primaryBike.odometerLabel?.let {
+                                        add(
+                                            DashboardMetricTileModel(
+                                                label = stringResource(R.string.home_odometer),
+                                                value = it,
+                                                tone = DashboardMetricTone.Informative,
+                                            )
+                                        )
+                                    }
+                                    primaryBike.assistSpeedLabel?.let {
+                                        add(DashboardMetricTileModel(stringResource(R.string.home_assist_limit), it))
+                                    }
+                                    primaryBike.walkAssistLabel?.let {
+                                        add(DashboardMetricTileModel(stringResource(R.string.home_walk_assist), it))
+                                    }
+                                    primaryBike.powerOnSummary?.let {
+                                        add(DashboardMetricTileModel(stringResource(R.string.home_usage), it))
+                                    }
+                                    primaryBike.batterySummary?.let {
+                                        add(
+                                            DashboardMetricTileModel(
+                                                label = stringResource(R.string.home_battery),
+                                                value = it,
+                                                tone = DashboardMetricTone.Positive,
+                                            )
+                                        )
+                                    }
+                                },
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.home_no_bike_data),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -120,79 +191,31 @@ fun HomeScreen(
                 }
             }
         }
+
         item {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.home_bike_status),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                HomeSummaryCard {
-                    primaryBike?.let { bike ->
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                        ) {
-                            Text(
-                                text = bike.title,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            bike.subtitle?.let {
-                                Text(
-                                    text = it,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            HomeMetricGrid(
-                                items = buildList {
-                                    bike.odometerLabel?.let { add(stringResource(R.string.home_odometer) to it) }
-                                    bike.assistSpeedLabel?.let { add(stringResource(R.string.home_assist_limit) to it) }
-                                    bike.walkAssistLabel?.let { add(stringResource(R.string.home_walk_assist) to it) }
-                                    bike.powerOnSummary?.let { add(stringResource(R.string.home_usage) to it) }
-                                    bike.batterySummary?.let { add(stringResource(R.string.home_battery) to it) }
-                                },
-                            )
-                        }
-                    } ?: Text(
-                        text = stringResource(R.string.home_no_bike_data),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-        item {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.home_recent_exports),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                HomeSummaryCard {
-                    HomeMetricGrid(
-                        items = listOf(
-                            stringResource(R.string.home_export_activities_csv) to (
-                                uiState.lastActivitiesCsvExport?.fileName ?: stringResource(R.string.home_export_none)
-                            ),
-                            stringResource(R.string.home_export_details_csv) to (
-                                uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none)
-                            ),
-                            stringResource(R.string.home_export_pdf) to (
-                                uiState.lastPdfExport?.fileName ?: stringResource(R.string.home_export_none)
-                            ),
-                            stringResource(R.string.home_export_last_time) to (
-                                uiState.lastPdfExport?.exportedAtLabel
-                                    ?: uiState.lastActivityDetailsCsvExport?.exportedAtLabel
-                                    ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
-                                    ?: stringResource(R.string.home_export_none)
-                            ),
-                        ),
-                    )
+            DashboardPageContainer {
+                HomeSection(title = stringResource(R.string.home_recent_exports)) {
+                    DashboardSectionCard {
+                        DashboardMetaRow(
+                            label = stringResource(R.string.home_export_activities_csv),
+                            value = uiState.lastActivitiesCsvExport?.fileName ?: stringResource(R.string.home_export_none),
+                        )
+                        DashboardMetaRow(
+                            label = stringResource(R.string.home_export_details_csv),
+                            value = uiState.lastActivityDetailsCsvExport?.fileName ?: stringResource(R.string.home_export_none),
+                        )
+                        DashboardMetaRow(
+                            label = stringResource(R.string.home_export_pdf),
+                            value = uiState.lastPdfExport?.fileName ?: stringResource(R.string.home_export_none),
+                        )
+                        DashboardMetaRow(
+                            label = stringResource(R.string.home_export_last_time),
+                            value = uiState.lastPdfExport?.exportedAtLabel
+                                ?: uiState.lastActivityDetailsCsvExport?.exportedAtLabel
+                                ?: uiState.lastActivitiesCsvExport?.exportedAtLabel
+                                ?: stringResource(R.string.home_export_none),
+                        )
+                    }
                 }
             }
         }
@@ -200,208 +223,391 @@ fun HomeScreen(
 }
 
 @Composable
-private fun DataStatusAndSyncCard(
+private fun HomeStatusHeroCard(
     uiState: HomeUiState,
     onSyncCloudData: () -> Unit,
-    onCancelSyncCloudData: () -> Unit,
-    onLoadMissingActivityDetails: () -> Unit,
-    onRefreshStaleActivityDetails: () -> Unit,
-    onCancelPendingActivityDetailsSync: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val dataStatus = uiState.dataStatus
-    val showStatusSummary = uiState.showExplanationTexts ||
-        dataStatus?.statusSummary != stringResource(R.string.home_data_status_summary_complete)
-    val hasSyncMetadata = dataStatus?.lastActivitySyncLabel != null ||
-        dataStatus?.lastDetailSyncLabel != null ||
-        dataStatus?.lastBikeSyncLabel != null
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+    DashboardHeroSurface(
+        modifier = modifier,
+        accentTone = dataStatus.toBadgeTone(),
     ) {
-        Column(
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.home_data_status_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = dataStatus?.let { stringResource(it.statusHeadlineRes) }
+                        ?: stringResource(R.string.home_data_status_loading),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                if (uiState.shouldShowStatusSummary) {
+                    Text(
+                        text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                dataStatus?.coveredPeriodLabel?.let { coveredPeriod ->
+                    Text(
+                        text = stringResource(R.string.home_data_status_period_value, coveredPeriod),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            dataStatus?.let { status ->
+                DashboardStatusBadge(
+                    label = status.statusLabel,
+                    tone = status.toBadgeTone(),
+                )
+            }
+        }
+        HomePrimaryActionBar(
+            label = stringResource(dataStatus?.primaryActionLabelRes ?: R.string.home_sync_button),
+            enabled = uiState.canStartSync,
+            isRunning = uiState.isSyncingCloudData,
+            showLabel = uiState.showExplanationTexts,
+            onClick = onSyncCloudData,
+        )
+    }
+}
+
+@Composable
+private fun HomeStatusMetricGrid(
+    dataStatus: DataStatusUiModel,
+    modifier: Modifier = Modifier,
+) {
+    DashboardMetricGrid(
+        modifier = modifier,
+        items = listOf(
+            DashboardMetricTileModel(
+                label = stringResource(R.string.home_data_status_activities),
+                value = dataStatus.cachedActivityCount.toString(),
+                tone = DashboardMetricTone.Informative,
+            ),
+            DashboardMetricTileModel(
+                label = stringResource(R.string.home_data_status_details),
+                value = "${dataStatus.detailedActivityCount} / ${dataStatus.cachedActivityCount}",
+                supportingText = stringResource(
+                    R.string.home_data_status_coverage_support,
+                    dataStatus.detailCoveragePercent,
+                ),
+                tone = if (dataStatus.isComplete) {
+                    DashboardMetricTone.Positive
+                } else {
+                    DashboardMetricTone.Informative
+                },
+            ),
+            DashboardMetricTileModel(
+                label = stringResource(R.string.home_data_status_missing),
+                value = dataStatus.missingDetailCount.toString(),
+                tone = if (dataStatus.hasMissingDetails) {
+                    DashboardMetricTone.Warning
+                } else {
+                    DashboardMetricTone.Positive
+                },
+            ),
+            DashboardMetricTileModel(
+                label = stringResource(R.string.home_data_status_stale),
+                value = dataStatus.staleDetailCount.toString(),
+                tone = if (dataStatus.hasStaleDetails) {
+                    DashboardMetricTone.Informative
+                } else {
+                    DashboardMetricTone.Neutral
+                },
+            ),
+            DashboardMetricTileModel(
+                label = stringResource(R.string.home_data_status_gps_points),
+                value = dataStatus.gpsPointCount.toString(),
+            ),
+        ),
+    )
+}
+
+@Composable
+private fun HomeSyncMetaCard(
+    uiState: HomeUiState,
+    progress: HomeSyncProgressUi?,
+    onLoadMissingActivityDetails: () -> Unit,
+    onRefreshStaleActivityDetails: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    DashboardSectionCard(modifier = modifier) {
+        Text(
+            text = stringResource(R.string.home_sync_title),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        stringResource(R.string.home_sync_subtitle).takeIf { uiState.showExplanationTexts }?.let { subtitle ->
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        uiState.lastCloudSyncSummary?.let { summary ->
+            DashboardMetaRow(
+                label = stringResource(R.string.home_sync_last_sync),
+                value = summary.syncedAtLabel,
+            )
+            DashboardMetricGrid(
+                items = listOf(
+                    DashboardMetricTileModel(
+                        label = stringResource(R.string.home_sync_activities),
+                        value = summary.activityCount.toString(),
+                    ),
+                    DashboardMetricTileModel(
+                        label = stringResource(R.string.home_sync_bikes),
+                        value = summary.bikeCount.toString(),
+                    ),
+                ),
+            )
+        }
+
+        if (uiState.hasSyncMetadata) {
+            SectionSurface {
+                OptionalRow(stringResource(R.string.home_data_status_last_activity_sync), uiState.dataStatus?.lastActivitySyncLabel)
+                OptionalRow(stringResource(R.string.home_data_status_last_detail_sync), uiState.dataStatus?.lastDetailSyncLabel)
+                OptionalRow(stringResource(R.string.home_data_status_last_bike_sync), uiState.dataStatus?.lastBikeSyncLabel)
+            }
+        } else if (progress == null && uiState.showExplanationTexts) {
+            Text(
+                text = stringResource(R.string.home_sync_meta_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        progress?.let {
+            HomeSyncProgressCard(
+                progress = it,
+                showButtonLabel = uiState.showExplanationTexts,
+            )
+        }
+
+        if (uiState.hasSecondarySyncActions) {
+            HomeSecondaryActionRow(
+                dataStatus = uiState.dataStatus,
+                enabled = uiState.canStartSync,
+                showButtonLabels = uiState.showExplanationTexts,
+                onLoadMissingActivityDetails = onLoadMissingActivityDetails,
+                onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeSyncProgressCard(
+    progress: HomeSyncProgressUi,
+    showButtonLabel: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val cancelLabel = stringResource(R.string.home_sync_cancel_button)
+    DashboardSectionCard(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+        contentPadding = PaddingValues(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        progress.phaseLabel?.let { label ->
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        Text(
+            text = if (progress.totalCount > 0) {
+                stringResource(R.string.home_sync_progress, progress.loadedCount, progress.totalCount)
+            } else {
+                stringResource(R.string.home_sync_starting)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LinearProgressIndicator(
+            progress = { progress.overallProgress.coerceIn(0f, 1f) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedButton(
+            onClick = progress.onCancel,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            MaterialTheme.colorScheme.secondaryContainer,
-                        ),
-                    ),
-                )
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+                .then(
+                    if (showButtonLabel) {
+                        Modifier
+                    } else {
+                        Modifier.semantics { contentDescription = cancelLabel }
+                    }
+                ),
         ) {
-            Row(
+            DashboardButtonContent(
+                label = cancelLabel,
+                showLabel = showButtonLabel,
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomePrimaryActionBar(
+    label: String,
+    enabled: Boolean,
+    isRunning: Boolean,
+    showLabel: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    HomeActionButton(
+        onClick = onClick,
+        enabled = enabled,
+        label = if (isRunning) {
+            stringResource(R.string.home_sync_running)
+        } else {
+            label
+        },
+        icon = {
+            if (isRunning) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Sync,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        },
+        showLabel = showLabel,
+        modifier = modifier.fillMaxWidth(),
+        emphasis = HomeActionButtonEmphasis.Primary,
+    )
+}
+
+@Composable
+private fun HomeSecondaryActionRow(
+    dataStatus: DataStatusUiModel?,
+    enabled: Boolean,
+    showButtonLabels: Boolean,
+    onLoadMissingActivityDetails: () -> Unit,
+    onRefreshStaleActivityDetails: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (dataStatus?.hasMissingDetails == true) {
+            HomeActionButton(
+                onClick = onLoadMissingActivityDetails,
+                enabled = enabled,
+                label = stringResource(R.string.home_data_status_action_missing),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+                showLabel = showButtonLabels,
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Text(
-                        text = stringResource(R.string.home_data_status_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                emphasis = HomeActionButtonEmphasis.Secondary,
+            )
+        }
+        if (dataStatus?.hasStaleDetails == true) {
+            HomeActionButton(
+                onClick = onRefreshStaleActivityDetails,
+                enabled = enabled,
+                label = stringResource(R.string.home_data_status_action_stale),
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Update,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
                     )
-                    if (showStatusSummary) {
-                        Text(
-                            text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
-                        )
-                    }
-                }
-                dataStatus?.let { status ->
-                    DataStatusBadge(
-                        label = status.statusLabel,
-                        tone = status.statusTone,
-                    )
-                }
-            }
+                },
+                showLabel = showButtonLabels,
+                modifier = Modifier.fillMaxWidth(),
+                emphasis = HomeActionButtonEmphasis.Secondary,
+            )
+        }
+    }
+}
 
-            dataStatus?.coveredPeriodLabel?.let { coveredPeriodLabel ->
-                Text(
-                    text = stringResource(R.string.home_data_status_period_value, coveredPeriodLabel),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
-                )
-            }
+@Composable
+private fun HomeSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        HomeSectionHeader(title = title)
+        content()
+    }
+}
 
-            dataStatus?.let { status ->
-                SummaryChipRow(
-                    summary = listOf(
-                        stringResource(R.string.home_data_status_activities) to status.cachedActivityCount.toString(),
-                        stringResource(R.string.home_data_status_details) to status.detailCoverageLabel,
-                        stringResource(R.string.home_data_status_missing) to status.missingDetailCount.toString(),
-                        stringResource(R.string.home_data_status_stale) to status.staleDetailCount.toString(),
-                        stringResource(R.string.home_data_status_gps_points) to status.gpsPointCount.toString(),
-                    ),
-                    itemContent = { label, value ->
-                        CompactMetricPill(label = label, value = value)
-                    },
-                )
-            }
+@Composable
+private fun HomeSectionHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title,
+        modifier = modifier,
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.SemiBold,
+    )
+}
 
-            if (hasSyncMetadata) {
-                SectionSurface {
-                    OptionalRow(stringResource(R.string.home_data_status_last_activity_sync), dataStatus?.lastActivitySyncLabel)
-                    OptionalRow(stringResource(R.string.home_data_status_last_detail_sync), dataStatus?.lastDetailSyncLabel)
-                    OptionalRow(stringResource(R.string.home_data_status_last_bike_sync), dataStatus?.lastBikeSyncLabel)
-                }
-            }
-
-            when {
-                uiState.isSyncingPendingActivityDetails -> {
-                    SyncProgressSection(
-                        phaseLabel = uiState.pendingActivityDetailSyncLabel,
-                        loadedCount = uiState.pendingActivityDetailSyncLoadedCount,
-                        totalCount = uiState.pendingActivityDetailSyncTotalCount,
-                        overallProgress = if (uiState.pendingActivityDetailSyncTotalCount > 0) {
-                            uiState.pendingActivityDetailSyncLoadedCount.toFloat() /
-                                uiState.pendingActivityDetailSyncTotalCount.toFloat()
-                        } else {
-                            0f
-                        },
-                        onCancel = onCancelPendingActivityDetailsSync,
-                    )
-                }
-
-                uiState.isSyncingCloudData -> {
-                    val totalCount = uiState.syncTotalActivityCount
-                    val loadedCount = uiState.syncLoadedActivityCount
-                    val phaseProgress = if (totalCount > 0) {
-                        loadedCount.toFloat() / totalCount.toFloat()
-                    } else {
-                        0f
-                    }
-                    val overallProgress = when (uiState.syncPhase) {
-                        SmartSystemCloudSyncPhase.BIKES -> phaseProgress / 3f
-                        SmartSystemCloudSyncPhase.ACTIVITIES -> (1f + phaseProgress) / 3f
-                        SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> (2f + phaseProgress) / 3f
-                        null -> 0f
-                    }
-                    SyncProgressSection(
-                        phaseLabel = uiState.syncPhaseLabel,
-                        loadedCount = loadedCount,
-                        totalCount = totalCount,
-                        overallProgress = overallProgress,
-                        onCancel = onCancelSyncCloudData,
-                    )
-                }
-            }
-
-            Column(
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                when {
-                    (dataStatus?.missingDetailCount ?: 0) > 0 && (dataStatus?.staleDetailCount ?: 0) > 0 -> {
-                        HomeActionButton(
-                            onClick = onLoadMissingActivityDetails,
-                            enabled = uiState.canStartSync,
-                            modifier = Modifier.fillMaxWidth(),
-                            emphasis = HomeActionButtonEmphasis.Secondary,
-                        ) {
-                            Text(stringResource(R.string.home_data_status_action_missing))
-                        }
-                        HomeActionButton(
-                            onClick = onRefreshStaleActivityDetails,
-                            enabled = uiState.canStartSync,
-                            modifier = Modifier.fillMaxWidth(),
-                            emphasis = HomeActionButtonEmphasis.Secondary,
-                        ) {
-                            Text(stringResource(R.string.home_data_status_action_stale))
-                        }
-                    }
-
-                    (dataStatus?.missingDetailCount ?: 0) > 0 -> {
-                        HomeActionButton(
-                            onClick = onLoadMissingActivityDetails,
-                            enabled = uiState.canStartSync,
-                            modifier = Modifier.fillMaxWidth(),
-                            emphasis = HomeActionButtonEmphasis.Secondary,
-                        ) {
-                            Text(stringResource(R.string.home_data_status_action_missing))
-                        }
-                    }
-
-                    (dataStatus?.staleDetailCount ?: 0) > 0 -> {
-                        HomeActionButton(
-                            onClick = onRefreshStaleActivityDetails,
-                            enabled = uiState.canStartSync,
-                            modifier = Modifier.fillMaxWidth(),
-                            emphasis = HomeActionButtonEmphasis.Secondary,
-                        ) {
-                            Text(stringResource(R.string.home_data_status_action_stale))
-                        }
-                    }
-                }
-
-                HomeActionButton(
-                    onClick = onSyncCloudData,
-                    enabled = uiState.canStartSync,
-                    modifier = Modifier.fillMaxWidth(),
-                    emphasis = HomeActionButtonEmphasis.Primary,
-                ) {
-                    if (uiState.isSyncingCloudData) {
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .width(18.dp)
-                                .height(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(stringResource(R.string.home_sync_running))
-                    } else {
-                        Text(stringResource(R.string.home_sync_button))
-                    }
-                }
-            }
+@Composable
+private fun HomeEmptyStateCard(
+    title: String,
+    description: String?,
+    modifier: Modifier = Modifier,
+) {
+    DashboardSectionCard(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+        description?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -410,18 +616,28 @@ private fun DataStatusAndSyncCard(
 private fun HomeActionButton(
     onClick: () -> Unit,
     enabled: Boolean,
+    label: String,
+    icon: @Composable () -> Unit,
+    showLabel: Boolean,
     modifier: Modifier = Modifier,
     emphasis: HomeActionButtonEmphasis = HomeActionButtonEmphasis.Secondary,
-    content: @Composable () -> Unit,
 ) {
-    val buttonModifier = modifier.heightIn(min = 54.dp)
+    val buttonModifier = modifier
+        .heightIn(min = 52.dp)
+        .then(
+            if (showLabel) {
+                Modifier
+            } else {
+                Modifier.semantics { contentDescription = label }
+            }
+        )
     when (emphasis) {
         HomeActionButtonEmphasis.Primary -> {
             Button(
                 onClick = onClick,
                 enabled = enabled,
                 modifier = buttonModifier,
-                shape = RoundedCornerShape(16.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -430,7 +646,11 @@ private fun HomeActionButton(
                 ),
                 contentPadding = ButtonDefaults.ContentPadding,
             ) {
-                HomeActionButtonContent(content = content)
+                DashboardButtonContent(
+                    label = label,
+                    icon = icon,
+                    showLabel = showLabel,
+                )
             }
         }
 
@@ -439,37 +659,21 @@ private fun HomeActionButton(
                 onClick = onClick,
                 enabled = enabled,
                 modifier = buttonModifier,
-                shape = RoundedCornerShape(16.dp),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                     contentColor = MaterialTheme.colorScheme.onSurface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f),
                     disabledContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                 ),
                 contentPadding = ButtonDefaults.ContentPadding,
             ) {
-                HomeActionButtonContent(content = content)
+                DashboardButtonContent(
+                    label = label,
+                    icon = icon,
+                    showLabel = showLabel,
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun HomeActionButtonContent(
-    content: @Composable () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        androidx.compose.material3.ProvideTextStyle(
-            value = MaterialTheme.typography.titleSmall.copy(
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-            ),
-        ) {
-            content()
         }
     }
 }
@@ -479,156 +683,62 @@ private enum class HomeActionButtonEmphasis {
     Secondary,
 }
 
-@Composable
-private fun SyncProgressSection(
-    phaseLabel: String?,
-    loadedCount: Int,
-    totalCount: Int,
-    overallProgress: Float,
-    onCancel: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        phaseLabel?.let { label ->
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-        Text(
-            text = if (totalCount > 0) {
-                stringResource(R.string.home_sync_progress, loadedCount, totalCount)
-            } else {
-                stringResource(R.string.home_sync_starting)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.9f),
-        )
-        LinearProgressIndicator(
-            progress = { overallProgress.coerceIn(0f, 1f) },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        OutlinedButton(
-            onClick = onCancel,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.home_sync_cancel_button))
-        }
-    }
+private data class HomeSyncProgressUi(
+    val phaseLabel: String?,
+    val loadedCount: Int,
+    val totalCount: Int,
+    val overallProgress: Float,
+    val onCancel: () -> Unit,
+)
+
+private fun DataStatusUiModel?.toBadgeTone(): DashboardStatusBadgeTone = when (this?.statusTone) {
+    DataStatusTone.EMPTY,
+    null,
+    -> DashboardStatusBadgeTone.Neutral
+
+    DataStatusTone.PARTIAL -> DashboardStatusBadgeTone.Warning
+    DataStatusTone.COMPLETE -> DashboardStatusBadgeTone.Positive
 }
 
-@Composable
-private fun DataStatusBadge(
-    label: String,
-    tone: DataStatusTone,
-) {
-    val containerColor = when (tone) {
-        DataStatusTone.EMPTY -> MaterialTheme.colorScheme.surface.copy(alpha = 0.35f)
-        DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.tertiaryContainer
-        DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.secondaryContainer
-    }
-    val contentColor = when (tone) {
-        DataStatusTone.EMPTY -> MaterialTheme.colorScheme.onPrimaryContainer
-        DataStatusTone.PARTIAL -> MaterialTheme.colorScheme.onTertiaryContainer
-        DataStatusTone.COMPLETE -> MaterialTheme.colorScheme.onSecondaryContainer
-    }
-    Surface(
-        shape = RoundedCornerShape(999.dp),
-        color = containerColor,
-        contentColor = contentColor,
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelLarge,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+private fun HomeUiState.toSyncProgressUi(
+    onCancelSyncCloudData: () -> Unit,
+    onCancelPendingActivityDetailsSync: () -> Unit,
+): HomeSyncProgressUi? = when {
+    isSyncingPendingActivityDetails -> {
+        val progress = if (pendingActivityDetailSyncTotalCount > 0) {
+            pendingActivityDetailSyncLoadedCount.toFloat() / pendingActivityDetailSyncTotalCount.toFloat()
+        } else {
+            0f
+        }
+        HomeSyncProgressUi(
+            phaseLabel = pendingActivityDetailSyncLabel,
+            loadedCount = pendingActivityDetailSyncLoadedCount,
+            totalCount = pendingActivityDetailSyncTotalCount,
+            overallProgress = progress,
+            onCancel = onCancelPendingActivityDetailsSync,
         )
     }
-}
 
-@Composable
-private fun HomeSummaryCard(
-    content: @Composable () -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            content()
+    isSyncingCloudData -> {
+        val phaseProgress = if (syncTotalActivityCount > 0) {
+            syncLoadedActivityCount.toFloat() / syncTotalActivityCount.toFloat()
+        } else {
+            0f
         }
+        val overallProgress = when (syncPhase) {
+            SmartSystemCloudSyncPhase.BIKES -> phaseProgress / 3f
+            SmartSystemCloudSyncPhase.ACTIVITIES -> (1f + phaseProgress) / 3f
+            SmartSystemCloudSyncPhase.ACTIVITY_DETAILS -> (2f + phaseProgress) / 3f
+            null -> 0f
+        }
+        HomeSyncProgressUi(
+            phaseLabel = syncPhaseLabel,
+            loadedCount = syncLoadedActivityCount,
+            totalCount = syncTotalActivityCount,
+            overallProgress = overallProgress,
+            onCancel = onCancelSyncCloudData,
+        )
     }
-}
 
-@Composable
-private fun HomeMetricGrid(
-    items: List<Pair<String, String>>,
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowItems.forEach { (label, value) ->
-                    HomeMetricTile(
-                        label = label,
-                        value = value,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun HomeMetricTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
+    else -> null
 }

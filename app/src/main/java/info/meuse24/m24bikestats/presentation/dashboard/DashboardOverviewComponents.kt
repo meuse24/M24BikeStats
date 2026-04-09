@@ -3,6 +3,7 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -53,7 +55,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
@@ -182,113 +187,109 @@ internal fun ActivityFilterSection(
         }
     }
 
-    Card(
+    DashboardSectionCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+            Text(
+                text = stringResource(R.string.filter_section_title),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+            )
+            FilledTonalIconButton(
+                onClick = {
+                    if (isSearchVisible && searchQuery.isBlank()) {
+                        isSearchVisible = false
+                    } else {
+                        isSearchVisible = true
+                    }
+                },
             ) {
-                Text(
-                    text = stringResource(R.string.filter_section_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                FilledTonalIconButton(
-                    onClick = {
-                        if (isSearchVisible && searchQuery.isBlank()) {
-                            isSearchVisible = false
-                        } else {
-                            isSearchVisible = true
-                        }
+                Icon(
+                    imageVector = if (isSearchVisible && searchQuery.isBlank()) Icons.Default.Close else Icons.Default.Search,
+                    contentDescription = if (isSearchVisible && searchQuery.isBlank()) {
+                        stringResource(R.string.filter_search_clear)
+                    } else {
+                        stringResource(R.string.filter_search_label)
                     },
-                ) {
+                )
+            }
+        }
+
+        if (isSearchVisible || searchQuery.isNotBlank()) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text(stringResource(R.string.filter_search_placeholder)) },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = null)
+                },
+                trailingIcon = if (searchQuery.isNotBlank()) {
+                    {
+                        IconButton(onClick = { onSearchQueryChanged("") }) {
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_search_clear))
+                        }
+                    }
+                } else {
+                    null
+                },
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            CompactFilterDropdown(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.filter_date_range),
+                selectedLabel = stringResource(selectedDateRange.labelRes),
+                icon = {
                     Icon(
-                        imageVector = if (isSearchVisible && searchQuery.isBlank()) Icons.Default.Close else Icons.Default.Search,
-                        contentDescription = if (isSearchVisible && searchQuery.isBlank()) {
-                            stringResource(R.string.filter_search_clear)
-                        } else {
-                            stringResource(R.string.filter_search_label)
+                        imageVector = Icons.Default.DateRange,
+                        contentDescription = null,
+                    )
+                },
+            ) { dismiss ->
+                ActivityDateRangeFilter.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(option.labelRes)) },
+                        onClick = {
+                            onDateRangeSelected(option)
+                            dismiss()
                         },
                     )
                 }
             }
 
-            if (isSearchVisible || searchQuery.isNotBlank()) {
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChanged,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    placeholder = { Text(stringResource(R.string.filter_search_placeholder)) },
-                    leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
-                    },
-                    trailingIcon = if (searchQuery.isNotBlank()) {
-                        {
-                            IconButton(onClick = { onSearchQueryChanged("") }) {
-                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.filter_search_clear))
-                            }
+            CompactFilterDropdown(
+                modifier = Modifier.weight(1f),
+                label = stringResource(R.string.filter_sorting),
+                selectedLabel = stringResource(selectedSortOption.labelRes),
+                icon = {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Sort,
+                        contentDescription = null,
+                    )
+                },
+            ) { dismiss ->
+                ActivitySortOption.entries.forEach { option ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(option.labelRes)) },
+                        onClick = {
+                            onSortOptionSelected(option)
+                            dismiss()
                         }
-                    } else {
-                        null
-                    },
-                )
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                CompactFilterDropdown(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(R.string.filter_date_range),
-                    selectedLabel = stringResource(selectedDateRange.labelRes),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = null,
-                        )
-                    },
-                ) { dismiss ->
-                    ActivityDateRangeFilter.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(option.labelRes)) },
-                            onClick = {
-                                onDateRangeSelected(option)
-                                dismiss()
-                            },
-                        )
-                    }
-                }
-
-                CompactFilterDropdown(
-                    modifier = Modifier.weight(1f),
-                    label = stringResource(R.string.filter_sorting),
-                    selectedLabel = stringResource(selectedSortOption.labelRes),
-                    icon = {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Sort,
-                            contentDescription = null,
-                        )
-                    },
-                ) { dismiss ->
-                    ActivitySortOption.entries.forEach { option ->
-                        DropdownMenuItem(
-                            text = { Text(stringResource(option.labelRes)) },
-                            onClick = {
-                                onSortOptionSelected(option)
-                                dismiss()
-                            },
-                        )
-                    }
+                    )
                 }
             }
         }
@@ -312,32 +313,74 @@ private fun CompactFilterDropdown(
             shape = RoundedCornerShape(14.dp),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
         ) {
-            icon()
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                )
-                Text(
-                    text = selectedLabel,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                val isCompact = maxWidth < 164.dp
+
+                if (isCompact) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            icon()
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = null,
+                            )
+                        }
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                        Text(
+                            text = selectedLabel,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.Start,
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        icon()
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            horizontalAlignment = Alignment.Start,
+                        ) {
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                            Text(
+                                text = selectedLabel,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowDropDown,
+                            contentDescription = null,
+                        )
+                    }
+                }
             }
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(
-                imageVector = Icons.Default.ArrowDropDown,
-                contentDescription = null,
-            )
         }
 
         DropdownMenu(
@@ -400,30 +443,35 @@ internal fun ActivityCard(
     onMapClick: (() -> Unit)? = null,
     onShareClick: (() -> Unit)? = null,
     primaryActionLabel: String? = null,
+    showActionLabels: Boolean = true,
 ) {
     val detailActionLabel = primaryActionLabel ?: stringResource(R.string.dashboard_activity_detail_button)
     val metricSummary = buildList {
-        add(stringResource(R.string.dashboard_card_speed) to activity.speedLabel.withLineBreakBeforeMax())
-        activity.powerLabel?.let { add(stringResource(R.string.dashboard_card_power) to it.withLineBreakBeforeMax()) }
-        activity.elevationLabel?.let { add(stringResource(R.string.dashboard_label_elevation) to it) }
-        activity.caloriesLabel?.let { add(stringResource(R.string.dashboard_label_calories) to it) }
+        add(
+            DashboardMetricTileModel(
+                label = stringResource(R.string.dashboard_card_speed),
+                value = activity.speedLabel.withLineBreakBeforeMax(),
+                tone = DashboardMetricTone.Informative,
+            )
+        )
+        activity.powerLabel?.let {
+            add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_power), it.withLineBreakBeforeMax()))
+        }
+        activity.elevationLabel?.let {
+            add(DashboardMetricTileModel(stringResource(R.string.dashboard_label_elevation), it))
+        }
+        activity.caloriesLabel?.let {
+            add(DashboardMetricTileModel(stringResource(R.string.dashboard_label_calories), it))
+        }
     }
 
-    Card(
+    DashboardSectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -447,105 +495,54 @@ internal fun ActivityCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    StatusBadge(activity.durationLabel)
-                    StatusBadge(activity.distanceLabel)
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    DashboardStatusBadge(
+                        label = activity.durationLabel,
+                        tone = DashboardStatusBadgeTone.Neutral,
+                    )
+                    DashboardStatusBadge(
+                        label = activity.distanceLabel,
+                        tone = DashboardStatusBadgeTone.Positive,
+                    )
                 }
             }
 
-            ActivityMetricGrid(summary = metricSummary)
+            DashboardMetricGrid(items = metricSummary)
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+                ActivityCardActionButton(
+                    label = detailActionLabel,
+                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                    onClick = onClick,
+                    showLabel = showActionLabels,
+                    modifier = Modifier.weight(1f),
+                )
+                onMapClick?.let { navigateToMap ->
                     ActivityCardActionButton(
-                        label = detailActionLabel,
-                        icon = Icons.AutoMirrored.Filled.ArrowForward,
-                        onClick = onClick,
+                        label = stringResource(R.string.dashboard_activity_map_button),
+                        icon = Icons.Default.Map,
+                        onClick = navigateToMap,
+                        showLabel = showActionLabels,
                         modifier = Modifier.weight(1f),
                     )
-                    onMapClick?.let { navigateToMap ->
-                        ActivityCardActionButton(
-                            label = stringResource(R.string.dashboard_activity_map_button),
-                            icon = Icons.Default.Map,
-                            onClick = navigateToMap,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    onShareClick?.let { share ->
-                        ActivityCardActionButton(
-                            label = stringResource(R.string.dashboard_activity_share_button),
-                            icon = Icons.Default.Share,
-                            onClick = share,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActivityMetricGrid(summary: List<Pair<String, String>>) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        summary.chunked(2).forEach { rowItems ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                rowItems.forEach { (label, value) ->
-                    ActivityMetricTile(
-                        label = label,
-                        value = value,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
+                onShareClick?.let { share ->
+                    ActivityCardActionButton(
+                        label = stringResource(R.string.dashboard_activity_share_button),
+                        icon = Icons.Default.Share,
+                        onClick = share,
+                        showLabel = showActionLabels,
+                        modifier = Modifier.weight(1f),
                     )
                 }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
             }
-        }
-    }
-}
-
-@Composable
-private fun ActivityMetricTile(
-    label: String,
-    value: String,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surface,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-            )
         }
     }
 }
@@ -555,23 +552,33 @@ internal fun ActivityCardActionButton(
     label: String,
     icon: ImageVector,
     onClick: () -> Unit,
+    showLabel: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 8.dp),
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .then(
+                if (showLabel) {
+                    Modifier
+                } else {
+                    Modifier.semantics { contentDescription = label }
+                }
+            ),
+        shape = RoundedCornerShape(16.dp),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = label,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        DashboardAdaptiveIconLabel(
+            label = label,
+            showLabel = showLabel,
+            icon = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+            },
         )
     }
 }
@@ -586,32 +593,41 @@ internal fun BikeOverviewCard(
     hasOidcCertificateInfo: Boolean,
     onClick: () -> Unit,
     onShareClick: () -> Unit,
+    showActionLabels: Boolean = true,
 ) {
     val metricSummary = buildList {
-        bike.odometerLabel?.let { add(stringResource(R.string.dashboard_card_odometer) to it) }
-        bike.assistSpeedLabel?.let { add(stringResource(R.string.dashboard_card_assist) to it) }
-        bike.walkAssistLabel?.let { add(stringResource(R.string.dashboard_card_walk_assist) to it) }
-        bike.powerOnSummary?.let { add(stringResource(R.string.dashboard_card_usage) to it) }
-        bike.batterySummary?.let { add(stringResource(R.string.dashboard_battery_fallback_title) to it) }
-        bike.assistModesSummary?.let { add(stringResource(R.string.dashboard_card_assist_ranges) to it) }
-        bike.bikePassSummary?.let { add(stringResource(R.string.dashboard_card_bike_pass) to it) }
+        bike.odometerLabel?.let {
+            add(
+                DashboardMetricTileModel(
+                    label = stringResource(R.string.dashboard_card_odometer),
+                    value = it,
+                    tone = DashboardMetricTone.Informative,
+                )
+            )
+        }
+        bike.assistSpeedLabel?.let { add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_assist), it)) }
+        bike.walkAssistLabel?.let { add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_walk_assist), it)) }
+        bike.powerOnSummary?.let { add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_usage), it)) }
+        bike.batterySummary?.let {
+            add(
+                DashboardMetricTileModel(
+                    label = stringResource(R.string.dashboard_battery_fallback_title),
+                    value = it,
+                    tone = DashboardMetricTone.Positive,
+                )
+            )
+        }
+        bike.assistModesSummary?.let { add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_assist_ranges), it)) }
+        bike.bikePassSummary?.let { add(DashboardMetricTileModel(stringResource(R.string.dashboard_card_bike_pass), it)) }
     }
 
-    Card(
+    DashboardSectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        border = androidx.compose.foundation.BorderStroke(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.8f),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -640,79 +656,46 @@ internal fun BikeOverviewCard(
                     }
                 }
                 if (hasOidcCertificateInfo) {
-                    StatusBadge(stringResource(R.string.dashboard_bike_certificate_badge))
+                    DashboardStatusBadge(
+                        label = stringResource(R.string.dashboard_bike_certificate_badge),
+                        tone = DashboardStatusBadgeTone.Informative,
+                    )
                 }
             }
 
             if (metricSummary.isNotEmpty()) {
-                BikeMetricGrid(summary = metricSummary)
+                DashboardMetricGrid(items = metricSummary)
             }
 
             if (hasOidcCertificateInfo) {
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f),
-                ) {
+                SectionSurface {
                     Text(
                         text = stringResource(R.string.dashboard_bike_certificate_hint),
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
 
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    ActivityCardActionButton(
-                        label = stringResource(R.string.dashboard_bike_share_button),
-                        icon = Icons.Default.Share,
-                        onClick = onShareClick,
-                        modifier = Modifier.weight(1f),
-                    )
-                    ActivityCardActionButton(
-                        label = stringResource(R.string.dashboard_bike_detail_button),
-                        icon = Icons.AutoMirrored.Filled.ArrowForward,
-                        onClick = onClick,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun BikeMetricGrid(summary: List<Pair<String, String>>) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        summary.chunked(2).forEach { rowItems ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                rowItems.forEach { (label, value) ->
-                    ActivityMetricTile(
-                        label = label,
-                        value = value,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    )
-                }
-                if (rowItems.size == 1) {
-                    Spacer(modifier = Modifier.weight(1f))
-                }
+                ActivityCardActionButton(
+                    label = stringResource(R.string.dashboard_bike_share_button),
+                    icon = Icons.Default.Share,
+                    onClick = onShareClick,
+                    showLabel = showActionLabels,
+                    modifier = Modifier.weight(1f),
+                )
+                ActivityCardActionButton(
+                    label = stringResource(R.string.dashboard_bike_detail_button),
+                    icon = Icons.AutoMirrored.Filled.ArrowForward,
+                    onClick = onClick,
+                    showLabel = showActionLabels,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

@@ -93,7 +93,22 @@ data class HomeUiState(
     val lastActivityDetailsCsvExport: ActivityDetailsCsvExportSummaryUiModel?,
     val lastPdfExport: PdfExportSummaryUiModel?,
     val showExplanationTexts: Boolean,
-)
+) {
+    val isAnySyncActive: Boolean
+        get() = isSyncingCloudData || isSyncingPendingActivityDetails
+
+    val hasSyncMetadata: Boolean
+        get() = dataStatus?.lastActivitySyncLabel != null ||
+            dataStatus?.lastDetailSyncLabel != null ||
+            dataStatus?.lastBikeSyncLabel != null ||
+            lastCloudSyncSummary != null
+
+    val hasSecondarySyncActions: Boolean
+        get() = dataStatus?.hasMissingDetails == true || dataStatus?.hasStaleDetails == true
+
+    val shouldShowStatusSummary: Boolean
+        get() = dataStatus?.let { showExplanationTexts || !it.isComplete || it.hasStaleDetails } ?: true
+}
 
 data class ActivitiesUiState(
     val activities: List<ActivityCardUiModel>,

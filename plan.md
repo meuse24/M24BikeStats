@@ -1,230 +1,567 @@
-# Plan: Datenzustand & Sync
+# Implementierungsplan: Home-Screen UI-Upgrade
 
-Stand: 2026-04-08
+Stand: 2026-04-08, überarbeitet 2026-04-08
+
+Verwendete Skills:
+
+- `mobile-android-design`
+- `android-design-guidelines`
+- `android-jetpack-compose`
+
+Hinweis:
+In diesem Schritt wird noch kein Produktivcode geändert. Dieses Dokument übersetzt den Designplan in einen konkreten Umsetzungsplan für das bestehende Repo.
 
 ## Ziel
 
-Die App soll für Nutzer klarer sichtbar machen:
+Der Home-Screen soll innerhalb der bestehenden Dashboard-Architektur auf ein professionelles Android-Material-3-Niveau gehoben werden, ohne neue fachliche Features einzuführen.
 
-- welche Bosch-Daten bereits lokal vorliegen
-- welche Daten noch fehlen
-- welche Detaildaten veraltet sein könnten
-- wann zuletzt erfolgreich synchronisiert wurde
-- welche gezielten Nachlade-Aktionen sinnvoll sind
+Konkret bedeutet das:
 
-Die Verbesserung soll echten Nutzwert bringen, ohne die App künstlich zu verkomplizieren.
+- bessere visuelle Hierarchie
+- weniger Überladung im ersten Fold
+- klare Primary- und Secondary-Actions
+- saubere Material-3-Farbrollen statt dekorativer Flächen
+- konsistente Card-Sprache zwischen Home, Aktivitäten und Bike-Bereich
+- robuste Darstellung für kleine Screens, große Schriftgrößen, Light/Dark und Dynamic Color
 
-## Problem
+## Harte Projektgrenzen
 
-Die App ist funktional bereits stark, aber der Datenzustand ist nur indirekt erkennbar.
+Diese Umsetzung bleibt bewusst innerhalb der aktuellen Architektur:
 
-Aktuell sieht der Nutzer zwar Aktivitäten, Bikes, Exporte und Statistiken, aber nicht auf einen Blick:
+- keine neuen Domain-Modelle
+- keine neuen UseCases
+- keine Änderungen an Repository-Verträgen
+- keine Navigationsneugestaltung
+- kein Feature-Umfang über UI/UX hinaus
 
-- wie vollständig der lokale Cache ist
-- ob Aktivitätsdetails flächendeckend vorhanden sind
-- ob GPS-/Detaildaten fehlen
-- ob nach einem Sync wirklich alles aktuell ist
+Die vorhandenen Daten reichen aus:
 
-Dadurch entsteht Unsicherheit:
+- `HomeUiState`
+- `DataStatusUiModel`
+- bestehende Sync-Callbacks im `HomeScreen`
+- bestehende Mapper- und ViewModel-Struktur
 
-- "Sind meine Daten vollständig?"
-- "Fehlen noch Details für ältere Touren?"
-- "Warum ist etwas im Export oder in der Statistik nicht enthalten?"
+## Ausgangslage im Repo
 
-## Lösungsidee
+### Relevante Dateien
 
-Ein neuer Bereich `Datenzustand & Sync` schafft Transparenz über Cache, Vollständigkeit und Aktualität.
+Theme und Tokens:
 
-Pragmatischer Ansatz:
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Color.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Theme.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Type.kt`
 
-1. V1 als starke Sektion auf dem Home-Screen
-2. V2 optional als eigener Detail-Screen mit tieferen Diagnosen
+Home und Shared UI:
 
-So entsteht sofort Mehrwert, ohne die Navigation unnötig aufzublähen.
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreen.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardSharedUi.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardOverviewComponents.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardScreenStates.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModels.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapper.kt`
 
-## Nutzerwert
+Strings:
 
-Der Bereich soll dem Nutzer sofort beantworten:
+- `app/src/main/res/values/strings.xml`
+- `app/src/main/res/values-de/strings.xml`
 
-- Wie viele Aktivitäten lokal vorhanden sind
-- Welcher Statistik- bzw. Cache-Zeitraum abgedeckt ist
-- Wie viele Aktivitäten Detaildaten haben
-- Wie viele GPS-Punkte lokal vorliegen
-- Ob Detaildaten fehlen oder veraltet sind
-- Wann Bikes, Aktivitäten und Details zuletzt erfolgreich synchronisiert wurden
-- Welche Aktion als Nächstes sinnvoll ist
+Bestehende Tests:
 
-## UX-Vorschlag
+- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapperTest.kt`
+- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardViewModelTest.kt`
+- `app/src/test/java/info/meuse24/m24bikestats/domain/usecase/ObserveDataStatusOverviewUseCaseTest.kt`
 
-### V1: Home-Screen-Card `Datenzustand & Sync`
+### Technische Beobachtungen
 
-Inhalt:
+- `Type.kt` definiert aktuell praktisch nur `bodyLarge`; die restliche Typo-Hierarchie fehlt als bewusstes System.
+- `Theme.kt` nutzt Dynamic Color korrekt, aber die statische Fallback-Palette ist noch Starter-Material (nur `primary`, `secondary`, `tertiary` explizit gesetzt).
+- `HomeScreen.kt` bündelt Titel, Badge, Erklärung, Zeitraum, KPI, Sync-Metadaten, Progress und mehrere CTAs in einer einzigen Hero-Card.
+- Die primäre CTA (`Jetzt synchronisieren`) steht in der aktuellen `DataStatusAndSyncCard` ganz unten — nach konditionalen sekundären Buttons. Das widerspricht der geplanten Action-Hierarchie und muss explizit korrigiert werden.
+- `DashboardSharedUi.kt` nutzt große lineare Gradients für Hero-Flächen. Laut Android-/Material-3-Guidelines sollten große Flächen primär über `surface`-Rollen statt über primäre Akzentfarben laufen.
+- In `HomeScreen.kt` existieren bereits die privaten Composables `HomeSummaryCard`, `HomeMetricGrid` und `HomeMetricTile`. Diese funktionieren bereits korrekt mit Material-3-Rollen und müssen in Paket 2 zu Shared-Primitives *promoted* werden, nicht neu erstellt.
+- Es gibt zwei Badge-Implementierungen: `StatusBadge` (intern in `DashboardSharedUi.kt`) und `DataStatusBadge` (privat in `HomeScreen.kt`). Diese müssen in Paket 2 zu einer einzigen `DashboardStatusBadge` konsolidiert werden.
+- `HomeUiState` liegt in `DashboardScreenStates.kt`, nicht in `DashboardUiModels.kt`. Das ist für Paket 4 relevant, da dort Convenience-Properties hinzukommen können.
+- `HomeUiState` enthält das Flag `showExplanationTexts`, das über die App-Einstellungen gesteuert wird. Das neue Layout muss dieses Flag weiterhin korrekt berücksichtigen.
+- Es gibt aktuell keine Compose-Previews im Projekt. Das ist für UI-Arbeit ein echter blinder Fleck.
 
-- abgedeckter Aktivitätszeitraum
-- Anzahl gecachter Aktivitäten
-- Anzahl Aktivitäten mit Details
-- Anzahl GPS-Punkte
-- Anteil vollständiger Aktivitäten
-- Status `vollständig`, `teilweise`, `veraltet`, `leer`
+## Zielarchitektur für den Home-Screen
 
-Quick Actions:
+Der neue Home-Screen bleibt eine `LazyColumn`, wird aber visuell und strukturell neu geschnitten.
 
-- `Fehlende Details laden`
-- `Veraltete Details aktualisieren`
-- `Alles synchronisieren`
+Geplante Reihenfolge der Blöcke:
 
-Zusätzliche Hinweise:
+1. `HomeStatusHeroCard`
+2. `HomeStatusMetricGrid`
+3. `HomeSyncMetaCard`
+4. `Latest Ride`
+5. `Bike Status`
+6. `Recent Exports`
 
-- kleine Statuszeile mit letztem erfolgreichen Sync
-- klare Erklärung, dass Exporte und Statistik nur Cache-Daten nutzen
+### Was aus der aktuellen `DataStatusAndSyncCard` wird
 
-### V2: Detail-Screen `Datenzustand`
+Die bestehende große Card wird nicht erweitert, sondern aufgelöst.
 
-Zusätzliche Inhalte:
+Geplante Aufteilung:
 
-- Aufschlüsselung nach Aktivitäten, Bikes, Details, GPX-relevanten Punkten
-- Liste der problematischen Bereiche
-- getrennte Zeitstempel für Bike-, Aktivitäten- und Detail-Sync
-- Diagnosehinweise bei Teilbestand oder Leerstand
-- eventuell Filter "nur unvollständige Aktivitäten"
+- `HomeStatusHeroCard`
+  - Gesamtstatus
+  - kurze Summary
+  - optional Zeitraum
+  - genau eine primäre Aktion
 
-## Fachliche Metriken
+- `HomeStatusMetricGrid`
+  - 4 bis 6 KPI-Kacheln
+  - Zahl dominant, Label sekundär
 
-Folgende Kennzahlen sind für V1 sinnvoll:
+- `HomeSyncMetaCard`
+  - letzter Aktivitäts-/Detail-/Bike-Sync
+  - laufender Sync-Fortschritt
+  - sekundäre Reparaturaktionen nur wenn relevant
 
-- `cachedActivityCount` — aus `BoschSmartSystemCacheStatusRepository.getCachedActivityTotalCount()`
-- `coveredActivityStart` / `coveredActivityEnd` — min/max `startTime` aus `observeCachedActivities()` (gleiche Quelle wie `GetStatisticsUseCase`, keine UseCase-Abhängigkeit)
-- `detailedActivityCount` — aus `ActivityDetailCacheOverview.detailedActivityCount` (bereits als Flow via `observeCachedActivityDetailCacheOverview()`)
-- `missingDetailCount` — abgeleitet: `cachedActivityCount - detailedActivityCount`, kein eigenes DB-Feld
-- `gpsPointCount` — aus `ActivityDetailCacheOverview.gpsPointCount`
-- `detailCoverageRatio` — abgeleitet: `detailedActivityCount / cachedActivityCount`
-- `hasStaleDetails` — nutzt `getActivityIdsNeedingDetailSync()` mit aktuellem `CloudSyncDetailMode`
-- `lastActivitySyncAt` — aus `ActivityDao.getCacheUpdatedAtEpochMillis()` (aktuell suspend, nicht reaktiv — siehe Technischer Schnitt)
-- `lastBikeSyncAt` — aus `BikeDao.getCacheUpdatedAtEpochMillis()` (gleiche Einschränkung)
-- `lastDetailSyncAt` — kein globaler Zeitstempel vorhanden; braucht neue DAO-Query `MAX(updatedAtEpochMillis)` über `activity_details`, das ist der einzige Punkt mit echter neuer Datenschicht-Arbeit
+## Konkrete Designentscheidungen für die spätere Umsetzung
 
-Abgeleitete Zustände:
+### 1. Hero-Fläche
 
-- `empty` — `cachedActivityCount == 0`
-- `partial` — `missingDetailCount > 0`
-- `complete` — `missingDetailCount == 0 && !hasStaleDetails`
-- `stale` — `hasStaleDetails`
+Nicht mehr:
 
-## Technischer Schnitt
+- Vollflächen-Gradient über große Card-Bereiche
+- mehrere gleich starke Buttons untereinander
+- horizontale KPI-Pills direkt im Hero
 
-### Domain
+Stattdessen:
 
-Neues Aggregat:
+- ruhige `surfaceContainerHigh`- oder `surfaceContainer`-Fläche
+- kleiner farblicher Akzent nur über Badge, Status-Indikator oder Top-Strip
+- kompakter Titel
+- eine Statuszeile
+- eine primäre CTA
 
-- `DataStatusOverview`
+### 2. KPI-Darstellung
 
-Neuer UseCase:
+Nicht mehr:
 
-- `ObserveDataStatusOverviewUseCase`
+- kleine Capsule-Pills als Hauptmetriken
 
-Aufgabe:
+Stattdessen:
 
-- vorhandene Cache- und Sync-Informationen aus bestehenden Quellen bündeln
-- keine Android-Abhängigkeiten
-- nur fachliche Aggregation, keine UI-Formatierung
+- 2x2 oder 2x3 Grid
+- klare Zahlenhierarchie
+- visuelle Problem-Markierung über Tonalität, nicht nur Farbe
 
-Konkrete Inputs (bereits existierend, direkt wiederverwendbar):
+### 3. Action-Hierarchie
 
-- `BoschSmartSystemRepository.observeCachedActivities()` → count, covered period
-- `BoschSmartSystemCacheStatusRepository.observeCachedActivityDetailCacheOverview()` → detailedActivityCount, gpsPointCount
-- `BoschSmartSystemCacheStatusRepository.getActivityIdsNeedingDetailSync()` → hasStaleDetails
-- `AppSettings.cloudSyncDetailMode` → für Stale-Erkennung nötig
+Der Home-Screen bekommt eine klare Bedienlogik:
 
-Reaktivitätsproblem bei Sync-Zeitstempeln:
+- primär: `Jetzt synchronisieren`
+- sekundär: `Fehlende Details laden`
+- sekundär: `Details auffrischen`
+- Abbruch-Action nur im aktiven Sync-Zustand
 
-`ActivityDao.getCacheUpdatedAtEpochMillis()` und `BikeDao.getCacheUpdatedAtEpochMillis()` sind `suspend`-Funktionen, keine Flows. Optionen:
-- A (empfohlen): Room-Queries als `Flow<Long?>` auf den `_cache_state`-Tabellen ergänzen
-- B (einfacher): Zeitstempel bei jeder Activity-Flow-Emission mitladen (einmalig per `suspend`, da der Flow ohnehin getriggert wird)
+### 4. Copy
 
-### Data
+Der erste Fold wird sprachlich verdichtet:
 
-Neues DAO-Element nötig:
+- kürzere Titel
+- kürzere Status-Summaries
+- technische Metadaten aus dem Hero entfernen
+- kürzere Button-Labels
 
-- `ActivityDetailDao.getMaxUpdatedAtEpochMillis(): Long?` — für globales `lastDetailSyncAt`
-- Optional: `Flow<Long?>` auf `activity_cache_state` und `bike_cache_state` für reaktive Sync-Zeitstempel
+## Umsetzungspakete
 
-Alles andere ist bereits vorhanden. Keine neuen Preferences-Einträge oder Room-Tabellen nötig.
+## Paket 1: Theme-System professionalisieren
 
-### Presentation
+Ziel:
+Aus Material-Defaults ein bewusstes Designsystem machen.
 
-V1:
+Betroffene Dateien:
 
-- neue Home-Komponente `DataStatusCard`
-- Mapping von `DataStatusOverview` nach UI-Modell
-- klare Statusfarben und knappe Texte
-- Quick Actions verdrahten **bestehende UseCases**:
-  - `Fehlende Details laden` → `RefreshSmartSystemActivityDetailUseCase` gefiltert via `getActivityIdsNeedingDetailSync()`
-  - `Veraltete Details aktualisieren` → gleicher Pfad, anderer Detail-Modus
-  - `Alles synchronisieren` → `SyncSmartSystemCloudUseCase`
+- `presentation/theme/Color.kt`
+- `presentation/theme/Theme.kt`
+- `presentation/theme/Type.kt`
+- neue Datei: `presentation/theme/DesignTokens.kt`
 
-V2:
+Konkrete Arbeit:
 
-- eigener Screen `DataStatusScreen`
-- Navigation nur ergänzen, wenn V1 in der Praxis echten Mehrwert zeigt
+- Fallback-Palette in `Color.kt` durch vollständige Light-/Dark-Tonalpalette ersetzen
+- Farbpalette aus einem Seed ableiten, nicht aus losem Lila/Starter-Set
+- `Theme.kt` auf vollständige Material-3-Rollen heben
+- Dynamic Color als Default beibehalten
+- in `DesignTokens.kt` feste App-Tokens definieren:
+  - `ScreenHorizontalPadding`
+  - `SectionSpacing`
+  - `CardCornerLarge`
+  - `CardCornerMedium`
+  - `CardBorderAlpha`
+  - `ContentMaxWidth`
+- `Type.kt` mit vollständiger Material-3-Typografie befüllen:
+  - `headlineSmall`
+  - `titleLarge`
+  - `titleMedium`
+  - `titleSmall`
+  - `bodyLarge`
+  - `bodyMedium`
+  - `bodySmall`
+  - `labelLarge`
+  - `labelMedium`
+  - `labelSmall`
 
-## Umsetzung in Phasen
+Entscheidung:
 
-### Phase 1
+- keine benutzerdefinierten Hex-Farben in Composables
+- keine große Primärfarbe als Hintergrundfläche
+- kleine Akzente über Badge, Indikator und CTA
 
-- `ActivityDetailDao.getMaxUpdatedAtEpochMillis()` hinzufügen (neues DAO, einzige neue DB-Arbeit)
-- Optional: `Flow<Long?>` auf `activity_cache_state` / `bike_cache_state` (wenn reaktive Zeitstempel gewünscht)
-- Domain-Modell `DataStatusOverview` definieren
-- UseCase `ObserveDataStatusOverviewUseCase` anlegen — kombiniert `observeCachedActivities()`, `observeCachedActivityDetailCacheOverview()`, Sync-Zeitstempel
-- Unit-Tests für Aggregation schreiben (Fake-Repositories bereits vorhanden)
+Ergebnis nach Paket 1:
 
-### Phase 2
+- besserer typografischer Kontrast
+- kontrollierte Flächenhierarchie
+- wiederverwendbare Tokens für das gesamte Dashboard
 
-- Home-Screen um `Datenzustand & Sync` erweitern
-- `DataStatusCard` mit Kennzahlen und Quick Actions bauen — Quick Actions verdrahten bestehende UseCases, keine neuen nötig
-- Lokalisierte Texte in Deutsch und Englisch ergänzen
-- Mapper-Tests ergänzen
+## Paket 2: Gemeinsame Dashboard-Grundbausteine neu ordnen
 
-### Phase 3
+Ziel:
+Bevor Home umgebaut wird, müssen die Shared-Primitives professioneller werden.
 
-- Reaktive Sync-Zeitstempel falls in Phase 1 noch nicht umgesetzt
-- Bessere Hinweise für veraltete Details
-- Optional separaten Detail-Screen ergänzen
+Betroffene Dateien:
 
-## Akzeptanzkriterien
+- `presentation/dashboard/DashboardSharedUi.kt`
+- optional neue Datei: `presentation/dashboard/DashboardDesignPrimitives.kt`
 
-- Nutzer erkennt auf dem Home-Screen sofort den lokalen Datenzustand
-- Nutzer erkennt, ob Aktivitätsdetails fehlen
-- Nutzer erkennt, ob vorhandene Daten potenziell veraltet sind
-- Sync-Aktionen sind direkt aus dem Kontext ausführbar
-- Statistik- und Exportverhalten werden besser verständlich
-- Aggregationslogik bleibt außerhalb der Compose-UI
+Konkrete Arbeit:
 
-## Nicht-Ziele
+- `HeroCard` fachlich und visuell entschärfen
+- Gradient-abhängige Hero-Logik entfernen
+- gemeinsame Card-Primitive definieren:
+  - `DashboardSectionCard`
+  - `DashboardHeroSurface`
+  - `DashboardMetricTile`
+  - `DashboardStatusBadge`
+  - `DashboardMetaRow`
+- `HomeSummaryCard`, `HomeMetricGrid` und `HomeMetricTile` aus `HomeScreen.kt` hierhin *verschieben* und als interne Shared-Primitives promotieren (nicht neu erstellen — sie existieren bereits und funktionieren korrekt)
+- `StatusBadge` (aus `DashboardSharedUi.kt`) und `DataStatusBadge` (aus `HomeScreen.kt`) zu einer einzigen `DashboardStatusBadge` konsolidieren — beide Verwendungsstellen danach auf die neue Komponente umstellen
+- bestehende `MetricPill` und `CompactMetricPill` nicht mehr als primäre KPI-Komponente verwenden
+- `SectionSurface` tonal und border-seitig an neues Theme anpassen
+- optional einen zentralen Content-Container ergänzen:
+  - `DashboardPageContainer`
+  - auf großen Breiten max. ca. 840dp
 
-- keine vollständige neue Admin- oder Diagnosekonsole
-- keine unnötige Modul-Aufspaltung nur für diese Verbesserung
-- keine technische Tiefendiagnose pro API-Call in V1
-- keine zusätzliche Cloud-Abfrage nur für reine Anzeigezwecke, wenn Cache-Daten genügen
+Android-guideline Bezug:
 
-## Warum diese Verbesserung priorisieren
+- auf Medium/Expanded Width nicht ungebremst über die volle Breite laufen
+- Surface-Rollen semantisch einsetzen
+- große Flächen nicht in Akzentfarben tränken
 
-Die App hat bereits viele starke Funktionen. Der größte zusätzliche Nutzen liegt jetzt nicht in noch mehr Endpunkten, sondern in besserer Transparenz über Datenqualität und Vollständigkeit.
+Ergebnis nach Paket 2:
 
-`Datenzustand & Sync` verbessert:
+- saubere Bausteine für Home, Aktivitäten und Bike-Bereich
+- weniger Styling-Duplikate in einzelnen Screens
 
-- Vertrauen in die App
-- Verständlichkeit von Statistik und Export
-- wahrgenommene Zuverlässigkeit
-- Bedienbarkeit für weniger technische Nutzer
+## Paket 3: Home-Screen in kleine, fokussierte Composables zerlegen
 
-## Empfohlener Start
+Ziel:
+Die aktuelle große Status-Card in klar getrennte Bereiche aufspalten.
 
-Pragmatisch zuerst nur V1 umsetzen:
+Betroffene Datei:
 
-- neues Domain-Aggregat
-- neue Home-Card
-- drei klare Kennzahlen
-- zwei Quick Actions
-- letzter erfolgreicher Sync
+- `presentation/dashboard/HomeScreen.kt`
 
-Das ist klein genug für einen sauberen ersten Schritt und groß genug, um für Nutzer sofort sichtbar besser zu sein.
+Geplante neue interne Composables:
+
+- `HomeStatusHeroCard`
+- `HomeStatusMetricGrid`
+- `HomeStatusMetricTile`
+- `HomeSyncMetaCard`
+- `HomeSyncProgressCard`
+- `HomePrimaryActionBar`
+- `HomeSecondaryActionRow`
+- `HomeSectionHeader`
+
+Konkrete Arbeit:
+
+- `DataStatusAndSyncCard` entfernen oder zu dünnem Orchestrator umbauen
+- Status-Hero nur noch für den Gesamtzustand verwenden
+- Sync-Metadaten aus dem Hero herausziehen
+- Progress-Zustände nur in eigenem Block darstellen
+- sekundäre Aktionen nicht mehr als Full-Width-Stapel direkt im Hero
+- bestehende `HomeSummaryCard`, `HomeMetricGrid`, `HomeMetricTile` auf neues Tokensystem umstellen
+
+Technische Regeln aus Compose-Sicht:
+
+- State bleibt in `HomeScreen`; neue Composables bleiben stateless
+- `Modifier` als erstes optionales Argument
+- keine neue Business-Logik in Composables
+- UI nur aus `HomeUiState` ableiten
+- `showExplanationTexts` weiterhin korrekt auswerten: Hero-Summary und erläuternde Texte in Leer-Zuständen bleiben conditional
+- primäre CTA (`Jetzt synchronisieren`) muss im neuen Layout visuell und in der Render-Reihenfolge an erste Stelle rücken — sekundäre Aktionen folgen darunter
+
+Ergebnis nach Paket 3:
+
+- Home-Code wird lesbarer
+- jede visuelle Zone hat eine einzige Aufgabe
+- spätere UI-Iteration wird viel einfacher
+
+## Paket 4: Data-Status-UI-Modell für das neue Layout vorbereiten
+
+Ziel:
+Die UI soll einfacher renderbar sein, ohne Domain-Schichten anzufassen.
+
+Betroffene Dateien:
+
+- `presentation/dashboard/DashboardUiModels.kt`
+- `presentation/dashboard/DashboardScreenStates.kt` (enthält `HomeUiState`)
+- `presentation/dashboard/DashboardUiModelMapper.kt`
+- optional `presentation/dashboard/DashboardStateMappings.kt`
+
+Konkrete Arbeit:
+
+- prüfen, ob `DataStatusUiModel` für das neue Layout ausreicht
+- falls nötig nur presentation-seitige Hilfsfelder ergänzen — als berechnete Getter (`val isComplete get() = statusTone == DataStatusTone.COMPLETE`), nicht als gespeicherte Felder:
+  - `isComplete`
+  - `hasMissingDetails`
+  - `hasStaleDetails`
+  - `primaryActionLabel`
+  - `primaryActionKind`
+  - `statusHeadline`
+- keine neue fachliche Logik in Domain oder UseCases
+- Copy-Verdichtung bereits im Mapper vorbereiten, damit `HomeScreen` keine Textlogik dupliziert
+
+Wichtig:
+
+- wenn zusätzliche Felder nötig werden, nur in `DataStatusUiModel`, nicht in `DataStatusOverview`
+- `HomeUiState` liegt in `DashboardScreenStates.kt`; falls Action-Logik sinnvoller dort aufgehängt ist, kann Paket 4 diese Datei ebenfalls leicht berühren
+- `DashboardUiModelMapperTest.kt` entsprechend mitziehen
+
+Ergebnis nach Paket 4:
+
+- weniger `when`-/`if`-Verzweigung direkt im Composable
+- klarere Trennung zwischen Mapping und Rendering
+
+## Paket 5: Activity- und Bike-Karten an die neue Designsprache angleichen
+
+Ziel:
+Der Home-Screen darf nach dem Umbau nicht wie ein Fremdkörper wirken.
+
+Betroffene Datei:
+
+- `presentation/dashboard/DashboardOverviewComponents.kt`
+
+Konkrete Arbeit:
+
+- `ActivityCard` an neue Card-Radien, Borders und Surface-Rollen anpassen
+- Action-Bereich in `ActivityCard` entschlacken
+- `BikeOverviewCard` gleichziehen
+- `StatusBadge` visuell an neue Statuslogik anpassen
+- Hero-Komponenten in Aktivitäten/Bikes auf neues Shared-Primitive umstellen
+
+Bewusste Abgrenzung:
+
+- keine inhaltliche Änderung an Activity-/Bike-Features
+- nur visuelle Harmonisierung
+
+Ergebnis nach Paket 5:
+
+- Home, Aktivitäten und Bikes wirken wie ein gemeinsames Produkt
+- keine Mischung aus altem und neuem UI-Charakter
+
+## Paket 6: Texte auf Mobile-Produktniveau verdichten
+
+Ziel:
+Die visuelle Verbesserung muss von kürzerer, klarerer Sprache unterstützt werden.
+
+Betroffene Dateien:
+
+- `res/values/strings.xml`
+- `res/values-de/strings.xml`
+
+Konkrete Arbeit:
+
+- Home-bezogene Titel verkürzen
+- Status-Summaries kürzen
+- CTA-Labels schärfen
+- Labels für Metazeilen kürzen
+- deutsche und englische Version immer parallel anpassen
+
+Konkrete Copy-Richtung:
+
+- weniger Erklärung
+- mehr Status
+- weniger technische Formulierungen im Hero
+- lange Substantivketten vermeiden
+
+Beispiele für spätere Überarbeitung:
+
+- `Datenzustand & Sync`
+- `Der lokale Tourenbestand ist vollständig ...`
+- `Vorhandene Details auffrischen`
+- `Cloud-Daten neu einlesen`
+
+Ergebnis nach Paket 6:
+
+- besserer erster Eindruck
+- weniger Zeilenumbrüche auf Compact Width
+- weniger Textdruck im oberen Bereich
+
+## Paket 7: Preview- und QA-Infrastruktur ergänzen
+
+Ziel:
+UI-Arbeit nicht blind nur gegen Emulator-Screenshots machen.
+
+Geplante neue Dateien:
+
+- `presentation/dashboard/HomeScreenPreview.kt`
+- optional `presentation/dashboard/DashboardCardPreview.kt`
+
+Konkrete Preview-Fälle:
+
+- Home komplett
+- Home teilweise unvollständig
+- Home leer
+- Home während aktivem Sync
+- Light Theme
+- Dark Theme
+- große Schriftgröße
+
+Wichtig:
+
+- da aktuell keine `@Preview` vorhanden sind, ist dieses Paket Pflicht
+- Previews sollen mit stabilen Fake-`HomeUiState`-Objekten arbeiten
+
+Ergebnis nach Paket 7:
+
+- schnellere UI-Iteration
+- weniger Regressionen
+- bessere Review-Basis
+
+## Paket 8: Testanpassungen
+
+Ziel:
+UI-Refactoring ohne fachliche Regression.
+
+Betroffene Dateien:
+
+- `DashboardUiModelMapperTest.kt`
+- `DashboardViewModelTest.kt`
+
+Konkrete Arbeit:
+
+- Mapper-Tests an neue Status-Copy und ggf. neue UI-Hilfsfelder anpassen
+- ViewModel-Tests nur anfassen, wenn UI-Modell-Struktur geändert wird
+- keine Domain-Tests anfassen, solange keine fachlichen Modelle geändert werden
+
+Nicht geplant:
+
+- Screenshot-Tests im ersten Schritt
+- neue Instrumentation-Tests nur für das visuelle Redesign
+
+## Umsetzungsreihenfolge
+
+Die spätere Umsetzung sollte in genau dieser Reihenfolge passieren:
+
+1. `Theme.kt`, `Type.kt`, `Color.kt`, neue `DesignTokens.kt`
+2. `DashboardUiModels.kt`, `DashboardScreenStates.kt` und `DashboardUiModelMapper.kt`
+3. `DashboardSharedUi.kt`
+4. `HomeScreen.kt`
+5. `DashboardOverviewComponents.kt`
+6. `values/strings.xml` und `values-de/strings.xml`
+7. Previews
+8. Tests
+
+Warum diese Reihenfolge:
+
+- erst System, dann Screen
+- UIModels vor HomeScreen: `HomeScreen.kt` soll die neuen Convenience-Getter aus `DataStatusUiModel` nutzen können — erst mappen, dann rendern
+- erst Bausteine, dann Spezialfall
+- erst Rendering, dann Copy-Feinschliff
+
+## Geplanter Dateiumfang
+
+Voraussichtlich zu ändern:
+
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Color.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Theme.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Type.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardSharedUi.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreen.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModels.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardScreenStates.kt` (ggf. Convenience-Properties auf `HomeUiState`)
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapper.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardOverviewComponents.kt`
+- `app/src/main/res/values/strings.xml`
+- `app/src/main/res/values-de/strings.xml`
+- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapperTest.kt`
+- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardViewModelTest.kt`
+
+Geplante neue Dateien:
+
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/DesignTokens.kt`
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreenPreview.kt`
+
+Optional neue Datei, falls Shared UI zu groß wird:
+
+- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardDesignPrimitives.kt`
+
+## Abnahmekriterien
+
+Die spätere Implementierung ist erfolgreich, wenn:
+
+- der obere Bereich des Home-Screens nur noch eine klare Hauptbotschaft trägt
+- genau eine primäre CTA im Hauptbereich sichtbar ist
+- KPI-Zahlen auf einen Blick lesbar sind
+- Sync-Metadaten nicht mehr den Hero dominieren
+- Activity- und Bike-Karten sichtbar besser zum neuen Home-Stil passen
+- Light, Dark und Dynamic Color stabil wirken
+- 200% Font Scale keine überlappenden oder abgeschnittenen Texte erzeugt
+- lange deutsche Strings den ersten Fold nicht mehr zerstören
+
+## QA-Checkliste für die spätere Umsetzung
+
+Visuell:
+
+- Compact Width auf kleinem Android-Screen
+- Medium/Expanded Width mit begrenzter Content-Breite
+- Light Theme
+- Dark Theme
+- Dynamic Color mit mindestens drei unterschiedlichen Wallpapers
+
+Accessibility:
+
+- alle Buttons >= 48dp Touch Target
+- sinnvolle `contentDescription` auf interaktiven Icons
+- Status nicht nur über Farbe vermittelt
+- TalkBack-Reihenfolge logisch
+
+Typografie:
+
+- keine Text-Clips bei großer Schrift
+- Labels maximal 11sp nur für echte Metadaten
+- Body nie unter 12sp
+
+Interaction:
+
+- Sync-Zustände zeigen sofort sichtbare Rückmeldung
+- Cancel nur im aktiven Prozess sichtbar
+- keine konkurrierenden Primäraktionen
+
+## Empfohlene spätere Commit-Struktur
+
+Wenn die Umsetzung startet, sollte sie in kleine, reviewbare Schritte geschnitten werden:
+
+1. `theme: define full material tokens and typography`
+2. `ui: prepare data status ui model and mapper for new layout`
+3. `ui: refactor shared dashboard surfaces and consolidate badges`
+4. `ui: split home status card into focused sections`
+5. `ui: align activity and bike cards with new dashboard language`
+6. `copy: shorten home strings for compact mobile layout`
+7. `test: add previews and adjust mapper tests`
+
+## Kurzfassung der eigentlichen Bauentscheidung
+
+Der Home-Screen wird nicht "hübscher gemacht", sondern strukturell neu organisiert:
+
+- weniger Dichte im Hero
+- mehr Ruhe in den Flächen
+- stärkere KPI-Hierarchie
+- klarere Actions
+- konsistenteres Theme
+
+Das ist der kleinste sinnvolle Umbau, der den Rookie-Eindruck sichtbar in Richtung professionelles Android-Produkt verschiebt, ohne fachlich unnötig breit zu werden.

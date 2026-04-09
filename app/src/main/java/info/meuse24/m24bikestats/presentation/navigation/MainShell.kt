@@ -83,12 +83,17 @@ fun MainShell(
                 MainDestination.entries.forEach { destination ->
                     item(
                         icon = {
+                            val destinationLabel = stringResource(destination.labelRes)
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = stringResource(destination.labelRes),
+                                contentDescription = destinationLabel,
                             )
                         },
-                        label = { Text(stringResource(destination.labelRes)) },
+                        label = if (showExplanationTexts) {
+                            { Text(stringResource(destination.labelRes)) }
+                        } else {
+                            null
+                        },
                         selected = currentMainDestination == destination,
                         onClick = { onMainDestinationSelected(destination) },
                     )

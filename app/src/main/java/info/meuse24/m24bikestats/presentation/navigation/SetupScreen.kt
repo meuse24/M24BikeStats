@@ -1,6 +1,5 @@
 package info.meuse24.m24bikestats.presentation.navigation
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.Card
@@ -18,7 +18,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,6 +29,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
@@ -166,25 +167,25 @@ private fun <T> SetupDropdownPreference(
             )
         }
         Box(modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = selectedLabel,
-                onValueChange = {},
-                readOnly = true,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-                trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.ArrowDropDown,
-                        contentDescription = null,
-                    )
-                },
+            OutlinedButton(
+                onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth(),
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable { expanded = true },
-            )
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    text = selectedLabel,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    imageVector = Icons.Default.ArrowDropDown,
+                    contentDescription = null,
+                )
+            }
             DropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false },
