@@ -14,7 +14,24 @@ data class AppSettings(
     val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
     val showExplanationTexts: Boolean = true,
-)
+    val installedAtEpochMillis: Long = 0L,
+    val accumulatedForegroundUsageMillis: Long = 0L,
+    val explanationTextsPromptHandled: Boolean = false,
+) {
+    fun shouldSuggestHidingExplanationTexts(
+        nowEpochMillis: Long = System.currentTimeMillis(),
+    ): Boolean =
+        showExplanationTexts &&
+            !explanationTextsPromptHandled &&
+            installedAtEpochMillis > 0L &&
+            nowEpochMillis - installedAtEpochMillis >= EXPLANATION_TEXTS_PROMPT_MIN_INSTALL_AGE_MILLIS &&
+            accumulatedForegroundUsageMillis >= EXPLANATION_TEXTS_PROMPT_MIN_USAGE_MILLIS
+
+    companion object {
+        const val EXPLANATION_TEXTS_PROMPT_MIN_INSTALL_AGE_MILLIS: Long = 3L * 24L * 60L * 60L * 1000L
+        const val EXPLANATION_TEXTS_PROMPT_MIN_USAGE_MILLIS: Long = 90L * 60L * 1000L
+    }
+}
 
 enum class CsvSeparator(
     val character: Char,

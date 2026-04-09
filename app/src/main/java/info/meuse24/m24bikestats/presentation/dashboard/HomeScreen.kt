@@ -233,47 +233,48 @@ private fun HomeStatusHeroCard(
         modifier = modifier,
         accentTone = dataStatus.toBadgeTone(),
     ) {
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.Top,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
+            Text(
+                text = stringResource(R.string.home_data_status_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = dataStatus?.let { stringResource(it.statusHeadlineRes) }
+                    ?: stringResource(R.string.home_data_status_loading),
+                style = MaterialTheme.typography.headlineSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (uiState.shouldShowStatusSummary) {
                 Text(
-                    text = stringResource(R.string.home_data_status_title),
-                    style = MaterialTheme.typography.labelLarge,
+                    text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = dataStatus?.let { stringResource(it.statusHeadlineRes) }
-                        ?: stringResource(R.string.home_data_status_loading),
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                )
-                if (uiState.shouldShowStatusSummary) {
-                    Text(
-                        text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                dataStatus?.coveredPeriodLabel?.let { coveredPeriod ->
-                    Text(
-                        text = stringResource(R.string.home_data_status_period_value, coveredPeriod),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
-            dataStatus?.let { status ->
-                DashboardStatusBadge(
-                    label = status.statusLabel,
-                    tone = status.toBadgeTone(),
-                )
+            if (dataStatus != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    dataStatus?.coveredPeriodLabel?.let { coveredPeriod ->
+                        Text(
+                            text = stringResource(R.string.home_data_status_period_value, coveredPeriod),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } ?: Spacer(modifier = Modifier.weight(1f))
+                    DashboardStatusBadge(
+                        label = dataStatus.statusLabel,
+                        tone = dataStatus.toBadgeTone(),
+                    )
+                }
             }
         }
         HomePrimaryActionBar(
