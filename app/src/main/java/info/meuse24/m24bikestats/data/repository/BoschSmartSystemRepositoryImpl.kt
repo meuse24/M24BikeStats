@@ -107,15 +107,12 @@ class BoschSmartSystemRepositoryImpl(
 
     override suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String> {
         val metadataById = activityDetailDao.getAllMetadata().associateBy { it.activityId }
         return activityDao.getAll().map { it.id }.filter { activityId ->
             val metadata = metadataById[activityId]
             when (detailMode) {
                 CloudSyncDetailMode.MISSING_ONLY -> metadata == null
-                CloudSyncDetailMode.MISSING_OR_STALE ->
-                    metadata == null || metadata.updatedAtEpochMillis < staleThresholdEpochMillis
             }
         }
     }

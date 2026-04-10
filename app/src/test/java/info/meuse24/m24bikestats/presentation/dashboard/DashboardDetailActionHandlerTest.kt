@@ -236,6 +236,5 @@ private class HandlerFakeRepository :
     override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = false
     override suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String> = emptyList()
 }

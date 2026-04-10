@@ -16,6 +16,5 @@ interface BoschSmartSystemCacheStatusRepository {
     suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean
     suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String>
 }

@@ -328,6 +328,15 @@ class DashboardOperationsHandler(
         pdfExportJob = null
     }
 
+    suspend fun cancelAndJoinAllOperations() {
+        val jobs = listOfNotNull(activitiesExportJob, activityDetailsExportJob, pdfExportJob)
+        jobs.forEach { it.cancel() }
+        activitiesExportJob = null
+        activityDetailsExportJob = null
+        pdfExportJob = null
+        jobs.forEach { it.join() }
+    }
+
     private fun s(@StringRes resId: Int, vararg args: Any): String =
         stringResolver.get(resId, args)
 

@@ -106,13 +106,10 @@ internal open class FakeBoschSmartSystemRepository :
     override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = bikeDetailFresh
     override suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String> = cachedActivities.map { it.id }.filter { activityId ->
         val hasDetail = cachedActivityDetails.containsKey(activityId)
         when (detailMode) {
             CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
-            CloudSyncDetailMode.MISSING_OR_STALE ->
-                !hasDetail || staleActivityIds.contains(activityId) || (staleActivityIds.isEmpty() && !activityDetailFresh)
         }
     }
 

@@ -687,12 +687,10 @@ private class DashboardFakeRepository :
     override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = true
     override suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String> = activitiesFlow.value.map { it.id }.filter { activityId ->
         val hasDetail = activityDetails[activityId]?.value != null
         when (detailMode) {
             CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
-            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail || staleActivityIds.contains(activityId)
         }
     }
 

@@ -210,12 +210,10 @@ private class DataStatusRepository :
     override suspend fun hasFreshBikeDetail(bikeId: String, maxAgeMillis: Long): Boolean = false
     override suspend fun getActivityIdsNeedingDetailSync(
         detailMode: CloudSyncDetailMode,
-        staleThresholdEpochMillis: Long,
     ): List<String> = activitiesFlow.value.map { it.id }.filter { activityId ->
         val hasDetail = detailIds.contains(activityId)
         when (detailMode) {
             CloudSyncDetailMode.MISSING_ONLY -> !hasDetail
-            CloudSyncDetailMode.MISSING_OR_STALE -> !hasDetail || staleActivityIds.contains(activityId)
         }
     }
 

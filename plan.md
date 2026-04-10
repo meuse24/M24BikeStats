@@ -480,7 +480,7 @@ Erweitern um:
 - `appSettingsRepository.resetInitialSyncFlag()` — damit der nächste angemeldete Nutzer einen vollständigen Initial-Sync bekommt, nicht den Delta-Refresh des Vorgängers
 - `appSettingsRepository.resetLatestCachedActivityStartTime()`
 
-**Aktivitäten und Bike-Daten beim Logout löschen?** Das ist eine fachliche Entscheidung: Da die App an einen Bosch-Account gebunden ist und kein Multi-Account-Betrieb existiert, wäre es sauber, auch den Room-Cache zu leeren. Allerdings erhöht das die Logout-Komplexität erheblich. Minimalansatz: nur OIDC-Cache + Flags leeren; Room-Daten bleiben, bis der nächste Initial-Sync sie überschreibt. Dieser Punkt sollte vor Implementierung final entschieden werden.
+**Aktivitäten und Bike-Daten beim Logout löschen?** Entschieden: Ja, Room wird beim Logout ebenfalls geleert. Da die App an einen einzelnen Bosch-Account gebunden ist und kein Multi-Account-Betrieb existiert, wäre ein verbleibender Cache ein Datenschutz-Problem auf geteilten Geräten (Daten eines abgemeldeten Nutzers im PDF-Export sichtbar). `ClearAuthenticationUseCase` ruft daher `database.clearAllTables()` auf; der nächste Initial-Sync befüllt den Cache neu.
 
 ### Neue Abhängigkeit in `AppModule.kt`
 

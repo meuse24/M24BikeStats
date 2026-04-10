@@ -79,7 +79,6 @@ class SyncSmartSystemCloudUseCase(
 
         val detailCandidates = cacheStatusRepository.getActivityIdsNeedingDetailSync(
             detailMode = CloudSyncDetailMode.MISSING_ONLY,
-            staleThresholdEpochMillis = 0L,
         )
         if (detailCandidates.isNotEmpty()) {
             onProgress(

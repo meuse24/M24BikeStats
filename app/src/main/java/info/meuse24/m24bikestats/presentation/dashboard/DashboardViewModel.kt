@@ -210,10 +210,12 @@ class DashboardViewModel(
 
     fun resetAllData() {
         viewModelScope.launch {
-            syncJob?.cancel()
+            val jobToCancel = syncJob
             syncJob = null
-            operationsHandler.cancelAllOperationsSilently()
-            detailActionHandler.cancelAllLoads()
+            jobToCancel?.cancel()
+            jobToCancel?.join()
+            operationsHandler.cancelAndJoinAllOperations()
+            detailActionHandler.cancelAndJoinAllLoads()
             appSettingsRepository.resetInitialSyncFlag()
             appSettingsRepository.resetLatestCachedActivityStartTime()
             oidcCacheRepository.clearOidcCache()

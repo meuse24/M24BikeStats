@@ -51,6 +51,21 @@ class DashboardDetailActionHandler(
         bikeDetailObservationJob = null
     }
 
+    suspend fun cancelAndJoinAllLoads() {
+        val jobs = listOfNotNull(
+            activityDetailLoadJob,
+            bikeDetailLoadJob,
+            activityDetailObservationJob,
+            bikeDetailObservationJob,
+        )
+        jobs.forEach { it.cancel() }
+        activityDetailLoadJob = null
+        bikeDetailLoadJob = null
+        activityDetailObservationJob = null
+        bikeDetailObservationJob = null
+        jobs.forEach { it.join() }
+    }
+
     fun loadBikeDetail(
         scope: CoroutineScope,
         bikeId: String,

@@ -121,7 +121,6 @@ enum class CsvExportFormat {
 
 enum class CloudSyncDetailMode {
     MISSING_ONLY,
-    MISSING_OR_STALE,
     ;
 
     companion object {

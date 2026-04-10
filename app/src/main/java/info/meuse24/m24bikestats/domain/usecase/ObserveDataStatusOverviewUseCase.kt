@@ -36,7 +36,6 @@ class ObserveDataStatusOverviewUseCase(
             val zoneId = zoneIdProvider()
             val missingDetailIds = cacheStatusRepository.getActivityIdsNeedingDetailSync(
                 detailMode = info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode.MISSING_ONLY,
-                staleThresholdEpochMillis = 0L,
             )
             val missingDetailCount = missingDetailIds.size
             val coveredDates = inputs.activities.mapNotNull { activity ->

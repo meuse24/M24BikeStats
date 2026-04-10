@@ -20,6 +20,11 @@ class ClearAuthenticationUseCase(
         oidcCacheRepository.clearOidcCache()
         appSettingsRepository.resetInitialSyncFlag()
         appSettingsRepository.resetLatestCachedActivityStartTime()
+        // Room wird beim Logout ebenfalls geleert: Die App ist an einen einzelnen Bosch-Account
+        // gebunden. Ohne diesen Schritt blieben Aktivitäts- und Bike-Daten des abgemeldeten
+        // Nutzers im Cache und wären nach einem erneuten Login (ggf. eines anderen Nutzers auf
+        // demselben Gerät) noch lesbar — auch im PDF-Export. Das ist ein Datenschutz-Problem.
+        // Entscheidung: Room beim Logout immer leeren; der nächste Initial-Sync befüllt ihn neu.
         withContext(ioDispatcher) {
             database.clearAllTables()
         }
