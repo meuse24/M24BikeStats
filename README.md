@@ -63,6 +63,14 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 ./gradlew assembleRelease
 ```
 
+## Datenschutzerklaerung fuer Google Play
+
+- Vorlage liegt unter `docs/privacy-policy/index.html`
+- Startseite fuer GitHub Pages liegt unter `docs/index.html`
+- fuer GitHub Pages in GitHub `Settings > Pages` den Branch `master` und den Ordner `/docs` waehlen
+- erwartete URL danach: `https://meuse24.github.io/M24BikeStats/privacy-policy/`
+- vor der Veroeffentlichung die Platzhalter in der Vorlage ersetzen und rechtlich pruefen
+
 ## Navigation
 
 - `Home`: Übersicht, letzter Cloud-Abgleich, letzte Tour, Bike-Status, letzte Exporte

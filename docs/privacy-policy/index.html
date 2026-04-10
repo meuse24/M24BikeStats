@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Datenschutzerklaerung | M24 Bike Stats</title>
+  <meta name="description" content="Datenschutzerklaerung fuer die Android-App M24 Bike Stats.">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --paper: rgba(255, 252, 246, 0.95);
+      --text: #1f1a16;
+      --muted: #655c52;
+      --accent: #8b5e34;
+      --accent-soft: rgba(139, 94, 52, 0.12);
+      --warning: #9f1239;
+      --warning-soft: rgba(159, 18, 57, 0.1);
+      --line: #ddd2c4;
+      --shadow: 0 24px 80px rgba(31, 26, 22, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(139, 94, 52, 0.14), transparent 30rem),
+        radial-gradient(circle at bottom right, rgba(15, 118, 110, 0.08), transparent 24rem),
+        linear-gradient(180deg, #faf7f1 0%, var(--bg) 100%);
+    }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 18px 72px;
+    }
+
+    .hero,
+    .section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero {
+      padding: 36px 28px;
+      margin-bottom: 20px;
+    }
+
+    .section {
+      padding: 28px;
+      margin-top: 18px;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 0.82rem;
+      color: var(--accent);
+      margin: 0 0 10px;
+    }
+
+    h1, h2, h3 {
+      line-height: 1.12;
+      margin: 0 0 14px;
+    }
+
+    h1 { font-size: clamp(2.2rem, 5vw, 4rem); }
+    h2 { font-size: clamp(1.4rem, 3vw, 2rem); margin-top: 0; }
+    h3 { font-size: 1.06rem; margin-top: 24px; }
+
+    p, li, dd, dt {
+      font-size: 1.02rem;
+      line-height: 1.72;
+    }
+
+    p, ul, ol, dl { margin: 0 0 16px; }
+
+    ul { padding-left: 1.2rem; }
+
+    .muted { color: var(--muted); }
+
+    .callout {
+      background: var(--warning-soft);
+      border: 1px solid rgba(159, 18, 57, 0.24);
+      border-radius: 18px;
+      padding: 18px 18px 4px;
+      margin-top: 22px;
+    }
+
+    .callout strong { color: var(--warning); }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .fact {
+      background: var(--accent-soft);
+      border: 1px solid rgba(139, 94, 52, 0.18);
+      border-radius: 18px;
+      padding: 14px 16px;
+    }
+
+    .fact strong {
+      display: block;
+      font-size: 0.84rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .toc {
+      display: grid;
+      gap: 10px;
+    }
+
+    .toc a,
+    a {
+      color: #7a4c20;
+      text-decoration-thickness: 0.08em;
+      text-underline-offset: 0.15em;
+    }
+
+    code {
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 0.92em;
+      background: rgba(31, 26, 22, 0.06);
+      padding: 0.14em 0.35em;
+      border-radius: 0.35em;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: minmax(160px, 240px) 1fr;
+      gap: 8px 18px;
+    }
+
+    dt {
+      font-weight: 700;
+      margin: 0;
+    }
+
+    dd {
+      margin: 0;
+    }
+
+    footer {
+      padding: 28px 4px 0;
+      color: var(--muted);
+      font-size: 0.96rem;
+    }
+
+    @media (max-width: 640px) {
+      .hero, .section { padding: 22px 18px; }
+      dl { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">M24 Bike Stats</p>
+      <h1>Datenschutzerklaerung</h1>
+      <p class="muted">
+        Stand: 10. April 2026
+      </p>
+      <p>
+        Diese Vorlage ist fuer die Veroeffentlichung ueber GitHub Pages gedacht und kann als
+        Privacy-Policy-URL im Google Play Store verwendet werden, sobald alle Platzhalter ersetzt
+        und die Inhalte rechtlich geprueft wurden.
+      </p>
+      <div class="facts">
+        <div class="fact">
+          <strong>App</strong>
+          M24 Bike Stats
+        </div>
+        <div class="fact">
+          <strong>Plattform</strong>
+          Android / Google Play
+        </div>
+        <div class="fact">
+          <strong>Repository</strong>
+          <a href="https://github.com/meuse24/M24BikeStats">github.com/meuse24/M24BikeStats</a>
+        </div>
+      </div>
+      <div class="callout">
+        <p><strong>Vor Veroeffentlichung ersetzen:</strong></p>
+        <ul>
+          <li>Pruefen, ob die angegebene Anschrift fuer dein Impressum und deinen Store-Eintrag ausreicht</li>
+          <li>Inhalte vor Veroeffentlichung rechtlich pruefen</li>
+        </ul>
+        <p>
+          Diese Datei ist eine technische Vorlage und keine Rechtsberatung.
+        </p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Inhalt</h2>
+      <nav class="toc" aria-label="Inhaltsverzeichnis">
+        <a href="#verantwortlicher">1. Verantwortlicher</a>
+        <a href="#ueberblick">2. Kurzueberblick</a>
+        <a href="#datenarten">3. Welche Daten verarbeitet werden</a>
+        <a href="#quellen">4. Woher die Daten stammen</a>
+        <a href="#zwecke">5. Zwecke der Verarbeitung</a>
+        <a href="#weitergabe">6. Empfaenger und Drittanbieter</a>
+        <a href="#speicherung">7. Speicherung, Loeschung und Exporte</a>
+        <a href="#sicherheit">8. Technische Schutzmassnahmen</a>
+        <a href="#rechte">9. Rechte betroffener Personen</a>
+        <a href="#aenderungen">10. Aenderungen dieser Erklaerung</a>
+      </nav>
+    </section>
+
+    <section class="section" id="verantwortlicher">
+      <h2>1. Verantwortlicher</h2>
+      <dl>
+        <dt>Name</dt>
+        <dd>G&uuml;nther Meusburger</dd>
+        <dt>E-Mail</dt>
+        <dd><a href="mailto:guenther.meusburger@gmx.net">guenther.meusburger@gmx.net</a></dd>
+        <dt>Anschrift</dt>
+        <dd>Austria</dd>
+        <dt>Land</dt>
+        <dd>Austria</dd>
+        <dt>Support</dt>
+        <dd>
+          <a href="https://github.com/meuse24/M24BikeStats/issues">GitHub Issues</a>
+        </dd>
+      </dl>
+    </section>
+
+    <section class="section" id="ueberblick">
+      <h2>2. Kurzueberblick</h2>
+      <p>
+        M24 Bike Stats ist eine unabhaengige Android-App fuer den Zugriff auf Fahr-, Aktivitaets-
+        und Bike-Daten aus dem Bosch Smart System. Die App wird nicht von Bosch eBike Systems
+        betrieben oder offiziell unterstuetzt.
+      </p>
+      <p>
+        Nach aktuellem Stand verwendet die App fuer ihre Kernfunktionen nur die Berechtigung
+        <code>INTERNET</code>. Die Anmeldung erfolgt ueber Bosch SingleKey ID per OAuth2 mit PKCE.
+        Netzwerkzugriffe finden statt, wenn du dich anmeldest oder Daten manuell aktualisierst.
+        Ein periodischer Hintergrundabgleich wird derzeit nicht geplant.
+      </p>
+    </section>
+
+    <section class="section" id="datenarten">
+      <h2>3. Welche Daten verarbeitet werden</h2>
+
+      <h3>3.1 Anmeldedaten und Sitzungsinformationen</h3>
+      <p>
+        Bei der Anmeldung verarbeitet die App Authentifizierungs- und Sitzungsdaten, damit du auf
+        dein Bosch-Konto zugreifen kannst. Dazu gehoeren insbesondere Zugriffstoken und
+        zugehoerige Metadaten, die fuer die Authentifizierung gegen Bosch-Dienste benoetigt werden.
+      </p>
+
+      <h3>3.2 Bosch-Konto-, Bike- und Aktivitaetsdaten</h3>
+      <p>
+        Die App kann Daten aus deinem Bosch-Konto anzeigen und lokal zwischenspeichern, soweit sie
+        ueber die genutzten Bosch-Endpunkte verfuegbar sind. Dazu koennen insbesondere gehoeren:
+      </p>
+      <ul>
+        <li>Profil- und Kontoangaben aus Bosch- bzw. OIDC-Antworten</li>
+        <li>verknuepfte Bikes und technische Bike-Details</li>
+        <li>Aktivitaetslisten, Aktivitaetsdetails und Tour-Metadaten</li>
+        <li>GPS-/Trackpunkte, sofern sie in Aktivitaetsdetails enthalten sind</li>
+        <li>Bike-Pass-, Service-Book- und Registrierungsinformationen, sofern Bosch sie liefert</li>
+      </ul>
+
+      <h3>3.3 Lokal erzeugte Daten</h3>
+      <p>
+        Die App speichert Daten lokal auf deinem Geraet, damit Inhalte schneller angezeigt und
+        Exporte ohne erneuten Abruf erstellt werden koennen. Dazu koennen unter anderem gehoeren:
+      </p>
+      <ul>
+        <li>lokaler Cache fuer Bikes, Aktivitaeten und Aktivitaetsdetails</li>
+        <li>temporar oder lokal erzeugte Exportdateien wie CSV, GPX oder PDF</li>
+        <li>App-Einstellungen und lokal gehaltene OIDC-Zwischenspeicher</li>
+      </ul>
+
+      <h3>3.4 Daten aus freiwilligen Nutzeraktionen</h3>
+      <p>
+        Wenn du Inhalte exportierst, teilst oder speicherst, verarbeitet die App die jeweils von dir
+        ausgewaehlten Inhalte fuer diese Aktion. Welche Daten anschliessend an eine andere App oder
+        einen anderen Dienst uebermittelt werden, haengt von deinem ausgewaehlten Ziel ab.
+      </p>
+    </section>
+
+    <section class="section" id="quellen">
+      <h2>4. Woher die Daten stammen</h2>
+      <ul>
+        <li>direkt von dir, wenn du dich anmeldest, synchronisierst, exportierst oder Inhalte teilst</li>
+        <li>aus den von Bosch fuer dein Konto bereitgestellten Smart-System- und OIDC-Endpunkten</li>
+        <li>von OpenFreeMap fuer Kartenkacheln in Kartenansichten</li>
+      </ul>
+    </section>
+
+    <section class="section" id="zwecke">
+      <h2>5. Zwecke der Verarbeitung</h2>
+      <ul>
+        <li>Durchfuehrung der Anmeldung und Verwaltung deiner Sitzung</li>
+        <li>Abruf, Anzeige und lokale Zwischenspeicherung deiner Bosch-Daten</li>
+        <li>Darstellung von Karten, Touren, Statistiken und Detailansichten</li>
+        <li>Erstellung von CSV-, GPX- und PDF-Exporten auf deinen Wunsch</li>
+        <li>Bereitstellung von Diagnose- und Supportinformationen innerhalb der App, soweit vorhanden</li>
+        <li>Fehlerbehebung und technische Wartung des Projekts</li>
+      </ul>
+    </section>
+
+    <section class="section" id="weitergabe">
+      <h2>6. Empfaenger und Drittanbieter</h2>
+
+      <h3>6.1 Bosch</h3>
+      <p>
+        Die App kommuniziert mit Bosch-Diensten, wenn du dich anmeldest oder Daten manuell
+        aktualisierst. Dabei werden die fuer die jeweilige Anfrage erforderlichen
+        Authentifizierungs- und Nutzdaten an Bosch uebertragen.
+      </p>
+
+      <h3>6.2 OpenFreeMap</h3>
+      <p>
+        Kartenansichten laden Kacheldaten von OpenFreeMap. Dabei koennen technisch notwendige
+        Verbindungsdaten wie IP-Adresse, Zeitpunkt und angeforderte Kachel-URL beim Kartenanbieter
+        anfallen.
+      </p>
+
+      <h3>6.3 Von dir ausgewaehlte Share- oder Speicherziele</h3>
+      <p>
+        Wenn du Exportdateien oder Inhalte ueber das Android-Teilen-Menue an andere Apps oder
+        Dienste weitergibst, erfolgt die weitere Verarbeitung durch diese Empfaenger in eigener
+        Verantwortung.
+      </p>
+    </section>
+
+    <section class="section" id="speicherung">
+      <h2>7. Speicherung, Loeschung und Exporte</h2>
+
+      <h3>7.1 Lokale Speicherung</h3>
+      <p>
+        Die App speichert Bosch-Daten und App-Einstellungen lokal auf deinem Geraet. Dadurch koennen
+        Listen, Detailansichten und Exporte schneller bereitgestellt werden.
+      </p>
+
+      <h3>7.2 Verhalten bei Logout</h3>
+      <p>
+        Nach aktuellem App-Stand werden beim Logout die lokalen Authentifizierungsdaten,
+        OIDC-Zwischenspeicher und die lokal in der App-Datenbank gespeicherten Bosch-Daten geloescht.
+        Damit bleiben die Daten eines zuvor angemeldeten Kontos nach dem Logout nicht in der App
+        verfuegbar.
+      </p>
+
+      <h3>7.3 Exportdateien</h3>
+      <p>
+        Bereits exportierte oder ausserhalb der App gespeicherte Dateien koennen auf dem Geraet oder
+        in anderen Apps verbleiben, bis du sie selbst entfernst. Gleiches gilt fuer Inhalte, die du
+        bewusst an andere Apps oder Dienste weitergegeben hast.
+      </p>
+
+      <h3>7.4 Deinstallation</h3>
+      <p>
+        Bei einer Deinstallation entfernt Android grundsaetzlich die app-internen Daten. Dateien,
+        die du ausserhalb des app-internen Speichers gesichert, geteilt oder exportiert hast, musst
+        du gegebenenfalls getrennt loeschen.
+      </p>
+    </section>
+
+    <section class="section" id="sicherheit">
+      <h2>8. Technische Schutzmassnahmen</h2>
+      <ul>
+        <li>Die App verwendet ausschliesslich Netzwerkzugriffe ueber das Internet und deaktiviert Klartext-Traffic.</li>
+        <li>Das automatische Android-Backup ist fuer die App deaktiviert.</li>
+        <li>Dateiweitergaben fuer Exporte erfolgen ueber einen Android-<code>FileProvider</code>.</li>
+        <li>Die App ist so ausgelegt, dass sensible Inhalte lokal gehalten und nur bei ausdruecklicher Nutzeraktion geteilt werden.</li>
+      </ul>
+    </section>
+
+    <section class="section" id="rechte">
+      <h2>9. Rechte betroffener Personen</h2>
+      <p>
+        Wenn auf dich anwendbares Datenschutzrecht Rechte auf Auskunft, Berichtigung, Loeschung,
+        Einschraenkung, Datenuebertragbarkeit oder Widerspruch vorsieht, kannst du dich ueber die
+        oben genannten Kontaktdaten melden.
+      </p>
+      <p>
+        Soweit die Daten unmittelbar aus Bosch-Diensten stammen, kann es erforderlich sein, Anfragen
+        zusaetzlich gegenueber Bosch geltend zu machen.
+      </p>
+    </section>
+
+    <section class="section" id="aenderungen">
+      <h2>10. Aenderungen dieser Erklaerung</h2>
+      <p>
+        Diese Datenschutzerklaerung kann angepasst werden, wenn sich die App, die genutzten
+        Endpunkte, die Exportfunktionen oder rechtliche Anforderungen aendern. Die jeweils aktuelle
+        Fassung wird unter dieser URL veroeffentlicht.
+      </p>
+    </section>
+
+    <footer>
+      <p>
+        Technische Quellen fuer diese Vorlage: Repository
+        <a href="https://github.com/meuse24/M24BikeStats">M24BikeStats</a>,
+        aktuelle App-Konfiguration und Google-Play-/GitHub-Pages-Anforderungen.
+      </p>
+    </footer>
+  </main>
+</body>
+</html>
