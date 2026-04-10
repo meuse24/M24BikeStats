@@ -87,16 +87,6 @@ class AppNavigationRoutingTest {
     }
 
     @Test
-    fun `refresh action is shown on non-home primary data routes`() {
-        assertFalse(MainDestination.HOME.route.shouldShowRefreshAction())
-        assertTrue(MainDestination.ACTIVITIES.route.shouldShowRefreshAction())
-        assertTrue(MainDestination.BIKE.route.shouldShowRefreshAction())
-        assertTrue(MainDestination.STATISTICS.route.shouldShowRefreshAction())
-        assertFalse(DrawerDestination.EXPORT.route.shouldShowRefreshAction())
-        assertFalse(DrawerDestination.INFO.route.shouldShowRefreshAction())
-    }
-
-    @Test
     fun `pdf export action is only shown on home route`() {
         assertTrue(MainDestination.HOME.route.shouldShowPdfExportAction())
         assertFalse(MainDestination.ACTIVITIES.route.shouldShowPdfExportAction())

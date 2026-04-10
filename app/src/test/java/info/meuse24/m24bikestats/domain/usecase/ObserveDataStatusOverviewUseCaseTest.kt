@@ -22,7 +22,7 @@ import org.junit.Test
 class ObserveDataStatusOverviewUseCaseTest {
 
     @Test
-    fun `aggregates covered period missing and stale details`() = runTest {
+    fun `aggregates covered period and missing details`() = runTest {
         val repository = DataStatusRepository().apply {
             setActivities(
                 listOf(
@@ -39,13 +39,11 @@ class ObserveDataStatusOverviewUseCaseTest {
         val overview = ObserveDataStatusOverviewUseCase(
             repository = repository,
             cacheStatusRepository = repository,
-            nowMillis = { 1_000_000L },
         ).invoke().first()
 
         assertEquals(3, overview.cachedActivityCount)
         assertEquals(1, overview.detailedActivityCount)
         assertEquals(2, overview.missingDetailCount)
-        assertEquals(1, overview.staleDetailCount)
         assertEquals(30L, overview.lastDetailSyncAtEpochMillis)
         assertEquals(DataStatusState.PARTIAL, overview.status)
     }
@@ -82,7 +80,6 @@ class ObserveDataStatusOverviewUseCaseTest {
         ).invoke().first()
 
         assertEquals(0, overview.missingDetailCount)
-        assertEquals(0, overview.staleDetailCount)
         assertEquals(DataStatusState.COMPLETE, overview.status)
     }
 
@@ -106,7 +103,6 @@ class ObserveDataStatusOverviewUseCaseTest {
         ).invoke().first()
 
         assertEquals(0, overview.missingDetailCount)
-        assertEquals(1, overview.staleDetailCount)
         assertEquals(DataStatusState.COMPLETE, overview.status)
     }
 

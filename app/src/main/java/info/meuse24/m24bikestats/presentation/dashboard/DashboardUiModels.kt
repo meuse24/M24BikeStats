@@ -147,7 +147,6 @@ data class DataStatusUiModel(
     val detailedActivityCount: Int,
     val detailCoverageLabel: String,
     val missingDetailCount: Int,
-    val staleDetailCount: Int,
     val gpsPointCount: Int,
     val lastActivitySyncLabel: String?,
     val lastBikeSyncLabel: String?,
@@ -158,9 +157,6 @@ data class DataStatusUiModel(
 
     val hasMissingDetails: Boolean
         get() = missingDetailCount > 0
-
-    val hasStaleDetails: Boolean
-        get() = staleDetailCount > 0
 
     val detailCoveragePercent: Int
         get() = if (cachedActivityCount > 0) {
@@ -179,7 +175,7 @@ data class DataStatusUiModel(
 
     @get:StringRes
     val primaryActionLabelRes: Int
-        get() = R.string.home_sync_button
+        get() = R.string.home_refresh_button
 }
 
 enum class DataStatusTone {

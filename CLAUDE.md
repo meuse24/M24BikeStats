@@ -52,8 +52,7 @@ auth/
   OidcCertificateInfo
 
 background/
-  BackgroundSyncScheduler
-  BackgroundSyncSettingsObserver
+  ComputeActivityCentersWorker
 
 presentation/
   login/
@@ -115,8 +114,9 @@ Regeln:
 - OAuth2 Authorization Code + PKCE
 - Token-Speicherung via `EncryptedSharedPreferences`
 - cache-first Aktivitäten-, Detail- und Bike-Flows
-- mehrstufiger Home-Cloud-Sync mit Bikes, Aktivitäten und konfigurierbarem Detail-Refresh
-- optionaler täglicher Hintergrund-Sync über WorkManager mit einstellbarer Netzbedingung
+- automatischer Initial-Sync beim ersten Start
+- manueller Home-Refresh für Bikes, OIDC-Daten, neue Aktivitäten und fehlende Aktivitätsdetails
+- verschlüsselter OIDC-Cache für Offline-Kontoansicht und PDF-Metadaten
 - konfigurierbare Hinweis-/Erklärungstexte mit Nachfrage-Timing `EARLY`, `STANDARD`, `LATE`, `NEVER`
 - Nachfrage zum Ausblenden von Hinweistexten basiert auf Installationsalter plus akkumulierte Foreground-Nutzung; sie erscheint nur am Sitzungsstart oder mit sehr kurzem Inline-Delay
 - CSV-Export für Aktivitäten, Details und Tracks
@@ -134,6 +134,7 @@ Regeln:
 - Kontodetails ergänzen Bike-Profil jetzt auch um `oemId`, `serviceDue`, `connectModule`, ABS-Komponenten, Bike Pass, Service Book und Registrierungen; starten mit `Konto & Profil`, zeigen nur das unterstützte System und hängen ausführliche OIDC-Karten unten an
 - Statistikscreen mit Vico-Kombidiagramm (Balken Distanz + Linie Fahrtzeit), Wochen-/Monats-/Jahresaggregation, interaktiver Period-Selektion, Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour sowie Durchschnittslinien für Distanz und Fahrtzeit; zeigt zusätzlich den abgedeckten Statistikzeitraum und startet horizontal beim neuesten Abschnitt; darunter `Highlights & Rhythmus` als read-only Sektion für Bestleistungen, distanzstärksten Zeitraum, effektive Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz; Tourenzahl als Data-Label auf dem Balken über Vico `ExtraStore`
 - Setup nutzt kompakte Dropdown-Auswahl statt langer Radio-Listen; Änderungen an sichtbaren Optionen deshalb bevorzugt dort zentral halten
+- Setup enthält zusätzlich einen Reset, der Room-Daten, OIDC-Cache und Sync-Flags löscht und sofort den Initial-Sync neu startet
 - `AppSettings` enthält zusätzlich Prompt-Timing, Tracking-Start, akkumulierte Foreground-Nutzung und `handled`-Status für die Hinweistext-Nachfrage
 - `MainActivity` misst Foreground-Sitzungen via `SystemClock.elapsedRealtime()` und schreibt die Nutzungsdauer beim `onStop`
 - `SupportScreens.kt` enthält jetzt einen dedizierten, gruppierten Info-Screen mit Projekt-/Privacy-/Legal-Karten, kompakten Bibliotheksgruppen und zusammengefassten CLI-Tool-Credits
@@ -165,16 +166,17 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 `AppModule` bindet unter anderem:
 
 - `AuthManager` als `AuthRepository` und `AuthFlowCoordinator`
-- `BackgroundSyncScheduler` und `BackgroundSyncSettingsObserver`
 - `BoschApiClient` als `BoschApiDataSource`
 - `BoschRepositoryImpl` als `BoschApiRepository`
 - `BoschSmartSystemRepositoryImpl`
+- `OidcCacheRepository`
 - `LiveOidcUserInfoProvider`
 - `LiveOidcDiscoveryInfoProvider`
 - `LiveOidcCertificateInfoProvider`
 - `AppSettingsRepositoryImpl`
 - alle UseCases
 - darunter `UpdateDisplayModeUseCase`
+- darunter `RefreshSmartSystemDataUseCase`
 - darunter `FetchBoschDataUseCase` (domain/usecase)
 - `DashboardStringResolver` für testbare ViewModel-Lokalisierung
 - `LoginStringResolver` für testbare Login-Statusmeldungen ohne Android-`Context` im ViewModel
@@ -197,13 +199,13 @@ GET https://p9.authz.bosch.com/.../protocol/openid-connect/certs
 - Vico-`dataLabelValueFormatter` bekommt nur den geplotteten Y-Wert; bei potenziell doppelten Distanzwerten keine positionsabhängige Zuordnung per Rohwert annehmen
 - Konto-Details bleiben im bestehenden Bike-/`bike_list`-Flow verankert; Route nicht ohne Navigation-Review umbenennen
 - Für Exportverhalten immer alle CSV-Pfade mitdenken: Aktivitäten, Detail-CSV, Track-CSV
-- Bei Cache-/Sync-Änderungen auf Room-State, Detail-Sync-Modus und Paging-Verhalten achten
+- Bei Cache-/Sync-Änderungen auf Room-State, Initial-Sync-/Refresh-Orchestrierung und Paging-Verhalten achten
 - Zusatzdaten pro Bike wie Bike Pass, Service Book und Registrierungen dürfen bei temporären API-Fehlern nicht aus dem Cache verschwinden; leere erfolgreiche Antworten dürfen den Cache dagegen leeren
-- Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Details dürfen datensparsam nur fehlend oder optional fehlend+veraltet geladen werden
-- Änderungen an `AppSettings` immer gegen die relevanten Verbraucher prüfen: Setup-UI, Dashboard-State, Root-Theme und bei Sync-Settings zusätzlich Hintergrund-Scheduler
+- Beim Cloud-Sync unterscheiden zwischen Summary-Cache und Detail-Cache; Aktivitätsdetails werden nur fehlend nachgeladen
+- Änderungen an `AppSettings` immer gegen die relevanten Verbraucher prüfen: Setup-UI, Dashboard-State, Root-Theme und bei Sync-Settings zusätzlich Initial-Sync-/Refresh-Flow
 - Änderungen an der Hinweistext-Nachfrage immer über alle Pfade prüfen: `AppSettingsRepository`, `MainActivity`, `AppNavigation`, `SetupScreen`, `DashboardViewModel`
 - Prompt-UX bewusst nicht wieder zu einem langen `delay(...)` innerhalb laufender Sitzungen zurückbauen; Ziel ist ein erwartbarer Anzeigezeitpunkt beim Sitzungsstart
-- Periodischen Hintergrund-Sync nur über `BackgroundSyncScheduler` ändern; keine parallelen WorkManager-Namen oder konkurrierenden Schedules einführen
+- Keinen periodischen Hintergrund-Sync wieder einführen; bestehend bleibt nur der einmalige `ComputeActivityCentersWorker`
 - Bei Aktivitätsdetails keine rohe Punktliste blind verwenden; Track/Profile laufen über den bereinigten Mapper-Pfad
 - Bei Home- oder Drawer-Änderungen `Home`-Navigation und Restore-State explizit prüfen
 - Keine Android-`Context`-Abhängigkeit direkt ins ViewModel ziehen, wenn ein kleiner Resolver/Provider reicht

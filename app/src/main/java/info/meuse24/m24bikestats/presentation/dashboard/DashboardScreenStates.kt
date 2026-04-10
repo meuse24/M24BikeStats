@@ -2,8 +2,6 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.SmartSystemCloudSyncPhase
-import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
-import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
 import info.meuse24.m24bikestats.domain.model.DisplayMode
 
 data class DashboardUiState(
@@ -18,10 +16,6 @@ data class DashboardUiState(
     val syncPhaseLabel: String? = null,
     val syncLoadedActivityCount: Int = 0,
     val syncTotalActivityCount: Int = 0,
-    val isSyncingPendingActivityDetails: Boolean = false,
-    val pendingActivityDetailSyncLabel: String? = null,
-    val pendingActivityDetailSyncLoadedCount: Int = 0,
-    val pendingActivityDetailSyncTotalCount: Int = 0,
     val cachedDetailActivityCount: Int = 0,
     val cachedDetailPointCount: Int = 0,
     val cachedGpsPointCount: Int = 0,
@@ -57,8 +51,6 @@ data class DashboardUiState(
     val dataStatus: DataStatusUiModel? = null,
     val lastCloudSyncSummary: CloudSyncSummaryUiModel? = null,
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
-    val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
-    val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
     val showExplanationTexts: Boolean = true,
     val error: String? = null,
@@ -79,10 +71,6 @@ data class HomeUiState(
     val syncPhaseLabel: String?,
     val syncLoadedActivityCount: Int,
     val syncTotalActivityCount: Int,
-    val isSyncingPendingActivityDetails: Boolean,
-    val pendingActivityDetailSyncLabel: String?,
-    val pendingActivityDetailSyncLoadedCount: Int,
-    val pendingActivityDetailSyncTotalCount: Int,
     val cachedDetailActivityCount: Int,
     val cachedDetailPointCount: Int,
     val cachedGpsPointCount: Int,
@@ -95,7 +83,7 @@ data class HomeUiState(
     val showExplanationTexts: Boolean,
 ) {
     val isAnySyncActive: Boolean
-        get() = isSyncingCloudData || isSyncingPendingActivityDetails
+        get() = isSyncingCloudData
 
     val hasSyncMetadata: Boolean
         get() = dataStatus?.lastActivitySyncLabel != null ||
@@ -103,11 +91,8 @@ data class HomeUiState(
             dataStatus?.lastBikeSyncLabel != null ||
             lastCloudSyncSummary != null
 
-    val hasSecondarySyncActions: Boolean
-        get() = dataStatus?.hasMissingDetails == true || dataStatus?.hasStaleDetails == true
-
     val shouldShowStatusSummary: Boolean
-        get() = dataStatus?.let { showExplanationTexts || !it.isComplete || it.hasStaleDetails } ?: true
+        get() = dataStatus?.let { showExplanationTexts || !it.isComplete } ?: true
 }
 
 data class ActivitiesUiState(
@@ -126,7 +111,6 @@ data class ActivitiesUiState(
 
 data class FunctionsUiState(
     val csvExportFormat: CsvExportFormat,
-    val cloudSyncDetailMode: CloudSyncDetailMode,
     val loadedActivityCount: Int,
     val visibleActivityCount: Int,
     val activityTotalCount: Int,
@@ -183,7 +167,6 @@ internal fun DashboardUiState.canRunBackgroundOperation(): Boolean =
     !isInitialLoading &&
         !isRefreshing &&
         !isSyncingCloudData &&
-        !isSyncingPendingActivityDetails &&
         !isExportingActivitiesCsv &&
         !isExportingActivityDetailsCsv &&
         !isExportingPdf

@@ -2,22 +2,16 @@ package info.meuse24.m24bikestats.presentation.dashboard
 
 import androidx.annotation.StringRes
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
-import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.R
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
-import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
@@ -25,7 +19,6 @@ import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCa
 import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -35,12 +28,7 @@ class DashboardFeedHandler(
     private val observeCachedActivityDetailCacheOverview: ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase,
     private val observeDataStatusOverview: ObserveDataStatusOverviewUseCase,
     private val observeAppSettings: ObserveAppSettingsUseCase,
-    private val getCachedActivityTotalCount: GetCachedSmartSystemActivityTotalCountUseCase,
     private val getActivities: GetSmartSystemActivitiesUseCase,
-    private val refreshActivitiesUseCase: RefreshSmartSystemActivitiesUseCase,
-    private val refreshBikesUseCase: RefreshSmartSystemBikesUseCase,
-    private val updateCloudSyncDetailModeUseCase: UpdateCloudSyncDetailModeUseCase,
-    private val updateBackgroundSyncModeUseCase: UpdateBackgroundSyncModeUseCase,
     private val updateCsvExportFormatUseCase: UpdateCsvExportFormatUseCase,
     private val updateDisplayModeUseCase: UpdateDisplayModeUseCase,
     private val updateExplanationTextsPromptTimingUseCase: UpdateExplanationTextsPromptTimingUseCase,
@@ -128,8 +116,6 @@ class DashboardFeedHandler(
                 updateState { current ->
                     current.copy(
                         csvExportFormat = settings.csvExportFormat,
-                        cloudSyncDetailMode = settings.cloudSyncDetailMode,
-                        backgroundSyncMode = settings.backgroundSyncMode,
                         displayMode = settings.displayMode,
                         showExplanationTexts = settings.showExplanationTexts,
                     )
@@ -142,75 +128,6 @@ class DashboardFeedHandler(
             updateState { current ->
                 current.copy(
                     hasOidcCertificateInfo = hasOidcCertificateInfo,
-                )
-            }
-        }
-    }
-
-    fun refresh(
-        scope: CoroutineScope,
-        force: Boolean,
-        currentState: () -> DashboardUiState,
-        updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
-    ) {
-        scope.launch {
-            val hasContent = currentState().activities.isNotEmpty() || currentState().bikes.isNotEmpty()
-            updateState {
-                it.copy(
-                    isInitialLoading = !hasContent,
-                    isRefreshing = hasContent,
-                    error = null,
-                )
-            }
-
-            val activitiesDeferred = async {
-                refreshActivitiesUseCase(limit = ACTIVITIES_PAGE_SIZE, offset = 0, force = force)
-            }
-            val bikesDeferred = async { refreshBikesUseCase(force = force) }
-
-            val activitiesResult = activitiesDeferred.await()
-            val bikesResult = bikesDeferred.await()
-
-            val activityPage = activitiesResult.getOrElse { error ->
-                updateState {
-                    it.copy(
-                        isInitialLoading = false,
-                        isRefreshing = false,
-                        error = error.message ?: s(R.string.dashboard_error_activities_load),
-                    )
-                }
-                return@launch
-            }
-
-            val resolvedTotal = activityPage?.total ?: getCachedActivityTotalCount() ?: currentState().loadedActivityCount
-
-            bikesResult.getOrElse { error ->
-                updateState {
-                    it.copy(
-                        isInitialLoading = false,
-                        isRefreshing = false,
-                        error = error.message ?: s(R.string.dashboard_error_bikes_load),
-                    )
-                }
-                return@launch
-            }
-
-            if (activityPage != null) {
-                activityOffset = activityPage.offset + activityPage.items.size
-                activityTotalCount = resolvedTotal
-            } else {
-                activityOffset = currentState().loadedActivityCount
-                activityTotalCount = resolvedTotal
-            }
-
-            updateState {
-                it.copy(
-                    isInitialLoading = false,
-                    isRefreshing = false,
-                    isLoadingMoreActivities = false,
-                    activityTotalCount = resolvedTotal,
-                    canLoadMoreActivities = it.loadedActivityCount < resolvedTotal,
-                    error = null,
                 )
             }
         }
@@ -315,28 +232,6 @@ class DashboardFeedHandler(
         if (currentState().csvExportFormat == format) return
         scope.launch {
             updateCsvExportFormatUseCase(format)
-        }
-    }
-
-    fun updateCloudSyncDetailMode(
-        scope: CoroutineScope,
-        currentState: () -> DashboardUiState,
-        mode: CloudSyncDetailMode,
-    ) {
-        if (currentState().cloudSyncDetailMode == mode) return
-        scope.launch {
-            updateCloudSyncDetailModeUseCase(mode)
-        }
-    }
-
-    fun updateBackgroundSyncMode(
-        scope: CoroutineScope,
-        currentState: () -> DashboardUiState,
-        mode: info.meuse24.m24bikestats.domain.model.BackgroundSyncMode,
-    ) {
-        if (currentState().backgroundSyncMode == mode) return
-        scope.launch {
-            updateBackgroundSyncModeUseCase(mode)
         }
     }
 

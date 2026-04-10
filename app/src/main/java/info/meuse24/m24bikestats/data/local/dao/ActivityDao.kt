@@ -19,6 +19,9 @@ interface ActivityDao {
     @Query("SELECT * FROM activities ORDER BY startTimeEpoch DESC, startTime DESC")
     suspend fun getAll(): List<ActivityEntity>
 
+    @Query("SELECT COUNT(*) FROM activities")
+    suspend fun count(): Int
+
     @Query("SELECT totalCount FROM activity_cache_state WHERE id = 0 LIMIT 1")
     suspend fun getCachedTotalCount(): Int?
 

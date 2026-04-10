@@ -2,13 +2,15 @@ package info.meuse24.m24bikestats.presentation.login
 
 import android.app.Activity
 import android.content.Intent
-import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class LoginViewModel(
     private val authFlowCoordinator: AuthFlowCoordinator,
@@ -41,25 +43,29 @@ class LoginViewModel(
 
     fun handleLogoutResult(resultCode: Int, data: Intent?) {
         if (resultCode != Activity.RESULT_OK) {
-            clearAuthentication()
-            _status.value = LoginStatus.Idle
+            clearAuthenticationAndSetIdle()
             return
         }
 
         authFlowCoordinator.handleLogoutResponse(
             intent = data,
-            onComplete = { _status.value = LoginStatus.Idle },
+            onComplete = ::clearAuthenticationAndSetIdle,
             onError = {
-                clearAuthentication()
-                _status.value = LoginStatus.Idle
-            }
+                clearAuthenticationAndSetIdle()
+            },
         )
     }
 
     fun logoutLocally() {
-        clearAuthentication()
-        _status.value = LoginStatus.Idle
+        clearAuthenticationAndSetIdle()
     }
     // onCleared() entfernt: AuthManager ist Koin-Singleton und darf nicht
     // vom ViewModel disposed werden – Lifecycle-Mismatch vermieden.
+
+    private fun clearAuthenticationAndSetIdle() {
+        viewModelScope.launch {
+            clearAuthentication()
+            _status.value = LoginStatus.Idle
+        }
+    }
 }

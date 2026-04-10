@@ -337,7 +337,7 @@ class RefreshSmartSystemUseCasesTest {
     }
 
     @Test
-    fun `cloud sync fetches all pages bikes and stale details in missing or stale mode`() {
+    fun `cloud sync fetches all pages bikes and missing details only`() {
         val repository = FakeBoschSmartSystemRepository().apply {
             cachedActivities = listOf(activity("a1"))
             cachedActivityDetails["a1"] = BoschActivityDetail("a1", points = emptyList())
@@ -381,15 +381,21 @@ class RefreshSmartSystemUseCasesTest {
                 BoschActivityDetail("a3", points = listOf(detailPoint(20.0, 510.0, 21.0, 82.0, 47.1, 9.1, 110.0)))
             )
         }
+        val settingsRepository = FakeAppSettingsRepository()
+        val userInfoProvider = FakeOidcUserInfoProvider()
+        val discoveryInfoProvider = FakeOidcDiscoveryInfoProvider()
         val progressEvents = mutableListOf<Triple<SmartSystemCloudSyncPhase, Int, Int>>()
         val useCase = SyncSmartSystemCloudUseCase(
             repository = repository,
             cacheStatusRepository = repository,
             authRepository = FakeAuthRepository(),
+            appSettingsRepository = settingsRepository,
+            oidcUserInfoProvider = userInfoProvider,
+            oidcDiscoveryInfoProvider = discoveryInfoProvider,
         )
 
         val result = kotlinx.coroutines.runBlocking {
-            useCase(detailMode = CloudSyncDetailMode.MISSING_OR_STALE) { progress ->
+            useCase { progress ->
                 progressEvents += Triple(progress.phase, progress.processedCount, progress.totalCount)
             }
         }
@@ -397,13 +403,20 @@ class RefreshSmartSystemUseCasesTest {
         assertTrue(result.isSuccess)
         assertEquals(listOf(100 to 0, 100 to 2), repository.getActivitiesCalls)
         assertEquals(1, repository.getBikesCalls)
-        assertEquals(listOf("a1", "a2", "a3"), repository.getActivityDetailCalls)
+        assertEquals(listOf("a2", "a3"), repository.getActivityDetailCalls)
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.BIKES, 1, 1)))
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 2, 3)))
         assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITIES, 3, 3)))
-        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITY_DETAILS, 3, 3)))
+        assertTrue(progressEvents.contains(Triple(SmartSystemCloudSyncPhase.ACTIVITY_DETAILS, 2, 2)))
         assertEquals(3, result.getOrNull()?.activityCount)
         assertEquals(1, result.getOrNull()?.bikeCount)
+        assertEquals(1, userInfoProvider.loadCalls)
+        assertEquals(1, discoveryInfoProvider.loadCalls)
+        assertTrue(
+            kotlinx.coroutines.runBlocking {
+                settingsRepository.getSettings().initialSyncCompletedAtEpochMillis > 0L
+            }
+        )
     }
 
     private fun activity(id: String) = BoschActivity(

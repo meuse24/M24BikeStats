@@ -1,6 +1,5 @@
 package info.meuse24.m24bikestats.domain.usecase
 
-import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.DataStatusOverview
 import info.meuse24.m24bikestats.domain.model.DataStatusState
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
@@ -16,9 +15,7 @@ import kotlinx.coroutines.flow.mapLatest
 class ObserveDataStatusOverviewUseCase(
     private val repository: BoschSmartSystemRepository,
     private val cacheStatusRepository: BoschSmartSystemCacheStatusRepository,
-    private val nowMillis: () -> Long = System::currentTimeMillis,
     private val zoneIdProvider: () -> ZoneId = ZoneId::systemDefault,
-    private val detailStaleThresholdMillis: Long = ACTIVITY_DETAIL_CACHE_TTL_MS,
 ) {
     operator fun invoke(): Flow<DataStatusOverview> =
         combine(
@@ -37,18 +34,11 @@ class ObserveDataStatusOverviewUseCase(
             )
         }.mapLatest { inputs ->
             val zoneId = zoneIdProvider()
-            val staleThresholdEpochMillis = nowMillis() - detailStaleThresholdMillis
             val missingDetailIds = cacheStatusRepository.getActivityIdsNeedingDetailSync(
-                detailMode = CloudSyncDetailMode.MISSING_ONLY,
-                staleThresholdEpochMillis = staleThresholdEpochMillis,
+                detailMode = info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode.MISSING_ONLY,
+                staleThresholdEpochMillis = 0L,
             )
             val missingDetailCount = missingDetailIds.size
-            val missingDetailIdSet = missingDetailIds.toSet()
-            val staleOrMissingIds = cacheStatusRepository.getActivityIdsNeedingDetailSync(
-                detailMode = CloudSyncDetailMode.MISSING_OR_STALE,
-                staleThresholdEpochMillis = staleThresholdEpochMillis,
-            )
-            val staleDetailCount = staleOrMissingIds.count { it !in missingDetailIdSet }
             val coveredDates = inputs.activities.mapNotNull { activity ->
                 runCatching {
                     Instant.parse(activity.startTime).atZone(zoneId).toLocalDate()
@@ -67,7 +57,6 @@ class ObserveDataStatusOverviewUseCase(
                     ?.toEpochMilli(),
                 detailedActivityCount = inputs.detailOverview.detailedActivityCount,
                 missingDetailCount = missingDetailCount,
-                staleDetailCount = staleDetailCount,
                 gpsPointCount = inputs.detailOverview.gpsPointCount,
                 lastActivitySyncAtEpochMillis = inputs.lastActivitySyncAt,
                 lastBikeSyncAtEpochMillis = inputs.lastBikeSyncAt,

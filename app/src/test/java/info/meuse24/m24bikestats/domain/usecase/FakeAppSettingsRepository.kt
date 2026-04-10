@@ -1,8 +1,6 @@
 package info.meuse24.m24bikestats.domain.usecase
 
 import info.meuse24.m24bikestats.domain.model.AppSettings
-import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
-import info.meuse24.m24bikestats.domain.model.CloudSyncDetailMode
 import info.meuse24.m24bikestats.domain.model.CsvExportFormat
 import info.meuse24.m24bikestats.domain.model.DisplayMode
 import info.meuse24.m24bikestats.domain.model.ExplanationTextsPromptTiming
@@ -13,26 +11,26 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class FakeAppSettingsRepository(
     initialFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
-    initialCloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
-    initialBackgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     initialDisplayMode: DisplayMode = DisplayMode.AUTOMATIC,
     initialShowExplanationTexts: Boolean = true,
     initialExplanationTextsPromptTiming: ExplanationTextsPromptTiming = ExplanationTextsPromptTiming.STANDARD,
     initialExplanationTextsPromptTrackingStartedAtEpochMillis: Long = 1L,
     initialExplanationTextsPromptForegroundUsageMillis: Long = 0L,
     initialExplanationTextsPromptHandled: Boolean = false,
+    initialInitialSyncCompletedAtEpochMillis: Long = 0L,
+    initialLatestCachedActivityStartTimeMillis: Long = 0L,
 ) : AppSettingsRepository {
     private val settingsState = MutableStateFlow(
         AppSettings(
             csvExportFormat = initialFormat,
-            cloudSyncDetailMode = initialCloudSyncDetailMode,
-            backgroundSyncMode = initialBackgroundSyncMode,
             displayMode = initialDisplayMode,
             showExplanationTexts = initialShowExplanationTexts,
             explanationTextsPromptTiming = initialExplanationTextsPromptTiming,
             explanationTextsPromptTrackingStartedAtEpochMillis = initialExplanationTextsPromptTrackingStartedAtEpochMillis,
             explanationTextsPromptForegroundUsageMillis = initialExplanationTextsPromptForegroundUsageMillis,
             explanationTextsPromptHandled = initialExplanationTextsPromptHandled,
+            initialSyncCompletedAtEpochMillis = initialInitialSyncCompletedAtEpochMillis,
+            latestCachedActivityStartTimeMillis = initialLatestCachedActivityStartTimeMillis,
         )
     )
 
@@ -42,14 +40,6 @@ class FakeAppSettingsRepository(
 
     override suspend fun updateCsvExportFormat(format: CsvExportFormat) {
         settingsState.value = settingsState.value.copy(csvExportFormat = format)
-    }
-
-    override suspend fun updateCloudSyncDetailMode(mode: CloudSyncDetailMode) {
-        settingsState.value = settingsState.value.copy(cloudSyncDetailMode = mode)
-    }
-
-    override suspend fun updateBackgroundSyncMode(mode: BackgroundSyncMode) {
-        settingsState.value = settingsState.value.copy(backgroundSyncMode = mode)
     }
 
     override suspend fun updateDisplayMode(mode: DisplayMode) {
@@ -85,5 +75,21 @@ class FakeAppSettingsRepository(
             explanationTextsPromptForegroundUsageMillis =
                 settingsState.value.explanationTextsPromptForegroundUsageMillis + durationMillis,
         )
+    }
+
+    override suspend fun markInitialSyncCompleted(atEpochMillis: Long) {
+        settingsState.value = settingsState.value.copy(initialSyncCompletedAtEpochMillis = atEpochMillis)
+    }
+
+    override suspend fun resetInitialSyncFlag() {
+        settingsState.value = settingsState.value.copy(initialSyncCompletedAtEpochMillis = 0L)
+    }
+
+    override suspend fun updateLatestCachedActivityStartTime(epochMillis: Long) {
+        settingsState.value = settingsState.value.copy(latestCachedActivityStartTimeMillis = epochMillis)
+    }
+
+    override suspend fun resetLatestCachedActivityStartTime() {
+        settingsState.value = settingsState.value.copy(latestCachedActivityStartTimeMillis = 0L)
     }
 }

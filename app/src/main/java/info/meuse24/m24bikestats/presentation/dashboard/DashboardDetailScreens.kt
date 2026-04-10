@@ -21,7 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Map
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,7 +54,6 @@ import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 fun ActivityDetailScreen(
     uiState: ActivityDetailScreenUiState,
     onLoadActivity: (String) -> Unit,
-    onRefreshActivity: (String) -> Unit,
     activityId: String,
     onNavigateToTrack: (String) -> Unit,
     onNavigateBack: () -> Unit,
@@ -81,9 +79,6 @@ fun ActivityDetailScreen(
                         IconButton(onClick = { shareActivityDetail(context, activity) }) {
                             Icon(Icons.Default.Share, contentDescription = stringResource(R.string.activity_detail_share))
                         }
-                    }
-                    IconButton(onClick = { onRefreshActivity(activityId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.activity_detail_refresh))
                     }
                 },
             )
@@ -200,7 +195,6 @@ internal fun shareBikeDetail(
 fun BikeDetailScreen(
     uiState: BikeDetailScreenUiState,
     onLoadBike: (String) -> Unit,
-    onRefreshBike: (String) -> Unit,
     bikeId: String,
     onNavigateBack: () -> Unit,
 ) {
@@ -215,11 +209,6 @@ fun BikeDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onRefreshBike(bikeId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.bike_detail_refresh))
                     }
                 },
             )

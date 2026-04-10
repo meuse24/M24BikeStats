@@ -9,10 +9,10 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - sekundäre Navigation für `setup`, `hilfe`, `info`, `api-test` und `logout`
 - Home-Top-Bar mit App-Branding statt generischem Bereichstitel
 - Room-Cache für Aktivitäten, Aktivitätsdetails und Bikes
-- cache-first Listen- und Detailansichten mit gezieltem Hintergrund-Refresh
-- mehrstufiger Cloud-Sync vom Home-Screen für Bikes, Aktivitäten und optional fehlende bzw. veraltete Aktivitätsdetails
-- optionaler täglicher Hintergrund-Sync über WorkManager mit konfigurierbaren Netzwerkbedingungen
-- Setup mit kompakten Dropdown-Einstellungen für Anzeigemodus, CSV-Format, Detail-Sync, Hintergrund-Sync sowie Hinweis-/Erklärungstexte
+- cache-first Listen- und Detailansichten mit automatischem Initial-Sync beim ersten Start
+- Home-Refresh lädt Bikes, OIDC-Accountdaten, neue Aktivitäten und fehlende Aktivitätsdetails nach
+- OIDC-UserInfo und Discovery-Daten werden verschlüsselt gecacht, damit Kontoansicht und PDF-Export auch offline funktionieren
+- Setup mit kompakten Dropdown-Einstellungen für Anzeigemodus, CSV-Format, Hinweis-/Erklärungstexte und einem kompletten Daten-Reset
 - konfigurierbare Nachfrage zum Ausblenden von Hinweistexten mit Zeitstufen `Früh`, `Standard`, `Spät`, `Nie`
 - Nachfrage erscheint erst nach ausreichender Installationsdauer und aktiver Foreground-Nutzung; bestehende Sitzungen werden nicht mit langen Delays unterbrochen
 - CSV-Export für Aktivitäten, Aktivitätsdetails und Tracks
@@ -74,9 +74,8 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Funktionen`: CSV-Exporte und PDF-Zusammenfassungsbericht
 - `Statistiken`: Wochen-/Monats-/Jahresaggregation aller gecachten Aktivitäten mit Vico-Kombidiagramm, initialem Fokus auf dem neuesten Zeitachsenabschnitt, abgedecktem Statistikzeitraum und Summary-Tiles für Gesamt- und Durchschnittswerte pro Tour; darunter `Highlights & Rhythmus` mit Bestleistungen, distanzstärkstem Zeitraum, effektiver Reisegeschwindigkeit, Wochentagsverteilung und Wochenfrequenz
 - `Setup`: kompakte Dropdown-Einstellungen für Anzeigemodus `Automatisch` / `Hell` / `Dunkel`
-- `Setup`: zusätzlich CSV-Format-Presets, Detail-Sync-Modus `nur fehlende` oder `fehlende + veraltete`
-- `Setup`: zusätzlich Hintergrund-Sync `deaktiviert`, `täglich per WLAN` oder `täglich in jedem Netz`
-- `Setup`: zusätzlich Hinweis-/Erklärungstexte sowie Nachfrage-Timing `früh`, `standard`, `spät`, `nie`
+- `Setup`: zusätzlich CSV-Format-Presets, Hinweis-/Erklärungstexte und Nachfrage-Timing `früh`, `standard`, `spät`, `nie`
+- `Setup`: Aktion `Alle Daten zurücksetzen` leert lokalen Cache, OIDC-Daten und Sync-Flags und startet sofort erneut den Initial-Sync
 - `Setup`: Nachfrage kann sichtbar ab `jetzt` neu gestartet werden; bei bereits ausgeblendeten Hinweistexten bleibt das Timing gespeichert
 - `Hilfe` / `Info` / `API-Test`: Sekundärziele im Drawer oder Overflow
 - `API-Test` ist nur in Debug-Builds als Diagnoseziel verfügbar
@@ -98,13 +97,12 @@ Android-App für Bosch eBike Smart System Fahrtdaten über das Bosch eBike Data 
 - `Automatisch` leitet aus den Dezimalkonventionen des Geräts ein passendes CSV-Preset ab.
 - `Excel/Deutsch` nutzt Semikolon, Dezimalkomma und deutsches Datumsformat.
 - `Standard/International` nutzt Komma, Dezimalpunkt und ISO-nahes Datumsformat.
-- Der optionale Hintergrund-Sync plant genau einen eindeutigen periodischen WorkManager-Job und übernimmt dabei den im Setup gewählten Detail-Sync-Modus.
 - Die Nachfrage zum Ausblenden von Hinweistexten nutzt den echten Installationszeitpunkt plus akkumulierte Foreground-Nutzung als gemeinsame Schwelle.
 - Aktivitäten- und Detail-CSV exportieren nur Daten, die bereits in Room vorhanden sind.
-- Der PDF-Bericht nutzt ebenfalls nur bereits lokal gecachte Daten und ergänzt sie um OIDC-UserInfo-/Discovery-Metadaten.
+- Der PDF-Bericht nutzt ebenfalls nur bereits lokal gecachte Daten und ergänzt sie um OIDC-UserInfo-/Discovery-Metadaten aus dem verschlüsselten Cache.
 - Der PDF-Bericht enthält Highlights sowie Wochen-, Monats- und Jahresdiagramme mit jeweils passendem distanzstärkstem Zeitraum.
-- Der Home-Sync zeigt Fortschritt und kann abgebrochen werden.
-- Der Home-Sync kann datensparsam nur fehlende Aktivitätsdetails laden oder optional veraltete Details mitaktualisieren.
+- Der Initial-Sync zeigt Fortschritt und kann ebenso wie der Home-Refresh abgebrochen werden.
+- Logout löscht Tokens, OIDC-Cache, Room-Daten und Sync-Flags, damit der nächste Account mit einem sauberen Initial-Sync startet.
 - Die Home-Übersicht zeigt zusätzlich die Anzahl gecachter Detaildatensätze und GPS-Punkte.
 - Bike-Status nutzt zusätzlich Walk Assist, Einschaltzeit und Assist-Reichweiten aus den Bike-Details.
 
@@ -115,7 +113,7 @@ domain/        Interfaces, Modelle, UseCases
 api/           Bosch-Endpoint-Katalog für API-Test/Diagnose
 data/          API- und Repository-Implementierungen, Room-Zugriff
 auth/          OAuth2/AppAuth, Token-Verwaltung, OIDC-Helfer
-background/    WorkManager-Scheduling und Settings-Beobachtung
+background/    einmalige Cache-Korrekturen für Aktivitätszentren
 presentation/  Compose-Screens, Navigation, Theme, ViewModels
 shared/        gemeinsam genutzte Formatierungs-/Hilfscodecs
 di/            Koin-Modul

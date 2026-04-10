@@ -10,14 +10,14 @@ import java.util.Locale
 
 data class AppSettings(
     val csvExportFormat: CsvExportFormat = CsvExportFormat.SYSTEM_DEFAULT,
-    val cloudSyncDetailMode: CloudSyncDetailMode = CloudSyncDetailMode.MISSING_ONLY,
-    val backgroundSyncMode: BackgroundSyncMode = BackgroundSyncMode.DISABLED,
     val displayMode: DisplayMode = DisplayMode.AUTOMATIC,
     val showExplanationTexts: Boolean = true,
     val explanationTextsPromptTiming: ExplanationTextsPromptTiming = ExplanationTextsPromptTiming.STANDARD,
     val explanationTextsPromptTrackingStartedAtEpochMillis: Long = 0L,
     val explanationTextsPromptForegroundUsageMillis: Long = 0L,
     val explanationTextsPromptHandled: Boolean = false,
+    val initialSyncCompletedAtEpochMillis: Long = 0L,
+    val latestCachedActivityStartTimeMillis: Long = 0L,
 ) {
     fun shouldSuggestHidingExplanationTexts(
         nowEpochMillis: Long = System.currentTimeMillis(),
@@ -126,18 +126,6 @@ enum class CloudSyncDetailMode {
 
     companion object {
         fun fromStoredValue(value: String?): CloudSyncDetailMode? =
-            entries.firstOrNull { mode -> mode.name == value }
-    }
-}
-
-enum class BackgroundSyncMode {
-    DISABLED,
-    DAILY_UNMETERED,
-    DAILY_CONNECTED,
-    ;
-
-    companion object {
-        fun fromStoredValue(value: String?): BackgroundSyncMode? =
             entries.firstOrNull { mode -> mode.name == value }
     }
 }

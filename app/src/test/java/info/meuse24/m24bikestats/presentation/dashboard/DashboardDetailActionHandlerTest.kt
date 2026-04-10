@@ -69,7 +69,6 @@ class DashboardDetailActionHandlerTest {
         handler.loadBikeDetail(
             scope = scope,
             bikeId = "bike-1",
-            force = false,
             currentState = { state },
             updateState = { transform -> state = transform(state) },
         )
@@ -79,7 +78,6 @@ class DashboardDetailActionHandlerTest {
         handler.loadBikeDetail(
             scope = scope,
             bikeId = "bike-1",
-            force = true,
             currentState = { state },
             updateState = { transform -> state = transform(state) },
         )

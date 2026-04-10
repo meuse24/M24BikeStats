@@ -1,11 +1,27 @@
 package info.meuse24.m24bikestats.domain.usecase
 
+import info.meuse24.m24bikestats.auth.OidcCacheRepository
+import info.meuse24.m24bikestats.data.local.database.BoschDatabase
+import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class ClearAuthenticationUseCase(
     private val authRepository: AuthRepository,
+    private val oidcCacheRepository: OidcCacheRepository,
+    private val appSettingsRepository: AppSettingsRepository,
+    private val database: BoschDatabase,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    operator fun invoke() {
+    suspend operator fun invoke() {
         authRepository.clearTokens()
+        oidcCacheRepository.clearOidcCache()
+        appSettingsRepository.resetInitialSyncFlag()
+        appSettingsRepository.resetLatestCachedActivityStartTime()
+        withContext(ioDispatcher) {
+            database.clearAllTables()
+        }
     }
 }

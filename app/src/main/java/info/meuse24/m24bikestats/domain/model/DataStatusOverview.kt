@@ -6,7 +6,6 @@ data class DataStatusOverview(
     val coveredActivityEndEpochMillis: Long?,
     val detailedActivityCount: Int,
     val missingDetailCount: Int,
-    val staleDetailCount: Int,
     val gpsPointCount: Int,
     val lastActivitySyncAtEpochMillis: Long?,
     val lastBikeSyncAtEpochMillis: Long?,

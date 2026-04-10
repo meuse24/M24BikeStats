@@ -5,12 +5,10 @@ import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.auth.LiveOidcDiscoveryInfoProvider
 import info.meuse24.m24bikestats.auth.LiveOidcCertificateInfoProvider
 import info.meuse24.m24bikestats.auth.LiveOidcUserInfoProvider
-import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcCacheRepository
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
 import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
-import info.meuse24.m24bikestats.background.BackgroundSyncScheduler
-import info.meuse24.m24bikestats.background.BackgroundSyncSettingsObserver
-import info.meuse24.m24bikestats.background.ComputeActivityCentersWorker
 import info.meuse24.m24bikestats.data.auth.AuthManager
 import info.meuse24.m24bikestats.data.export.AndroidPdfStringResolver
 import info.meuse24.m24bikestats.data.export.PdfMapTileProvider
@@ -20,6 +18,7 @@ import info.meuse24.m24bikestats.data.export.PdfStringResolver
 import info.meuse24.m24bikestats.data.local.database.BoschDatabase
 import info.meuse24.m24bikestats.data.local.database.BoschDatabaseMigrations
 import info.meuse24.m24bikestats.data.local.preferences.AppSettingsRepositoryImpl
+import info.meuse24.m24bikestats.data.local.preferences.OidcCacheRepositoryImpl
 import info.meuse24.m24bikestats.data.remote.BoschApiDataSource
 import info.meuse24.m24bikestats.data.remote.BoschApiClient
 import info.meuse24.m24bikestats.data.remote.BoschJsonBodyExtractor
@@ -42,7 +41,6 @@ import info.meuse24.m24bikestats.domain.usecase.FetchBoschDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetActivityMapPointsUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
-import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCurrentAccessTokenInfoUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetStatisticsUseCase
@@ -59,16 +57,14 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActiviti
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RecordExplanationTextsPromptForegroundUsageUseCase
 import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
 import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
@@ -87,10 +83,6 @@ import info.meuse24.m24bikestats.presentation.login.LoginViewModel
 import info.meuse24.m24bikestats.presentation.map.MapSummaryViewModel
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsUiModelMapper
 import info.meuse24.m24bikestats.presentation.statistics.StatisticsViewModel
-import androidx.work.WorkManager
-import androidx.work.ExistingWorkPolicy
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.Constraints
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
@@ -129,17 +121,16 @@ val appModule = module {
     single<BoschSmartSystemRepository> { get<BoschSmartSystemRepositoryImpl>() }
     single<BoschSmartSystemCacheStatusRepository> { get<BoschSmartSystemRepositoryImpl>() }
     single<AppSettingsRepository> { AppSettingsRepositoryImpl(androidContext()) }
+    single<OidcCacheRepository> { OidcCacheRepositoryImpl(androidContext()) }
     single<AuthRepository> { get<AuthManager>() }
     single<AuthFlowCoordinator> { get<AuthManager>() }
     single<LoginStringResolver> { AndroidLoginStringResolver(androidContext()) }
-    single { BackgroundSyncScheduler(androidContext()) }
-    single { BackgroundSyncSettingsObserver(get(), get()) }
     single<DashboardStringResolver> { AndroidDashboardStringResolver(androidContext()) }
     single { DashboardUiModelMapper(get()) }
     single { StatisticsUiModelMapper() }
     single<OidcCertificateInfoProvider> { LiveOidcCertificateInfoProvider(get(), get()) }
-    single<OidcUserInfoProvider> { LiveOidcUserInfoProvider(get()) }
-    single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get()) }
+    single<OidcUserInfoProvider> { LiveOidcUserInfoProvider(get(), get()) }
+    single<OidcDiscoveryInfoProvider> { LiveOidcDiscoveryInfoProvider(get(), get()) }
     single<PdfReportMetadataRepository> { PdfReportMetadataRepositoryImpl(get(), get()) }
     single<PdfStringResolver> { AndroidPdfStringResolver(androidContext()) }
     single { PdfMapTileProvider() }
@@ -155,7 +146,7 @@ val appModule = module {
     // --- Domain ---
     factory { GetActivityMapPointsUseCase(get()) }
     factory { IsAuthenticatedUseCase(get()) }
-    factory { ClearAuthenticationUseCase(get()) }
+    factory { ClearAuthenticationUseCase(get(), get(), get(), get()) }
     factory { FetchBoschDataUseCase(get(), get()) }
     factory { GetSmartSystemActivitiesUseCase(get(), get()) }
     factory { ObserveCachedSmartSystemActivitiesUseCase(get()) }
@@ -165,13 +156,10 @@ val appModule = module {
     factory { ObserveCachedSmartSystemBikeDetailUseCase(get()) }
     factory { GetCachedSmartSystemActivityUseCase(get()) }
     factory { GetCachedSmartSystemActivityDetailUseCase(get()) }
-    factory { GetCachedSmartSystemActivityTotalCountUseCase(get()) }
     factory { GetCachedSmartSystemBikeUseCase(get()) }
     factory { GetStatisticsUseCase(get()) }
     factory { ObserveDataStatusOverviewUseCase(get(), get()) }
     factory { ObserveAppSettingsUseCase(get()) }
-    factory { UpdateBackgroundSyncModeUseCase(get()) }
-    factory { UpdateCloudSyncDetailModeUseCase(get()) }
     factory { UpdateCsvExportFormatUseCase(get()) }
     factory { UpdateDisplayModeUseCase(get()) }
     factory { UpdateExplanationTextsPromptTimingUseCase(get()) }
@@ -188,11 +176,11 @@ val appModule = module {
     factory { GetSmartSystemBikesUseCase(get(), get()) }
     factory { GetSmartSystemBikeDetailUseCase(get(), get()) }
     factory { RefreshSmartSystemActivitiesUseCase(get(), get(), get()) }
-    factory { RefreshPendingSmartSystemActivityDetailsUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemActivityDetailUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemBikesUseCase(get(), get(), get()) }
     factory { RefreshSmartSystemBikeDetailUseCase(get(), get(), get()) }
-    factory { SyncSmartSystemCloudUseCase(get(), get(), get()) }
+    factory { SyncSmartSystemCloudUseCase(get(), get(), get(), get(), get(), get()) }
+    factory { RefreshSmartSystemDataUseCase(get(), get(), get(), get(), get(), get()) }
 
     // --- Presentation ---
     factory {
@@ -202,12 +190,7 @@ val appModule = module {
             observeCachedActivityDetailCacheOverview = get(),
             observeDataStatusOverview = get(),
             observeAppSettings = get(),
-            getCachedActivityTotalCount = get(),
             getActivities = get(),
-            refreshActivitiesUseCase = get(),
-            refreshBikesUseCase = get(),
-            updateCloudSyncDetailModeUseCase = get(),
-            updateBackgroundSyncModeUseCase = get(),
             updateCsvExportFormatUseCase = get(),
             updateDisplayModeUseCase = get(),
             updateExplanationTextsPromptTimingUseCase = get(),
@@ -224,8 +207,6 @@ val appModule = module {
             exportActivitiesCsv = get(),
             exportActivityDetailsCsv = get(),
             exportPdfSummaryReportFileUseCase = get(),
-            refreshPendingSmartSystemActivityDetailsUseCase = get(),
-            syncSmartSystemCloudUseCase = get(),
             stringResolver = get(),
         )
     }

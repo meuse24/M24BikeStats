@@ -4,13 +4,26 @@ import android.app.Activity
 import android.content.Intent
 import info.meuse24.m24bikestats.auth.AuthFlowCoordinator
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
+import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
 import info.meuse24.m24bikestats.domain.usecase.ClearAuthenticationUseCase
 import info.meuse24.m24bikestats.domain.usecase.IsAuthenticatedUseCase
+import info.meuse24.m24bikestats.presentation.dashboard.MainDispatcherRule
+import info.meuse24.m24bikestats.testsupport.FakeOidcCacheRepository
+import info.meuse24.m24bikestats.testsupport.TestBoschDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Test
     fun `initial status is authenticated when auth use case returns true`() {
@@ -19,7 +32,7 @@ class LoginViewModelTest {
         val viewModel = LoginViewModel(
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(authRepository),
-            clearAuthentication = ClearAuthenticationUseCase(authRepository),
+            clearAuthentication = createClearAuthenticationUseCase(authRepository),
             stringResolver = FakeLoginStringResolver(),
         )
 
@@ -27,17 +40,18 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `logout locally clears authentication and sets idle status`() {
+    fun `logout locally clears authentication and sets idle status`() = runTest {
         val authRepository = FakeAuthRepository(isAuthenticated = true)
 
         val viewModel = LoginViewModel(
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(authRepository),
-            clearAuthentication = ClearAuthenticationUseCase(authRepository),
+            clearAuthentication = createClearAuthenticationUseCase(authRepository),
             stringResolver = FakeLoginStringResolver(),
         )
 
         viewModel.logoutLocally()
+        advanceUntilIdle()
 
         assertEquals(1, authRepository.clearTokensCalls)
         assertTrue(viewModel.status.value is LoginStatus.Idle)
@@ -48,7 +62,7 @@ class LoginViewModelTest {
         val viewModel = LoginViewModel(
             authFlowCoordinator = FakeAuthFlowCoordinator(),
             isAuthenticated = IsAuthenticatedUseCase(FakeAuthRepository(isAuthenticated = false)),
-            clearAuthentication = ClearAuthenticationUseCase(FakeAuthRepository(isAuthenticated = false)),
+            clearAuthentication = createClearAuthenticationUseCase(FakeAuthRepository(isAuthenticated = false)),
             stringResolver = FakeLoginStringResolver(),
         )
 
@@ -59,6 +73,16 @@ class LoginViewModelTest {
             viewModel.status.value,
         )
     }
+
+    private fun createClearAuthenticationUseCase(
+        authRepository: AuthRepository,
+    ) = ClearAuthenticationUseCase(
+        authRepository = authRepository,
+        oidcCacheRepository = FakeOidcCacheRepository(),
+        appSettingsRepository = FakeAppSettingsRepository(),
+        database = TestBoschDatabase(),
+        ioDispatcher = Dispatchers.Main,
+    )
 
     private class FakeAuthRepository(
         private val isAuthenticated: Boolean,

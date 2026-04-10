@@ -173,7 +173,7 @@ class DashboardUiModelMapperTest {
     }
 
     @Test
-    fun `data status stays complete when only existing details can be refreshed`() {
+    fun `data status stays complete when no details are missing`() {
         val uiModel = mapper.toDataStatusUiModel(
             DataStatusOverview(
                 cachedActivityCount = 12,
@@ -181,7 +181,6 @@ class DashboardUiModelMapperTest {
                 coveredActivityEndEpochMillis = null,
                 detailedActivityCount = 12,
                 missingDetailCount = 0,
-                staleDetailCount = 4,
                 gpsPointCount = 4800,
                 lastActivitySyncAtEpochMillis = null,
                 lastBikeSyncAtEpochMillis = null,
@@ -192,9 +191,8 @@ class DashboardUiModelMapperTest {
 
         assertEquals(DataStatusTone.COMPLETE, uiModel.statusTone)
         assertEquals("res-${R.string.home_data_status_state_complete}", uiModel.statusLabel)
-        assertEquals("res-${R.string.home_data_status_summary_stale}:4", uiModel.statusSummary)
+        assertEquals("res-${R.string.home_data_status_summary_complete}", uiModel.statusSummary)
         assertEquals(R.string.home_data_status_headline_ready, uiModel.statusHeadlineRes)
-        assertEquals(4, uiModel.staleDetailCount)
     }
 
     @Test
@@ -206,7 +204,6 @@ class DashboardUiModelMapperTest {
                 coveredActivityEndEpochMillis = null,
                 detailedActivityCount = 15,
                 missingDetailCount = 5,
-                staleDetailCount = 2,
                 gpsPointCount = 640,
                 lastActivitySyncAtEpochMillis = null,
                 lastBikeSyncAtEpochMillis = null,
@@ -217,10 +214,9 @@ class DashboardUiModelMapperTest {
 
         assertEquals(75, uiModel.detailCoveragePercent)
         assertTrue(uiModel.hasMissingDetails)
-        assertTrue(uiModel.hasStaleDetails)
         assertFalse(uiModel.isComplete)
         assertEquals(R.string.home_data_status_headline_missing, uiModel.statusHeadlineRes)
-        assertEquals(R.string.home_sync_button, uiModel.primaryActionLabelRes)
+        assertEquals(R.string.home_refresh_button, uiModel.primaryActionLabelRes)
     }
 
     private fun activity() = BoschActivity(

@@ -13,9 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -42,11 +40,8 @@ import info.meuse24.m24bikestats.presentation.theme.DesignTokens
 @Composable
 fun HomeScreen(
     uiState: HomeUiState,
-    onSyncCloudData: () -> Unit,
-    onCancelSyncCloudData: () -> Unit,
-    onLoadMissingActivityDetails: () -> Unit,
-    onRefreshStaleActivityDetails: () -> Unit,
-    onCancelPendingActivityDetailsSync: () -> Unit,
+    onRefresh: () -> Unit,
+    onCancelRefresh: () -> Unit,
     onNavigateToActivityDetail: (String) -> Unit,
     onNavigateToActivityTrack: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -62,16 +57,12 @@ fun HomeScreen(
         uiState.syncPhaseLabel,
         uiState.syncLoadedActivityCount,
         uiState.syncTotalActivityCount,
-        uiState.isSyncingPendingActivityDetails,
-        uiState.pendingActivityDetailSyncLabel,
-        uiState.pendingActivityDetailSyncLoadedCount,
-        uiState.pendingActivityDetailSyncTotalCount,
     ) {
         uiState.toSyncProgressUi(
-            onCancelSyncCloudData = onCancelSyncCloudData,
-            onCancelPendingActivityDetailsSync = onCancelPendingActivityDetailsSync,
+            onCancelRefresh = onCancelRefresh,
         )
     }
+    val isInitialSetup = uiState.isInitialLoading && uiState.allActivities.isEmpty() && uiState.bikes.isEmpty()
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -85,8 +76,22 @@ fun HomeScreen(
             DashboardPageContainer {
                 HomeStatusHeroCard(
                     uiState = uiState,
-                    onSyncCloudData = onSyncCloudData,
+                    isInitialSetup = isInitialSetup,
+                    onRefresh = onRefresh,
                 )
+            }
+        }
+
+        if (isInitialSetup) {
+            item {
+                DashboardPageContainer {
+                    HomeEmptyStateCard(
+                        title = stringResource(R.string.home_initial_sync_title),
+                        description = stringResource(R.string.home_initial_sync_text).takeIf {
+                            uiState.showExplanationTexts
+                        },
+                    )
+                }
             }
         }
 
@@ -103,8 +108,6 @@ fun HomeScreen(
                 HomeSyncMetaCard(
                     uiState = uiState,
                     progress = syncProgress,
-                    onLoadMissingActivityDetails = onLoadMissingActivityDetails,
-                    onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
                 )
             }
         }
@@ -225,10 +228,21 @@ fun HomeScreen(
 @Composable
 private fun HomeStatusHeroCard(
     uiState: HomeUiState,
-    onSyncCloudData: () -> Unit,
+    isInitialSetup: Boolean,
+    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dataStatus = uiState.dataStatus
+    val headlineRes = when {
+        isInitialSetup -> R.string.home_initial_sync_title
+        dataStatus != null -> dataStatus.statusHeadlineRes
+        else -> R.string.home_data_status_loading
+    }
+    val summaryText = when {
+        isInitialSetup -> stringResource(R.string.home_initial_sync_text)
+        uiState.shouldShowStatusSummary -> dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading)
+        else -> null
+    }
     DashboardHeroSurface(
         modifier = modifier,
         accentTone = dataStatus.toBadgeTone(),
@@ -243,20 +257,19 @@ private fun HomeStatusHeroCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = dataStatus?.let { stringResource(it.statusHeadlineRes) }
-                    ?: stringResource(R.string.home_data_status_loading),
+                text = stringResource(headlineRes),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.SemiBold,
             )
-            if (uiState.shouldShowStatusSummary) {
+            summaryText?.let { statusSummary ->
                 Text(
-                    text = dataStatus?.statusSummary ?: stringResource(R.string.home_data_status_loading),
+                    text = statusSummary,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            if (dataStatus != null) {
+            if (dataStatus != null && !isInitialSetup) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -278,11 +291,11 @@ private fun HomeStatusHeroCard(
             }
         }
         HomePrimaryActionBar(
-            label = stringResource(dataStatus?.primaryActionLabelRes ?: R.string.home_sync_button),
+            label = stringResource(dataStatus?.primaryActionLabelRes ?: R.string.home_refresh_button),
             enabled = uiState.canStartSync,
             isRunning = uiState.isSyncingCloudData,
             showLabel = uiState.showExplanationTexts,
-            onClick = onSyncCloudData,
+            onClick = onRefresh,
         )
     }
 }
@@ -323,15 +336,6 @@ private fun HomeStatusMetricGrid(
                 },
             ),
             DashboardMetricTileModel(
-                label = stringResource(R.string.home_data_status_stale),
-                value = dataStatus.staleDetailCount.toString(),
-                tone = if (dataStatus.hasStaleDetails) {
-                    DashboardMetricTone.Informative
-                } else {
-                    DashboardMetricTone.Neutral
-                },
-            ),
-            DashboardMetricTileModel(
                 label = stringResource(R.string.home_data_status_gps_points),
                 value = dataStatus.gpsPointCount.toString(),
             ),
@@ -343,8 +347,6 @@ private fun HomeStatusMetricGrid(
 private fun HomeSyncMetaCard(
     uiState: HomeUiState,
     progress: HomeSyncProgressUi?,
-    onLoadMissingActivityDetails: () -> Unit,
-    onRefreshStaleActivityDetails: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     DashboardSectionCard(modifier = modifier) {
@@ -398,16 +400,6 @@ private fun HomeSyncMetaCard(
             HomeSyncProgressCard(
                 progress = it,
                 showButtonLabel = uiState.showExplanationTexts,
-            )
-        }
-
-        if (uiState.hasSecondarySyncActions) {
-            HomeSecondaryActionRow(
-                dataStatus = uiState.dataStatus,
-                enabled = uiState.canStartSync,
-                showButtonLabels = uiState.showExplanationTexts,
-                onLoadMissingActivityDetails = onLoadMissingActivityDetails,
-                onRefreshStaleActivityDetails = onRefreshStaleActivityDetails,
             )
         }
     }
@@ -486,7 +478,7 @@ private fun HomePrimaryActionBar(
         onClick = onClick,
         enabled = enabled,
         label = if (isRunning) {
-            stringResource(R.string.home_sync_running)
+            stringResource(R.string.home_refresh_running)
         } else {
             label
         },
@@ -508,56 +500,6 @@ private fun HomePrimaryActionBar(
         modifier = modifier.fillMaxWidth(),
         emphasis = HomeActionButtonEmphasis.Primary,
     )
-}
-
-@Composable
-private fun HomeSecondaryActionRow(
-    dataStatus: DataStatusUiModel?,
-    enabled: Boolean,
-    showButtonLabels: Boolean,
-    onLoadMissingActivityDetails: () -> Unit,
-    onRefreshStaleActivityDetails: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        if (dataStatus?.hasMissingDetails == true) {
-            HomeActionButton(
-                onClick = onLoadMissingActivityDetails,
-                enabled = enabled,
-                label = stringResource(R.string.home_data_status_action_missing),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Download,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                showLabel = showButtonLabels,
-                modifier = Modifier.fillMaxWidth(),
-                emphasis = HomeActionButtonEmphasis.Secondary,
-            )
-        }
-        if (dataStatus?.hasStaleDetails == true) {
-            HomeActionButton(
-                onClick = onRefreshStaleActivityDetails,
-                enabled = enabled,
-                label = stringResource(R.string.home_data_status_action_stale),
-                icon = {
-                    Icon(
-                        imageVector = Icons.Default.Update,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                showLabel = showButtonLabels,
-                modifier = Modifier.fillMaxWidth(),
-                emphasis = HomeActionButtonEmphasis.Secondary,
-            )
-        }
-    }
 }
 
 @Composable
@@ -702,24 +644,8 @@ private fun DataStatusUiModel?.toBadgeTone(): DashboardStatusBadgeTone = when (t
 }
 
 private fun HomeUiState.toSyncProgressUi(
-    onCancelSyncCloudData: () -> Unit,
-    onCancelPendingActivityDetailsSync: () -> Unit,
+    onCancelRefresh: () -> Unit,
 ): HomeSyncProgressUi? = when {
-    isSyncingPendingActivityDetails -> {
-        val progress = if (pendingActivityDetailSyncTotalCount > 0) {
-            pendingActivityDetailSyncLoadedCount.toFloat() / pendingActivityDetailSyncTotalCount.toFloat()
-        } else {
-            0f
-        }
-        HomeSyncProgressUi(
-            phaseLabel = pendingActivityDetailSyncLabel,
-            loadedCount = pendingActivityDetailSyncLoadedCount,
-            totalCount = pendingActivityDetailSyncTotalCount,
-            overallProgress = progress,
-            onCancel = onCancelPendingActivityDetailsSync,
-        )
-    }
-
     isSyncingCloudData -> {
         val phaseProgress = if (syncTotalActivityCount > 0) {
             syncLoadedActivityCount.toFloat() / syncTotalActivityCount.toFloat()
@@ -737,7 +663,7 @@ private fun HomeUiState.toSyncProgressUi(
             loadedCount = syncLoadedActivityCount,
             totalCount = syncTotalActivityCount,
             overallProgress = overallProgress,
-            onCancel = onCancelSyncCloudData,
+            onCancel = onCancelRefresh,
         )
     }
 

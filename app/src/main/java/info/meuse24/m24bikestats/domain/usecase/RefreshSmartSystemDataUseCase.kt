@@ -11,19 +11,16 @@ import info.meuse24.m24bikestats.domain.repository.AppSettingsRepository
 import info.meuse24.m24bikestats.domain.repository.AuthRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemCacheStatusRepository
 import info.meuse24.m24bikestats.domain.repository.BoschSmartSystemRepository
-import java.time.Instant
-import java.time.OffsetDateTime
 import kotlinx.coroutines.ensureActive
 import kotlin.coroutines.coroutineContext
 
-class SyncSmartSystemCloudUseCase(
+class RefreshSmartSystemDataUseCase(
     private val repository: BoschSmartSystemRepository,
     private val cacheStatusRepository: BoschSmartSystemCacheStatusRepository,
     private val authRepository: AuthRepository,
     private val appSettingsRepository: AppSettingsRepository,
     private val oidcUserInfoProvider: OidcUserInfoProvider,
     private val oidcDiscoveryInfoProvider: OidcDiscoveryInfoProvider,
-    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     suspend operator fun invoke(
         onProgress: (SmartSystemCloudSyncProgress) -> Unit = {},
@@ -48,34 +45,67 @@ class SyncSmartSystemCloudUseCase(
         runCatching { oidcUserInfoProvider.loadCurrentUserInfo() }
         runCatching { oidcDiscoveryInfoProvider.loadCurrentDiscovery() }
 
-        val knownActivityIds = repository.getCachedActivities()
+        val cachedActivities = repository.getCachedActivities()
+        val knownActivityIds = cachedActivities
             .asSequence()
             .map(BoschActivity::id)
             .toMutableSet()
-        var offset = 0
-        var totalActivityCount = cacheStatusRepository.getCachedActivityTotalCount() ?: knownActivityIds.size
+        val checkpointEpochMillis = appSettingsRepository.getSettings().latestCachedActivityStartTimeMillis
+            .takeIf { it > 0L }
+            ?: cachedActivities.mapNotNull(BoschActivity::startTimeEpochMillisOrNull).maxOrNull()
+            ?: 0L
 
-        do {
+        var offset = 0
+        var loadedNewActivityCount = 0
+        var pageCount = 0
+        var reachedCheckpoint = false
+
+        while (pageCount < MAX_DELTA_PAGES && !reachedCheckpoint) {
             coroutineContext.ensureActive()
             val page = repository.getActivities(
                 accessToken = token,
-                limit = SYNC_PAGE_SIZE,
+                limit = PAGE_SIZE,
                 offset = offset,
             ).getOrElse { return@withValidAccessToken Result.failure(it) }
-
-            totalActivityCount = page.total
             if (page.items.isEmpty()) break
 
-            knownActivityIds += page.items.map(BoschActivity::id)
+            pageCount += 1
+            var pageEncounteredCheckpoint = false
+            val newItemsOnPage = buildList {
+                for (item in page.items) {
+                    val isKnown = item.id in knownActivityIds
+                    val isAtOrBeforeCheckpoint = checkpointEpochMillis <= 0L ||
+                        item.startTimeEpochMillisOrNull()?.let { startTime -> startTime <= checkpointEpochMillis } == true
+                    if (isKnown && isAtOrBeforeCheckpoint) {
+                        pageEncounteredCheckpoint = true
+                        break
+                    }
+                    if (!isKnown) {
+                        add(item)
+                    }
+                }
+            }
+
+            if (newItemsOnPage.isNotEmpty()) {
+                knownActivityIds += newItemsOnPage.map(BoschActivity::id)
+                loadedNewActivityCount += newItemsOnPage.size
+            }
+
+            reachedCheckpoint = pageEncounteredCheckpoint || page.items.size < PAGE_SIZE
+            val progressTotal = if (reachedCheckpoint || pageCount >= MAX_DELTA_PAGES) {
+                loadedNewActivityCount
+            } else {
+                loadedNewActivityCount + PAGE_SIZE
+            }
             onProgress(
                 SmartSystemCloudSyncProgress(
                     phase = SmartSystemCloudSyncPhase.ACTIVITIES,
-                    processedCount = knownActivityIds.size.coerceAtMost(totalActivityCount),
-                    totalCount = totalActivityCount,
+                    processedCount = loadedNewActivityCount,
+                    totalCount = progressTotal,
                 ),
             )
             offset = page.offset + page.items.size
-        } while (offset < totalActivityCount && knownActivityIds.size < totalActivityCount)
+        }
 
         val detailCandidates = cacheStatusRepository.getActivityIdsNeedingDetailSync(
             detailMode = CloudSyncDetailMode.MISSING_ONLY,
@@ -109,7 +139,6 @@ class SyncSmartSystemCloudUseCase(
             .maxOrNull()
             ?: 0L
         appSettingsRepository.updateLatestCachedActivityStartTime(latestActivityStartTimeMillis)
-        appSettingsRepository.markInitialSyncCompleted(nowMillis())
 
         Result.success(
             SmartSystemCloudSyncSummary(
@@ -120,11 +149,7 @@ class SyncSmartSystemCloudUseCase(
     }
 
     private companion object {
-        private const val SYNC_PAGE_SIZE = 100
+        private const val PAGE_SIZE = 20
+        private const val MAX_DELTA_PAGES = 5
     }
 }
-
-internal fun BoschActivity.startTimeEpochMillisOrNull(): Long? =
-    runCatching { OffsetDateTime.parse(startTime).toInstant().toEpochMilli() }
-        .recoverCatching { Instant.parse(startTime).toEpochMilli() }
-        .getOrNull()

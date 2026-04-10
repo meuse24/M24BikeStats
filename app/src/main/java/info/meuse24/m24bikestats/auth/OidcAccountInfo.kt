@@ -16,10 +16,17 @@ interface OidcUserInfoProvider {
 
 class LiveOidcUserInfoProvider(
     private val fetchBoschData: FetchBoschDataUseCase,
+    private val oidcCacheRepository: OidcCacheRepository,
 ) : OidcUserInfoProvider {
     override suspend fun loadCurrentUserInfo(): OidcUserInfoUiModel? {
-        val response = fetchBoschData(BoschEndpoint.USERINFO.toRequest()).getOrNull() ?: return null
-        return parseOidcUserInfo(response)
+        val liveUserInfo = fetchBoschData(BoschEndpoint.USERINFO.toRequest())
+            .getOrNull()
+            ?.let(::parseOidcUserInfo)
+        if (liveUserInfo != null) {
+            oidcCacheRepository.saveCachedUserInfo(liveUserInfo.toCachedUserInfo())
+            return liveUserInfo
+        }
+        return oidcCacheRepository.getCachedUserInfo()?.toUiModel()
     }
 }
 
@@ -41,10 +48,17 @@ interface OidcDiscoveryInfoProvider {
 
 class LiveOidcDiscoveryInfoProvider(
     private val fetchBoschData: FetchBoschDataUseCase,
+    private val oidcCacheRepository: OidcCacheRepository,
 ) : OidcDiscoveryInfoProvider {
     override suspend fun loadCurrentDiscovery(): OidcDiscoveryInfoUiModel? {
-        val response = fetchBoschData(BoschEndpoint.OIDC_DISCOVERY.toRequest()).getOrNull() ?: return null
-        return parseOidcDiscoveryInfo(response)
+        val liveDiscoveryInfo = fetchBoschData(BoschEndpoint.OIDC_DISCOVERY.toRequest())
+            .getOrNull()
+            ?.let(::parseOidcDiscoveryInfo)
+        if (liveDiscoveryInfo != null) {
+            oidcCacheRepository.saveCachedDiscoveryInfo(liveDiscoveryInfo.toCachedDiscoveryInfo())
+            return liveDiscoveryInfo
+        }
+        return oidcCacheRepository.getCachedDiscoveryInfo()?.toUiModel()
     }
 }
 
@@ -90,3 +104,43 @@ private fun parseJsonBody(response: String): JSONObject? =
                 JSONObject(response.substring(bodyStartIndex).trim())
             }.getOrNull()
         }
+
+private fun OidcUserInfoUiModel.toCachedUserInfo(): CachedOidcUserInfo =
+    CachedOidcUserInfo(
+        email = email,
+        username = username,
+        subject = subject,
+    )
+
+private fun CachedOidcUserInfo.toUiModel(): OidcUserInfoUiModel =
+    OidcUserInfoUiModel(
+        email = email,
+        username = username,
+        subject = subject,
+    )
+
+private fun OidcDiscoveryInfoUiModel.toCachedDiscoveryInfo(): CachedOidcDiscoveryInfo =
+    CachedOidcDiscoveryInfo(
+        issuer = issuer,
+        authorizationEndpoint = authorizationEndpoint,
+        tokenEndpoint = tokenEndpoint,
+        userInfoEndpoint = userInfoEndpoint,
+        jwksUri = jwksUri,
+        revocationEndpoint = revocationEndpoint,
+        introspectionEndpoint = introspectionEndpoint,
+        endSessionEndpoint = endSessionEndpoint,
+        supportedGrantTypes = supportedGrantTypes,
+    )
+
+private fun CachedOidcDiscoveryInfo.toUiModel(): OidcDiscoveryInfoUiModel =
+    OidcDiscoveryInfoUiModel(
+        issuer = issuer,
+        authorizationEndpoint = authorizationEndpoint,
+        tokenEndpoint = tokenEndpoint,
+        userInfoEndpoint = userInfoEndpoint,
+        jwksUri = jwksUri,
+        revocationEndpoint = revocationEndpoint,
+        introspectionEndpoint = introspectionEndpoint,
+        endSessionEndpoint = endSessionEndpoint,
+        supportedGrantTypes = supportedGrantTypes,
+    )

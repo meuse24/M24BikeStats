@@ -40,10 +40,20 @@ class DashboardDetailActionHandler(
     private var activityDetailObservationJob: Job? = null
     private var bikeDetailObservationJob: Job? = null
 
+    fun cancelAllLoads() {
+        activityDetailLoadJob?.cancel()
+        bikeDetailLoadJob?.cancel()
+        activityDetailObservationJob?.cancel()
+        bikeDetailObservationJob?.cancel()
+        activityDetailLoadJob = null
+        bikeDetailLoadJob = null
+        activityDetailObservationJob = null
+        bikeDetailObservationJob = null
+    }
+
     fun loadBikeDetail(
         scope: CoroutineScope,
         bikeId: String,
-        force: Boolean,
         currentState: () -> DashboardUiState,
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
@@ -96,7 +106,7 @@ class DashboardDetailActionHandler(
                 }
             }
 
-            refreshBikeDetailUseCase(bikeId, force = force).getOrElse { error ->
+            refreshBikeDetailUseCase(bikeId, force = false).getOrElse { error ->
                 updateState {
                     it.copy(
                         isBikeDetailLoading = false,
@@ -125,7 +135,6 @@ class DashboardDetailActionHandler(
     fun loadActivityDetail(
         scope: CoroutineScope,
         activityId: String,
-        force: Boolean,
         currentState: () -> DashboardUiState,
         updateState: ((DashboardUiState) -> DashboardUiState) -> Unit,
     ) {
@@ -161,7 +170,7 @@ class DashboardDetailActionHandler(
                 }
             }
 
-            refreshActivityDetailUseCase(activityId, force = force).getOrElse { error ->
+            refreshActivityDetailUseCase(activityId, force = false).getOrElse { error ->
                 updateState {
                     it.copy(
                         isActivityDetailLoading = false,

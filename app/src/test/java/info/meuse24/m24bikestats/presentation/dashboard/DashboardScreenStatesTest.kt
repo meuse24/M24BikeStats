@@ -15,32 +15,27 @@ class DashboardScreenStatesTest {
             cachedActivityCount = 10,
             detailedActivityCount = 10,
             missingDetailCount = 0,
-            staleDetailCount = 0,
         )
         val partial = dataStatus(
             statusTone = DataStatusTone.PARTIAL,
             cachedActivityCount = 10,
             detailedActivityCount = 8,
             missingDetailCount = 2,
-            staleDetailCount = 1,
         )
         val empty = dataStatus(
             statusTone = DataStatusTone.EMPTY,
             cachedActivityCount = 0,
             detailedActivityCount = 0,
             missingDetailCount = 0,
-            staleDetailCount = 0,
         )
 
         assertTrue(complete.isComplete)
         assertFalse(complete.hasMissingDetails)
-        assertFalse(complete.hasStaleDetails)
         assertEquals(100, complete.detailCoveragePercent)
         assertEquals(R.string.home_data_status_headline_ready, complete.statusHeadlineRes)
 
         assertFalse(partial.isComplete)
         assertTrue(partial.hasMissingDetails)
-        assertTrue(partial.hasStaleDetails)
         assertEquals(80, partial.detailCoveragePercent)
         assertEquals(R.string.home_data_status_headline_missing, partial.statusHeadlineRes)
 
@@ -50,20 +45,18 @@ class DashboardScreenStatesTest {
     }
 
     @Test
-    fun `home ui state derived flags reflect sync metadata and secondary actions`() {
+    fun `home ui state derived flags reflect sync metadata`() {
         val state = homeUiState(
             isSyncingCloudData = true,
             dataStatus = dataStatus(
                 statusTone = DataStatusTone.PARTIAL,
                 missingDetailCount = 3,
-                staleDetailCount = 1,
                 lastActivitySyncLabel = "09.04.2026 06:10",
             ),
         )
 
         assertTrue(state.isAnySyncActive)
         assertTrue(state.hasSyncMetadata)
-        assertTrue(state.hasSecondarySyncActions)
     }
 
     @Test
@@ -73,17 +66,6 @@ class DashboardScreenStatesTest {
             dataStatus = dataStatus(
                 statusTone = DataStatusTone.COMPLETE,
                 missingDetailCount = 0,
-                staleDetailCount = 0,
-                cachedActivityCount = 12,
-                detailedActivityCount = 12,
-            ),
-        )
-        val staleWithoutHints = homeUiState(
-            showExplanationTexts = false,
-            dataStatus = dataStatus(
-                statusTone = DataStatusTone.COMPLETE,
-                missingDetailCount = 0,
-                staleDetailCount = 2,
                 cachedActivityCount = 12,
                 detailedActivityCount = 12,
             ),
@@ -93,7 +75,6 @@ class DashboardScreenStatesTest {
             dataStatus = dataStatus(
                 statusTone = DataStatusTone.PARTIAL,
                 missingDetailCount = 2,
-                staleDetailCount = 0,
                 cachedActivityCount = 12,
                 detailedActivityCount = 10,
             ),
@@ -104,7 +85,6 @@ class DashboardScreenStatesTest {
         )
 
         assertFalse(completeWithoutHints.shouldShowStatusSummary)
-        assertTrue(staleWithoutHints.shouldShowStatusSummary)
         assertTrue(partialWithoutHints.shouldShowStatusSummary)
         assertTrue(noStatus.shouldShowStatusSummary)
     }
@@ -114,7 +94,6 @@ class DashboardScreenStatesTest {
         cachedActivityCount: Int = 12,
         detailedActivityCount: Int = 12,
         missingDetailCount: Int = 0,
-        staleDetailCount: Int = 0,
         lastActivitySyncLabel: String? = null,
     ) = DataStatusUiModel(
         statusTone = statusTone,
@@ -125,7 +104,6 @@ class DashboardScreenStatesTest {
         detailedActivityCount = detailedActivityCount,
         detailCoverageLabel = "coverage",
         missingDetailCount = missingDetailCount,
-        staleDetailCount = staleDetailCount,
         gpsPointCount = 0,
         lastActivitySyncLabel = lastActivitySyncLabel,
         lastBikeSyncLabel = null,
@@ -151,10 +129,6 @@ class DashboardScreenStatesTest {
         syncPhaseLabel = null,
         syncLoadedActivityCount = 0,
         syncTotalActivityCount = 0,
-        isSyncingPendingActivityDetails = false,
-        pendingActivityDetailSyncLabel = null,
-        pendingActivityDetailSyncLoadedCount = 0,
-        pendingActivityDetailSyncTotalCount = 0,
         cachedDetailActivityCount = 0,
         cachedDetailPointCount = 0,
         cachedGpsPointCount = 0,

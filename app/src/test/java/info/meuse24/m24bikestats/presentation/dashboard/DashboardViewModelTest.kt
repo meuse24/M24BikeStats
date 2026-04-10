@@ -3,10 +3,11 @@ package info.meuse24.m24bikestats.presentation.dashboard
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoProvider
 import info.meuse24.m24bikestats.auth.OidcCertificateInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
 import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
-import info.meuse24.m24bikestats.domain.model.BoschActivity
+import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
-import info.meuse24.m24bikestats.domain.model.BackgroundSyncMode
+import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
 import info.meuse24.m24bikestats.domain.model.BoschActivityPage
 import info.meuse24.m24bikestats.domain.model.BoschBike
@@ -29,7 +30,6 @@ import info.meuse24.m24bikestats.domain.usecase.ExportSmartSystemActivitiesCsvUs
 import info.meuse24.m24bikestats.domain.usecase.FakeAppSettingsRepository
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityDetailUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityUseCase
-import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemActivityTotalCountUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetCachedSmartSystemBikeUseCase
 import info.meuse24.m24bikestats.domain.usecase.GetSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemActivitiesUseCase
@@ -40,24 +40,23 @@ import info.meuse24.m24bikestats.domain.usecase.ObserveCachedSmartSystemBikesUse
 import info.meuse24.m24bikestats.domain.usecase.ObserveAppSettingsUseCase
 import info.meuse24.m24bikestats.domain.usecase.ObserveDataStatusOverviewUseCase
 import info.meuse24.m24bikestats.domain.usecase.MarkExplanationTextsPromptHandledUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshPendingSmartSystemActivityDetailsUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivitiesUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemActivityDetailUseCase
+import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemDataUseCase
 import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikeDetailUseCase
-import info.meuse24.m24bikestats.domain.usecase.RefreshSmartSystemBikesUseCase
 import info.meuse24.m24bikestats.domain.usecase.ResetExplanationTextsPromptUseCase
 import info.meuse24.m24bikestats.domain.usecase.SyncSmartSystemCloudUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateCloudSyncDetailModeUseCase
-import info.meuse24.m24bikestats.domain.usecase.UpdateBackgroundSyncModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateCsvExportFormatUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateDisplayModeUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateExplanationTextsPromptTimingUseCase
 import info.meuse24.m24bikestats.domain.usecase.UpdateShowExplanationTextsUseCase
+import info.meuse24.m24bikestats.testsupport.FakeOidcCacheRepository
+import info.meuse24.m24bikestats.testsupport.TestBoschDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import java.io.File
@@ -290,7 +289,7 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `home data status exposes missing and stale cache state`() = runTest {
+    fun `home data status exposes missing cache state`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
                 listOf(
@@ -313,65 +312,7 @@ class DashboardViewModelTest {
         assertEquals(3, dataStatus!!.cachedActivityCount)
         assertEquals(1, dataStatus.detailedActivityCount)
         assertEquals(2, dataStatus.missingDetailCount)
-        assertEquals(1, dataStatus.staleDetailCount)
         assertEquals(DataStatusTone.PARTIAL, dataStatus.statusTone)
-    }
-
-    @Test
-    fun `loading missing activity details updates data status`() = runTest {
-        val repository = DashboardFakeRepository().apply {
-            setActivities(
-                listOf(
-                    testActivity(id = "a1", title = "Ride 1"),
-                    testActivity(id = "a2", title = "Ride 2"),
-                ),
-                totalCount = 2,
-            )
-            setBikes(emptyList())
-        }
-        val viewModel = createViewModel(repository)
-        advanceUntilIdle()
-
-        assertEquals(2, viewModel.uiState.value.toHomeUiState().dataStatus?.missingDetailCount)
-
-        viewModel.loadMissingActivityDetails()
-        advanceUntilIdle()
-
-        val dataStatus = viewModel.uiState.value.toHomeUiState().dataStatus
-        assertEquals(0, dataStatus?.missingDetailCount)
-        assertEquals(2, dataStatus?.detailedActivityCount)
-    }
-
-    @Test
-    fun `cloud sync detail mode changes propagate into ui state`() = runTest {
-        val repository = DashboardFakeRepository().apply {
-            setActivities(emptyList(), totalCount = 0)
-            setBikes(emptyList())
-        }
-        val settingsRepository = FakeAppSettingsRepository()
-        val viewModel = createViewModel(repository, settingsRepository)
-        advanceUntilIdle()
-
-        viewModel.updateCloudSyncDetailMode(CloudSyncDetailMode.MISSING_OR_STALE)
-        advanceUntilIdle()
-
-        assertEquals(CloudSyncDetailMode.MISSING_OR_STALE, viewModel.uiState.value.cloudSyncDetailMode)
-    }
-
-    @Test
-    fun `background sync mode changes propagate into ui state`() = runTest {
-        val repository = DashboardFakeRepository().apply {
-            setActivities(emptyList(), totalCount = 0)
-            setBikes(emptyList())
-        }
-        val settingsRepository = FakeAppSettingsRepository()
-        val viewModel = createViewModel(repository, settingsRepository)
-        advanceUntilIdle()
-
-        viewModel.updateBackgroundSyncMode(BackgroundSyncMode.DAILY_UNMETERED)
-        advanceUntilIdle()
-
-        assertEquals(BackgroundSyncMode.DAILY_UNMETERED, viewModel.uiState.value.backgroundSyncMode)
     }
 
     @Test
@@ -447,7 +388,7 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `can load more activities when cached total exceeds first loaded page`() = runTest {
+    fun `cached activity observation exposes loaded entries without load more state`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
                 activities = (1..20).map { index -> testActivity(id = "a$index", title = "Ride $index") },
@@ -461,12 +402,12 @@ class DashboardViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(20, state.loadedActivityCount)
-        assertEquals(45, state.activityTotalCount)
-        assertTrue(state.canLoadMoreActivities)
+        assertEquals(20, state.activityTotalCount)
+        assertTrue(!state.canLoadMoreActivities)
     }
 
     @Test
-    fun `cloud sync stores last sync summary`() = runTest {
+    fun `refresh stores last sync summary`() = runTest {
         val repository = DashboardFakeRepository().apply {
             setActivities(
                 listOf(
@@ -492,7 +433,7 @@ class DashboardViewModelTest {
         val viewModel = createViewModel(repository)
         advanceUntilIdle()
 
-        viewModel.syncCloudData()
+        viewModel.refresh()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
@@ -506,12 +447,46 @@ class DashboardViewModelTest {
         repository: DashboardFakeRepository,
         settingsRepository: FakeAppSettingsRepository = FakeAppSettingsRepository(),
     ): DashboardViewModel {
+        runBlocking {
+            if (repository.currentActivityCount() > 0 && settingsRepository.getSettings().initialSyncCompletedAtEpochMillis == 0L) {
+                settingsRepository.markInitialSyncCompleted(1L)
+            }
+        }
+
         val authRepository = object : AuthRepository {
             override fun getAccessToken(): String? = "token"
             override suspend fun getValidAccessToken(): Result<String> = Result.success("token")
             override fun isAuthenticated(): Boolean = true
             override fun clearTokens() = Unit
         }
+        val stringResolver = TestStringResolver()
+        val oidcCacheRepository = FakeOidcCacheRepository()
+        val oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
+            override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
+        }
+        val oidcUserInfoProvider = object : OidcUserInfoProvider {
+            override suspend fun loadCurrentUserInfo(): OidcUserInfoUiModel? = null
+        }
+        val oidcDiscoveryInfoProvider = object : OidcDiscoveryInfoProvider {
+            override suspend fun loadCurrentDiscovery(): OidcDiscoveryInfoUiModel? = null
+        }
+        val database = TestBoschDatabase { repository.currentActivityCount() }
+        val syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(
+            repository = repository,
+            cacheStatusRepository = repository,
+            authRepository = authRepository,
+            appSettingsRepository = settingsRepository,
+            oidcUserInfoProvider = oidcUserInfoProvider,
+            oidcDiscoveryInfoProvider = oidcDiscoveryInfoProvider,
+        )
+        val refreshSmartSystemDataUseCase = RefreshSmartSystemDataUseCase(
+            repository = repository,
+            cacheStatusRepository = repository,
+            authRepository = authRepository,
+            appSettingsRepository = settingsRepository,
+            oidcUserInfoProvider = oidcUserInfoProvider,
+            oidcDiscoveryInfoProvider = oidcDiscoveryInfoProvider,
+        )
 
         return DashboardViewModel(
             feedHandler = DashboardFeedHandler(
@@ -520,23 +495,16 @@ class DashboardViewModelTest {
                 observeCachedActivityDetailCacheOverview = ObserveCachedSmartSystemActivityDetailCacheOverviewUseCase(repository),
                 observeDataStatusOverview = ObserveDataStatusOverviewUseCase(repository, repository),
                 observeAppSettings = ObserveAppSettingsUseCase(settingsRepository),
-                getCachedActivityTotalCount = GetCachedSmartSystemActivityTotalCountUseCase(repository),
                 getActivities = GetSmartSystemActivitiesUseCase(repository, authRepository),
-                refreshActivitiesUseCase = RefreshSmartSystemActivitiesUseCase(repository, repository, authRepository),
-                refreshBikesUseCase = RefreshSmartSystemBikesUseCase(repository, repository, authRepository),
-                updateCloudSyncDetailModeUseCase = UpdateCloudSyncDetailModeUseCase(settingsRepository),
-                updateBackgroundSyncModeUseCase = UpdateBackgroundSyncModeUseCase(settingsRepository),
                 updateCsvExportFormatUseCase = UpdateCsvExportFormatUseCase(settingsRepository),
                 updateDisplayModeUseCase = UpdateDisplayModeUseCase(settingsRepository),
                 updateExplanationTextsPromptTimingUseCase = UpdateExplanationTextsPromptTimingUseCase(settingsRepository),
                 resetExplanationTextsPromptUseCase = ResetExplanationTextsPromptUseCase(settingsRepository),
                 markExplanationTextsPromptHandledUseCase = MarkExplanationTextsPromptHandledUseCase(settingsRepository),
                 updateShowExplanationTextsUseCase = UpdateShowExplanationTextsUseCase(settingsRepository),
-                oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
-                    override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
-                },
-                uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
-                stringResolver = TestStringResolver(),
+                oidcCertificateInfoProvider = oidcCertificateInfoProvider,
+                uiModelMapper = DashboardUiModelMapper(stringResolver),
+                stringResolver = stringResolver,
             ),
             operationsHandler = DashboardOperationsHandler(
                 exportActivitiesCsv = ExportSmartSystemActivitiesCsvUseCase(repository, authRepository, settingsRepository),
@@ -548,13 +516,7 @@ class DashboardViewModelTest {
                     ),
                     pdfReportFileExporter = FakePdfReportFileExporter(),
                 ),
-                refreshPendingSmartSystemActivityDetailsUseCase = RefreshPendingSmartSystemActivityDetailsUseCase(
-                    repository = repository,
-                    cacheStatusRepository = repository,
-                    authRepository = authRepository,
-                ),
-                syncSmartSystemCloudUseCase = SyncSmartSystemCloudUseCase(repository, repository, authRepository),
-                stringResolver = TestStringResolver(),
+                stringResolver = stringResolver,
                 pdfExportDispatcher = Dispatchers.Main,
             ),
             detailActionHandler = DashboardDetailActionHandler(
@@ -565,18 +527,18 @@ class DashboardViewModelTest {
                 getCachedBike = GetCachedSmartSystemBikeUseCase(repository),
                 refreshActivityDetailUseCase = RefreshSmartSystemActivityDetailUseCase(repository, repository, authRepository),
                 refreshBikeDetailUseCase = RefreshSmartSystemBikeDetailUseCase(repository, repository, authRepository),
-                oidcCertificateInfoProvider = object : OidcCertificateInfoProvider {
-                    override suspend fun loadCurrentCertificate(): OidcCertificateInfoUiModel? = null
-                },
-                oidcUserInfoProvider = object : OidcUserInfoProvider {
-                    override suspend fun loadCurrentUserInfo() = null
-                },
-                oidcDiscoveryInfoProvider = object : OidcDiscoveryInfoProvider {
-                    override suspend fun loadCurrentDiscovery() = null
-                },
-                uiModelMapper = DashboardUiModelMapper(TestStringResolver()),
-                stringResolver = TestStringResolver(),
+                oidcCertificateInfoProvider = oidcCertificateInfoProvider,
+                oidcUserInfoProvider = oidcUserInfoProvider,
+                oidcDiscoveryInfoProvider = oidcDiscoveryInfoProvider,
+                uiModelMapper = DashboardUiModelMapper(stringResolver),
+                stringResolver = stringResolver,
             ),
+            performInitialSyncUseCase = syncSmartSystemCloudUseCase,
+            refreshSmartSystemDataUseCase = refreshSmartSystemDataUseCase,
+            appSettingsRepository = settingsRepository,
+            oidcCacheRepository = oidcCacheRepository,
+            database = database,
+            stringResolver = stringResolver,
         )
     }
 
@@ -691,6 +653,8 @@ private class DashboardFakeRepository :
         bikeCacheUpdatedAtFlow.value = bikeUpdatedAt
         activityDetailCacheUpdatedAtFlow.value = detailUpdatedAt
     }
+
+    fun currentActivityCount(): Int = activitiesFlow.value.size
 
     override fun observeCachedActivities(): Flow<List<BoschActivity>> = activitiesFlow.asStateFlow()
     override fun observeCachedBikes(): Flow<List<BoschBike>> = bikesFlow.asStateFlow()

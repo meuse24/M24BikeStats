@@ -97,7 +97,6 @@ private val TrackEndColor = Color(0xFF6A1B9A)
 fun TrackScreen(
     uiState: TrackUiState,
     onLoadActivity: (String) -> Unit,
-    onRefreshActivity: (String) -> Unit,
     activityId: String,
     onNavigateBack: () -> Unit,
 ) {
@@ -112,11 +111,6 @@ fun TrackScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.activity_detail_back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { onRefreshActivity(activityId) }) {
-                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.track_refresh))
                     }
                 },
             )

@@ -1,567 +1,639 @@
-# Implementierungsplan: Home-Screen UI-Upgrade
+# Implementierungsplan: Sync-Vereinfachung und OIDC-Cache
 
-Stand: 2026-04-08, überarbeitet 2026-04-08
-
-Verwendete Skills:
-
-- `mobile-android-design`
-- `android-design-guidelines`
-- `android-jetpack-compose`
-
-Hinweis:
-In diesem Schritt wird noch kein Produktivcode geändert. Dieses Dokument übersetzt den Designplan in einen konkreten Umsetzungsplan für das bestehende Repo.
+Stand: 2026-04-10
 
 ## Ziel
 
-Der Home-Screen soll innerhalb der bestehenden Dashboard-Architektur auf ein professionelles Android-Material-3-Niveau gehoben werden, ohne neue fachliche Features einzuführen.
+Die bisherige Sync-Logik wird auf zwei klar definierte Funktionen reduziert:
 
-Konkret bedeutet das:
+- **Funktion 1 – Initial-Sync**: Lädt beim ersten App-Start automatisch alles vollständig (Bikes, alle Aktivitätsseiten, alle fehlenden Details, OIDC-Daten). Auch manuell als Reset im Setup auslösbar.
+- **Funktion 2 – Auffrischen**: Manueller Button auf dem Homescreen. Lädt Bikes, OIDC UserInfo, nur neue Aktivitäten (delta-basiert bis zur ersten bekannten ID) und alle noch fehlenden Details nach.
 
-- bessere visuelle Hierarchie
-- weniger Überladung im ersten Fold
-- klare Primary- und Secondary-Actions
-- saubere Material-3-Farbrollen statt dekorativer Flächen
-- konsistente Card-Sprache zwischen Home, Aktivitäten und Bike-Bereich
-- robuste Darstellung für kleine Screens, große Schriftgrößen, Light/Dark und Dynamic Color
+Hintergrund-Sync, konfigurierbare Detail-Modi, redundante Refresh-Buttons auf Sub-Screens und separate sekundäre Sync-Aktionen auf dem Homescreen entfallen.
 
-## Harte Projektgrenzen
+---
 
-Diese Umsetzung bleibt bewusst innerhalb der aktuellen Architektur:
+## Begründung der Kernentscheidungen
 
-- keine neuen Domain-Modelle
-- keine neuen UseCases
-- keine Änderungen an Repository-Verträgen
-- keine Navigationsneugestaltung
-- kein Feature-Umfang über UI/UX hinaus
+### Aktivitäten sind unveränderlich
+Bosch liefert fertige Touren, die nachträglich nicht geändert werden. Neue Aktivitäten kommen täglich 1–2 hinzu. Es genügt daher, beim Auffrischen nur fehlende Aktivitäten nachzuladen, nicht den gesamten Bestand neu zu lesen.
 
-Die vorhandenen Daten reichen aus:
+### API sortiert nach `startTime DESC`
+Dokumentiert in `docs_api/activityRecords.v1.yaml`. Damit kann beim inkrementellen Laden abgebrochen werden, sobald die erste bereits bekannte Aktivitäts-ID auftaucht.
 
-- `HomeUiState`
-- `DataStatusUiModel`
-- bestehende Sync-Callbacks im `HomeScreen`
-- bestehende Mapper- und ViewModel-Struktur
+### `MISSING_OR_STALE` ist überflüssig
+Da Details zu unveränderlichen Aktivitäten gehören, gibt es keinen sinnvollen Fall, in dem ein Detail nach 30 Minuten als "veraltet" gilt. `MISSING_ONLY` ist immer die korrekte Strategie.
 
-## Ausgangslage im Repo
+### Hintergrund-Sync ist mit einem manuellen Button redundant
+Ein täglicher Auto-Sync bringt keinen Mehrwert, wenn der Nutzer selbst mit einem Knopfdruck aktualisieren kann und dabei exakt das Gleiche passiert.
 
-### Relevante Dateien
+### OIDC-Daten in `EncryptedSharedPreferences`
+UserInfo (email, username, subject) und DiscoveryInfo (issuer, Endpunkte) sind kleine, flache Datensätze – kein Listenformat, kein Suchbedarf. Room wäre überdimensioniert. `EncryptedSharedPreferences` ist konsistent mit der bestehenden Token-Speicherung und deckt den Datenschutzbedarf.
 
-Theme und Tokens:
+### OIDC-Cache ist nötig für Offline-Betrieb und PDF
+`PdfReportMetadataRepositoryImpl` ruft `OidcUserInfoProvider.loadCurrentUserInfo()` und `OidcDiscoveryInfoProvider.loadCurrentDiscovery()` live auf. Ohne Cache schlägt die PDF-Erzeugung offline stumm fehl.
 
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Color.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Theme.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Type.kt`
+---
 
-Home und Shared UI:
+## Phase A – Entfernen: Hintergrund-Sync
 
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreen.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardSharedUi.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardOverviewComponents.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardScreenStates.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModels.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapper.kt`
+**Begründung**: Mit dem manuellen Auffrischen-Button und dem Auto-Initial-Sync ist kein täglicher WorkManager-Job mehr nötig.
 
-Strings:
+### Zu löschende Dateien
+- `background/BackgroundSyncScheduler.kt`
+- `background/BackgroundSyncSettingsObserver.kt`
+- `background/SmartSystemBackgroundSyncWorker.kt`
 
-- `app/src/main/res/values/strings.xml`
-- `app/src/main/res/values-de/strings.xml`
+### Zu ändernde Dateien
 
-Bestehende Tests:
+**`AppSettings.kt`**
+- Feld `backgroundSyncMode: BackgroundSyncMode` entfernen
+- Enum `BackgroundSyncMode` entfernen
 
-- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapperTest.kt`
-- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardViewModelTest.kt`
-- `app/src/test/java/info/meuse24/m24bikestats/domain/usecase/ObserveDataStatusOverviewUseCaseTest.kt`
+**`AppSettingsRepository.kt`**
+- `updateBackgroundSyncMode()` entfernen
 
-### Technische Beobachtungen
+**`AppSettingsRepositoryImpl.kt`**
+- `updateBackgroundSyncMode()` und zugehörigen Preference-Key entfernen
 
-- `Type.kt` definiert aktuell praktisch nur `bodyLarge`; die restliche Typo-Hierarchie fehlt als bewusstes System.
-- `Theme.kt` nutzt Dynamic Color korrekt, aber die statische Fallback-Palette ist noch Starter-Material (nur `primary`, `secondary`, `tertiary` explizit gesetzt).
-- `HomeScreen.kt` bündelt Titel, Badge, Erklärung, Zeitraum, KPI, Sync-Metadaten, Progress und mehrere CTAs in einer einzigen Hero-Card.
-- Die primäre CTA (`Jetzt synchronisieren`) steht in der aktuellen `DataStatusAndSyncCard` ganz unten — nach konditionalen sekundären Buttons. Das widerspricht der geplanten Action-Hierarchie und muss explizit korrigiert werden.
-- `DashboardSharedUi.kt` nutzt große lineare Gradients für Hero-Flächen. Laut Android-/Material-3-Guidelines sollten große Flächen primär über `surface`-Rollen statt über primäre Akzentfarben laufen.
-- In `HomeScreen.kt` existieren bereits die privaten Composables `HomeSummaryCard`, `HomeMetricGrid` und `HomeMetricTile`. Diese funktionieren bereits korrekt mit Material-3-Rollen und müssen in Paket 2 zu Shared-Primitives *promoted* werden, nicht neu erstellt.
-- Es gibt zwei Badge-Implementierungen: `StatusBadge` (intern in `DashboardSharedUi.kt`) und `DataStatusBadge` (privat in `HomeScreen.kt`). Diese müssen in Paket 2 zu einer einzigen `DashboardStatusBadge` konsolidiert werden.
-- `HomeUiState` liegt in `DashboardScreenStates.kt`, nicht in `DashboardUiModels.kt`. Das ist für Paket 4 relevant, da dort Convenience-Properties hinzukommen können.
-- `HomeUiState` enthält das Flag `showExplanationTexts`, das über die App-Einstellungen gesteuert wird. Das neue Layout muss dieses Flag weiterhin korrekt berücksichtigen.
-- Es gibt aktuell keine Compose-Previews im Projekt. Das ist für UI-Arbeit ein echter blinder Fleck.
+**`M24BikeStatsApp.kt`**
+- Zeile `GlobalContext.get().get<BackgroundSyncSettingsObserver>().start(applicationScope)` entfernen — sonst Compile- oder Startup-Fehler nach Löschung des Observers
+- Import von `BackgroundSyncSettingsObserver` entfernen
 
-## Zielarchitektur für den Home-Screen
+**`AppModule.kt`**
+- Bindings für `BackgroundSyncScheduler`, `BackgroundSyncSettingsObserver`, `SmartSystemBackgroundSyncWorker` entfernen
 
-Der neue Home-Screen bleibt eine `LazyColumn`, wird aber visuell und strukturell neu geschnitten.
+**`DashboardFeedHandler.kt`**
+- `updateBackgroundSyncModeUseCase`-Parameter entfernen
+- `updateBackgroundSyncMode()`-Methode entfernen
+- `backgroundSyncMode` aus Settings-Observation entfernen
 
-Geplante Reihenfolge der Blöcke:
+**`DashboardViewModel.kt`**
+- `updateBackgroundSyncMode()` entfernen
 
-1. `HomeStatusHeroCard`
-2. `HomeStatusMetricGrid`
-3. `HomeSyncMetaCard`
-4. `Latest Ride`
-5. `Bike Status`
-6. `Recent Exports`
+**`SetupScreen.kt`**
+- `backgroundSyncMode`-Parameter und zugehöriges Dropdown entfernen
+- `onBackgroundSyncModeSelected`-Callback entfernen
 
-### Was aus der aktuellen `DataStatusAndSyncCard` wird
+**`AppNavigation.kt`**
+- Background-Sync-Callbacks an SetupScreen entfernen
 
-Die bestehende große Card wird nicht erweitert, sondern aufgelöst.
+**`UpdateBackgroundSyncModeUseCase.kt`**
+- Datei löschen
 
-Geplante Aufteilung:
+---
 
-- `HomeStatusHeroCard`
-  - Gesamtstatus
-  - kurze Summary
-  - optional Zeitraum
-  - genau eine primäre Aktion
+## Phase B – Entfernen: Konfigurierbarer Detail-Modus
 
-- `HomeStatusMetricGrid`
-  - 4 bis 6 KPI-Kacheln
-  - Zahl dominant, Label sekundär
+**Begründung**: `MISSING_OR_STALE` ist mit unveränderlichen Aktivitäten sinnlos. `MISSING_ONLY` wird fest verdrahtet, die Einstellung entfällt.
 
-- `HomeSyncMetaCard`
-  - letzter Aktivitäts-/Detail-/Bike-Sync
-  - laufender Sync-Fortschritt
-  - sekundäre Reparaturaktionen nur wenn relevant
+### Zu ändernde Dateien
 
-## Konkrete Designentscheidungen für die spätere Umsetzung
+**`AppSettings.kt`**
+- Feld `cloudSyncDetailMode: CloudSyncDetailMode` entfernen
+- Enum `CloudSyncDetailMode` auf einen einzelnen Wert reduzieren oder ganz entfernen
 
-### 1. Hero-Fläche
+**`AppSettingsRepository.kt`**
+- `updateCloudSyncDetailMode()` entfernen
 
-Nicht mehr:
+**`AppSettingsRepositoryImpl.kt`**
+- `updateCloudSyncDetailMode()` und Preference-Key entfernen
 
-- Vollflächen-Gradient über große Card-Bereiche
-- mehrere gleich starke Buttons untereinander
-- horizontale KPI-Pills direkt im Hero
+**`SyncSmartSystemCloudUseCase.kt`**
+- `detailMode`-Parameter entfernen, intern immer `MISSING_ONLY`-Logik verwenden
 
-Stattdessen:
+**`SmartSystemBackgroundSyncWorker.kt`**
+- Entfällt ohnehin (Phase A)
 
-- ruhige `surfaceContainerHigh`- oder `surfaceContainer`-Fläche
-- kleiner farblicher Akzent nur über Badge, Status-Indikator oder Top-Strip
-- kompakter Titel
-- eine Statuszeile
-- eine primäre CTA
+**`DashboardFeedHandler.kt`**
+- `updateCloudSyncDetailModeUseCase`-Parameter entfernen
+- `updateCloudSyncDetailMode()`-Methode entfernen
+- `cloudSyncDetailMode` aus Settings-Observation entfernen
 
-### 2. KPI-Darstellung
+**`DashboardViewModel.kt`**
+- `updateCloudSyncDetailMode()` entfernen
 
-Nicht mehr:
+**`SetupScreen.kt`**
+- `cloudSyncDetailMode`-Parameter und Dropdown entfernen
+- `onCloudSyncDetailModeSelected`-Callback entfernen
 
-- kleine Capsule-Pills als Hauptmetriken
+**`AppNavigation.kt`**
+- Callbacks an SetupScreen bereinigen
 
-Stattdessen:
+**`UpdateCloudSyncDetailModeUseCase.kt`**
+- Datei löschen
 
-- 2x2 oder 2x3 Grid
-- klare Zahlenhierarchie
-- visuelle Problem-Markierung über Tonalität, nicht nur Farbe
+**`HomeScreen.kt`**
+- `onRefreshStaleActivityDetails`-Callback und zugehörigen `HomeSecondaryActionRow`-Zweig entfernen
+- `HomeStatusMetricGrid`: Tile "Veraltet" entfernen
 
-### 3. Action-Hierarchie
+**`DashboardOperationsHandler.kt`**
+- `refreshStaleActivityDetails()` entfernen
 
-Der Home-Screen bekommt eine klare Bedienlogik:
+**`DashboardViewModel.kt`**
+- `refreshStaleActivityDetails()` entfernen
 
-- primär: `Jetzt synchronisieren`
-- sekundär: `Fehlende Details laden`
-- sekundär: `Details auffrischen`
-- Abbruch-Action nur im aktiven Sync-Zustand
+**`AppNavigation.kt`**
+- `onRefreshStaleActivityDetails`-Callback entfernen
 
-### 4. Copy
+---
 
-Der erste Fold wird sprachlich verdichtet:
+## Phase C – Entfernen: Redundante Refresh-Buttons auf Sub-Screens
 
-- kürzere Titel
-- kürzere Status-Summaries
-- technische Metadaten aus dem Hero entfernen
-- kürzere Button-Labels
+**Begründung**: Sub-Screens lesen aus dem Room-Cache; nach einem Auffrischen auf dem Homescreen aktualisieren sie sich automatisch via Flow. Explizite Refresh-Buttons sind überflüssig.
 
-## Umsetzungspakete
+### Top-Bar Refresh-Aktionen in `AppNavigation.kt`
 
-## Paket 1: Theme-System professionalisieren
+Die Funktion `shouldShowRefreshAction()` gibt aktuell `true` für die Routen `ACTIVITIES`, `BIKE` und `STATISTICS` zurück und zeigt dort einen Refresh-`IconButton` in der TopBar, der `dashboardViewModel::refresh` aufruft. Diese Einstiegspunkte müssen entfernt werden, da sie eine andere Semantik hätten als der Auffrischen-Button auf dem Homescreen:
+- `shouldShowRefreshAction()` und die zugehörige `IconButton`-Verzweigung in `topBarActions` entfernen
+- Import von `Icons.Default.Refresh` prüfen und ggf. entfernen (wird noch an anderer Stelle verwendet)
 
-Ziel:
-Aus Material-Defaults ein bewusstes Designsystem machen.
+### Betroffene Screens
 
-Betroffene Dateien:
+**Aktivitäten-Detail-Screen (`DashboardDetailScreens.kt`)**
+- `onRefreshActivity`-Parameter und zugehöriger `IconButton` entfernen
+- Der `onLoadActivity`-Aufruf (cache-first beim Öffnen) bleibt bestehen
 
-- `presentation/theme/Color.kt`
-- `presentation/theme/Theme.kt`
-- `presentation/theme/Type.kt`
-- neue Datei: `presentation/theme/DesignTokens.kt`
+**Bike-Detail-Screen (`DashboardDetailScreens.kt`)**
+- `onRefreshBike`-Parameter und zugehöriger `IconButton` entfernen
+- Der `onLoadBike`-Aufruf (cache-first beim Öffnen) bleibt bestehen
 
-Konkrete Arbeit:
+**Track-Screen (`DashboardTrackScreen.kt`)**
+- `onRefreshActivity`-Parameter entfernen, falls vorhanden
 
-- Fallback-Palette in `Color.kt` durch vollständige Light-/Dark-Tonalpalette ersetzen
-- Farbpalette aus einem Seed ableiten, nicht aus losem Lila/Starter-Set
-- `Theme.kt` auf vollständige Material-3-Rollen heben
-- Dynamic Color als Default beibehalten
-- in `DesignTokens.kt` feste App-Tokens definieren:
-  - `ScreenHorizontalPadding`
-  - `SectionSpacing`
-  - `CardCornerLarge`
-  - `CardCornerMedium`
-  - `CardBorderAlpha`
-  - `ContentMaxWidth`
-- `Type.kt` mit vollständiger Material-3-Typografie befüllen:
-  - `headlineSmall`
-  - `titleLarge`
-  - `titleMedium`
-  - `titleSmall`
-  - `bodyLarge`
-  - `bodyMedium`
-  - `bodySmall`
-  - `labelLarge`
-  - `labelMedium`
-  - `labelSmall`
+**`DashboardDetailActionHandler.kt`**
+- `refreshBikeDetail()` und `refreshActivityDetail()` entfernen (diese riefen denselben UseCase wie die Load-Varianten auf, nur mit `force=true`)
 
-Entscheidung:
+**`DashboardViewModel.kt`**
+- `refreshBikeDetail()` und `refreshActivityDetail()` entfernen
 
-- keine benutzerdefinierten Hex-Farben in Composables
-- keine große Primärfarbe als Hintergrundfläche
-- kleine Akzente über Badge, Indikator und CTA
+**`AppNavigation.kt`**
+- `onRefreshActivity`- und `onRefreshBike`-Callbacks entfernen
 
-Ergebnis nach Paket 1:
+---
 
-- besserer typografischer Kontrast
-- kontrollierte Flächenhierarchie
-- wiederverwendbare Tokens für das gesamte Dashboard
+## Phase D – Entfernen: Separate Sync-UseCase-Kette auf dem Homescreen
 
-## Paket 2: Gemeinsame Dashboard-Grundbausteine neu ordnen
+**Begründung**: `syncCloudData()`, `loadMissingActivityDetails()` und `cancelPendingActivityDetailsSync()` werden durch die neue einheitliche Auffrischen-Funktion ersetzt.
 
-Ziel:
-Bevor Home umgebaut wird, müssen die Shared-Primitives professioneller werden.
+**`DashboardOperationsHandler.kt`**
+- `syncCloudData()` entfernen (wird durch neuen `RefreshSmartSystemDataUseCase` im ViewModel ersetzt)
+- `loadMissingActivityDetails()` entfernen (ist in Auffrischen integriert)
+- `cancelCloudSync()` bleibt vorerst als Cancel-Mechanismus, wird ggf. umbenannt
+- `cancelPendingActivityDetailsSync()` entfernen (kein separater Detail-Sync mehr)
 
-Betroffene Dateien:
+**`HomeScreen.kt`**
+- `onLoadMissingActivityDetails`-Callback entfernen
+- `onCancelPendingActivityDetailsSync`-Callback entfernen
 
-- `presentation/dashboard/DashboardSharedUi.kt`
-- optional neue Datei: `presentation/dashboard/DashboardDesignPrimitives.kt`
+**`DashboardViewModel.kt`**
+- `loadMissingActivityDetails()` entfernen
+- `cancelPendingActivityDetailsSync()` entfernen
 
-Konkrete Arbeit:
+**`AppNavigation.kt`**
+- Callbacks bereinigen
 
-- `HeroCard` fachlich und visuell entschärfen
-- Gradient-abhängige Hero-Logik entfernen
-- gemeinsame Card-Primitive definieren:
-  - `DashboardSectionCard`
-  - `DashboardHeroSurface`
-  - `DashboardMetricTile`
-  - `DashboardStatusBadge`
-  - `DashboardMetaRow`
-- `HomeSummaryCard`, `HomeMetricGrid` und `HomeMetricTile` aus `HomeScreen.kt` hierhin *verschieben* und als interne Shared-Primitives promotieren (nicht neu erstellen — sie existieren bereits und funktionieren korrekt)
-- `StatusBadge` (aus `DashboardSharedUi.kt`) und `DataStatusBadge` (aus `HomeScreen.kt`) zu einer einzigen `DashboardStatusBadge` konsolidieren — beide Verwendungsstellen danach auf die neue Komponente umstellen
-- bestehende `MetricPill` und `CompactMetricPill` nicht mehr als primäre KPI-Komponente verwenden
-- `SectionSurface` tonal und border-seitig an neues Theme anpassen
-- optional einen zentralen Content-Container ergänzen:
-  - `DashboardPageContainer`
-  - auf großen Breiten max. ca. 840dp
+**`RefreshPendingSmartSystemActivityDetailsUseCase.kt`**
+- Prüfen ob noch anderweitig verwendet; falls nicht, löschen
 
-Android-guideline Bezug:
+---
 
-- auf Medium/Expanded Width nicht ungebremst über die volle Breite laufen
-- Surface-Rollen semantisch einsetzen
-- große Flächen nicht in Akzentfarben tränken
+## Phase E – Neu: OIDC-Cache via `EncryptedSharedPreferences`
 
-Ergebnis nach Paket 2:
+**Begründung**: UserInfo und DiscoveryInfo müssen offline verfügbar sein (PDF-Erzeugung, Konto-Screen).
 
-- saubere Bausteine für Home, Aktivitäten und Bike-Bereich
-- weniger Styling-Duplikate in einzelnen Screens
+### Neue Datei: `auth/OidcCacheRepository.kt` (Interface)
 
-## Paket 3: Home-Screen in kleine, fokussierte Composables zerlegen
+```
+interface OidcCacheRepository {
+    fun getCachedUserInfo(): CachedOidcUserInfo?
+    fun saveCachedUserInfo(info: CachedOidcUserInfo)
+    fun getCachedDiscoveryInfo(): CachedOidcDiscoveryInfo?
+    fun saveCachedDiscoveryInfo(info: CachedOidcDiscoveryInfo)
+    fun clearOidcCache()
+}
 
-Ziel:
-Die aktuelle große Status-Card in klar getrennte Bereiche aufspalten.
+data class CachedOidcUserInfo(
+    val email: String?,
+    val username: String?,
+    val subject: String?,
+)
 
-Betroffene Datei:
+data class CachedOidcDiscoveryInfo(
+    val issuer: String?,
+    val authorizationEndpoint: String?,
+    val tokenEndpoint: String?,
+    val userInfoEndpoint: String?,
+    val jwksUri: String?,
+    val revocationEndpoint: String?,
+    val introspectionEndpoint: String?,
+    val endSessionEndpoint: String?,
+    val supportedGrantTypes: List<String>,  // als kommaseparierter String in Prefs speichern
+)
+// Hinweis: OidcDiscoveryInfoUiModel hat bereits alle diese Felder – das Cache-Modell muss vollständig sein,
+// damit der Konto-Screen offline keine Lücken zeigt.
+```
 
-- `presentation/dashboard/HomeScreen.kt`
+### Neue Datei: `data/local/preferences/OidcCacheRepositoryImpl.kt`
 
-Geplante neue interne Composables:
+- Nutzt `EncryptedSharedPreferences` (gleiche Instanz wie Token-Speicherung oder eigene Instanz)
+- Eigene Preference-Keys für jeden OIDC-Wert
+- `clearOidcCache()` löscht alle Keys
 
-- `HomeStatusHeroCard`
-- `HomeStatusMetricGrid`
-- `HomeStatusMetricTile`
-- `HomeSyncMetaCard`
-- `HomeSyncProgressCard`
-- `HomePrimaryActionBar`
-- `HomeSecondaryActionRow`
-- `HomeSectionHeader`
+### Geänderte Datei: `auth/OidcAccountInfo.kt` – `LiveOidcUserInfoProvider`
 
-Konkrete Arbeit:
+- Liest OIDC UserInfo live von der API
+- Schreibt das Ergebnis nach `OidcCacheRepository`
+- Fällt bei API-Fehler auf den Cache zurück (statt `null` zurückzugeben)
 
-- `DataStatusAndSyncCard` entfernen oder zu dünnem Orchestrator umbauen
-- Status-Hero nur noch für den Gesamtzustand verwenden
-- Sync-Metadaten aus dem Hero herausziehen
-- Progress-Zustände nur in eigenem Block darstellen
-- sekundäre Aktionen nicht mehr als Full-Width-Stapel direkt im Hero
-- bestehende `HomeSummaryCard`, `HomeMetricGrid`, `HomeMetricTile` auf neues Tokensystem umstellen
+### Geänderte Datei: `auth/OidcAccountInfo.kt` – `LiveOidcDiscoveryInfoProvider`
 
-Technische Regeln aus Compose-Sicht:
+- Analog: lädt live, schreibt in Cache, fällt bei Fehler auf Cache zurück
 
-- State bleibt in `HomeScreen`; neue Composables bleiben stateless
-- `Modifier` als erstes optionales Argument
-- keine neue Business-Logik in Composables
-- UI nur aus `HomeUiState` ableiten
-- `showExplanationTexts` weiterhin korrekt auswerten: Hero-Summary und erläuternde Texte in Leer-Zuständen bleiben conditional
-- primäre CTA (`Jetzt synchronisieren`) muss im neuen Layout visuell und in der Render-Reihenfolge an erste Stelle rücken — sekundäre Aktionen folgen darunter
+### Geänderter Datei: `AppModule.kt`
 
-Ergebnis nach Paket 3:
+- `OidcCacheRepositoryImpl` binden
+- `LiveOidcUserInfoProvider` und `LiveOidcDiscoveryInfoProvider` erhalten `OidcCacheRepository` als Abhängigkeit
 
-- Home-Code wird lesbarer
-- jede visuelle Zone hat eine einzige Aufgabe
-- spätere UI-Iteration wird viel einfacher
+---
 
-## Paket 4: Data-Status-UI-Modell für das neue Layout vorbereiten
+## Phase F – Neu: AppSettings erweitern
 
-Ziel:
-Die UI soll einfacher renderbar sein, ohne Domain-Schichten anzufassen.
+**Begründung**: Der Auto-Initial-Sync braucht ein persistentes Flag, der Delta-Sync eine Zeitmarkierung für die neuste bekannte Aktivität.
 
-Betroffene Dateien:
+### Zu ändernde Datei: `AppSettings.kt`
 
-- `presentation/dashboard/DashboardUiModels.kt`
-- `presentation/dashboard/DashboardScreenStates.kt` (enthält `HomeUiState`)
-- `presentation/dashboard/DashboardUiModelMapper.kt`
-- optional `presentation/dashboard/DashboardStateMappings.kt`
+Neue Felder:
+```kotlin
+val initialSyncCompletedAtEpochMillis: Long = 0L  // 0 = noch nie durchgeführt
+val latestCachedActivityStartTimeMillis: Long = 0L  // startTime der neusten gecachten Aktivität
+```
 
-Konkrete Arbeit:
+### Achtung: `fallbackToDestructiveMigration`
 
-- prüfen, ob `DataStatusUiModel` für das neue Layout ausreicht
-- falls nötig nur presentation-seitige Hilfsfelder ergänzen — als berechnete Getter (`val isComplete get() = statusTone == DataStatusTone.COMPLETE`), nicht als gespeicherte Felder:
-  - `isComplete`
-  - `hasMissingDetails`
-  - `hasStaleDetails`
-  - `primaryActionLabel`
-  - `primaryActionKind`
-  - `statusHeadline`
-- keine neue fachliche Logik in Domain oder UseCases
-- Copy-Verdichtung bereits im Mapper vorbereiten, damit `HomeScreen` keine Textlogik dupliziert
+Room löscht bei einer fehlenden Migration die gesamte Datenbank, lässt aber `SharedPreferences` unberührt. Das bedeutet: `initialSyncCompletedAtEpochMillis > 0` kann gesetzt sein, obwohl die DB leer ist.
 
-Wichtig:
+**Gegenmaßnahme im ViewModel `init{}`-Block**: Zusätzlich zur Flag-Prüfung die DB auf Leerheit prüfen:
+```
+if (initialSyncCompletedAt > 0 && activityDao.count() == 0) {
+    appSettingsRepository.resetInitialSyncFlag()
+}
+```
+Danach läuft die normale Flag-Prüfung und der Initial-Sync startet automatisch.
 
-- wenn zusätzliche Felder nötig werden, nur in `DataStatusUiModel`, nicht in `DataStatusOverview`
-- `HomeUiState` liegt in `DashboardScreenStates.kt`; falls Action-Logik sinnvoller dort aufgehängt ist, kann Paket 4 diese Datei ebenfalls leicht berühren
-- `DashboardUiModelMapperTest.kt` entsprechend mitziehen
+### Zu ändernde Datei: `AppSettingsRepository.kt`
 
-Ergebnis nach Paket 4:
+Neue Methoden:
+```
+suspend fun markInitialSyncCompleted(atEpochMillis: Long)
+suspend fun resetInitialSyncFlag()
+suspend fun updateLatestCachedActivityStartTime(epochMillis: Long)
+```
 
-- weniger `when`-/`if`-Verzweigung direkt im Composable
-- klarere Trennung zwischen Mapping und Rendering
+### Zu ändernde Datei: `AppSettingsRepositoryImpl.kt`
 
-## Paket 5: Activity- und Bike-Karten an die neue Designsprache angleichen
+- Implementierung der neuen Methoden
+- Neue Preference-Keys: `KEY_INITIAL_SYNC_COMPLETED_AT`, `KEY_LATEST_ACTIVITY_START_TIME`
 
-Ziel:
-Der Home-Screen darf nach dem Umbau nicht wie ein Fremdkörper wirken.
+---
 
-Betroffene Datei:
+## Phase G – Neu: Initial-Sync UseCase ausbauen
 
-- `presentation/dashboard/DashboardOverviewComponents.kt`
+**Begründung**: Der bestehende `SyncSmartSystemCloudUseCase` kommt dem Ziel nah, braucht aber drei Erweiterungen: OIDC cachen, Flags setzen, Detail-Modus-Parameter entfernen.
 
-Konkrete Arbeit:
+### Zu ändernde Datei: `domain/usecase/SyncSmartSystemCloudUseCase.kt`
 
-- `ActivityCard` an neue Card-Radien, Borders und Surface-Rollen anpassen
-- Action-Bereich in `ActivityCard` entschlacken
-- `BikeOverviewCard` gleichziehen
-- `StatusBadge` visuell an neue Statuslogik anpassen
-- Hero-Komponenten in Aktivitäten/Bikes auf neues Shared-Primitive umstellen
+Neu: Umbenennung in `PerformInitialSyncUseCase` (oder Name belassen – fachliche Entscheidung beim Implementieren).
 
-Bewusste Abgrenzung:
+Änderungen:
+- `detailMode`-Parameter entfernen (immer `MISSING_ONLY`)
+- Nach erfolgreichem Abschluss und **nach** dem letzten Room-Commit:
+  - `appSettingsRepository.updateLatestCachedActivityStartTime(newestActivityStartTime)`
+  - `appSettingsRepository.markInitialSyncCompleted(nowMillis())` — zwingend als letzter Schritt, damit ein Abbruch kein unvollständiges "done"-Flag hinterlässt
+- OIDC UserInfo und DiscoveryInfo vor den Aktivitäten laden und cachen (via `OidcUserInfoProvider` und `OidcDiscoveryInfoProvider`, die jetzt automatisch schreiben)
+- Fehlerbehandlung: bei OIDC-Fehler weitermachen (kein harter Abbruch), bei Aktivitäten-/Bike-Fehler abbrechen wie bisher
 
-- keine inhaltliche Änderung an Activity-/Bike-Features
-- nur visuelle Harmonisierung
+Neue Abhängigkeiten im Konstruktor:
+- `appSettingsRepository: AppSettingsRepository`
+- `oidcUserInfoProvider: OidcUserInfoProvider`
+- `oidcDiscoveryInfoProvider: OidcDiscoveryInfoProvider`
 
-Ergebnis nach Paket 5:
+---
 
-- Home, Aktivitäten und Bikes wirken wie ein gemeinsames Produkt
-- keine Mischung aus altem und neuem UI-Charakter
+## Phase H – Neu: Auffrischen UseCase
 
-## Paket 6: Texte auf Mobile-Produktniveau verdichten
+**Begründung**: Der inkrementelle Refresh ist fachlich anders als der vollständige Initial-Sync. Ein eigener UseCase macht die Abgrenzung explizit.
 
-Ziel:
-Die visuelle Verbesserung muss von kürzerer, klarerer Sprache unterstützt werden.
+### Neue Datei: `domain/usecase/RefreshSmartSystemDataUseCase.kt`
 
-Betroffene Dateien:
+Ablauf:
+1. Bikes vollständig laden und cachen
+2. OIDC UserInfo **und DiscoveryInfo** laden und cachen — beide, nicht nur UserInfo; Discovery kann beim Initial-Sync transient fehlschlagen und muss beim Auffrischen nachgeholt werden können
+3. Aktivitäten delta-laden:
+   - Seiten laden (limit = 20, nach startTime DESC)
+   - Für jede Seite: prüfen welche IDs neu sind (noch nicht in `activityDao`)
+   - Wenn eine Seite keine neuen IDs enthält → Abbruch
+   - Wenn Seite kürzer als limit → letzte Seite, Abbruch nach Verarbeitung
+   - Neue Aktivitäten in Room cachen
+   - **Hard-Limit: maximal 5 Seiten** (= 100 Aktivitäten); wer mehr benötigt (z.B. nach monatelanger Pause), nutzt Reset + Initial-Sync
+4. Alle fehlenden Details nachladen (`MISSING_ONLY` über alle gecachten Aktivitäten)
+5. `latestCachedActivityStartTime` **erst nach erfolgreichem Room-Commit** der neuen Aktivitäten setzen — nie vorher, um Historienlücken bei Netzwerkabbruch zu verhindern
+6. Fortschritts-Callbacks analog zum bestehenden `SyncSmartSystemCloudUseCase`
 
-- `res/values/strings.xml`
-- `res/values-de/strings.xml`
+Abhängigkeiten:
+- `repository: BoschSmartSystemRepository`
+- `cacheStatusRepository: BoschSmartSystemCacheStatusRepository`
+- `authRepository: AuthRepository`
+- `appSettingsRepository: AppSettingsRepository`
+- `oidcUserInfoProvider: OidcUserInfoProvider`
 
-Konkrete Arbeit:
+---
 
-- Home-bezogene Titel verkürzen
-- Status-Summaries kürzen
-- CTA-Labels schärfen
-- Labels für Metazeilen kürzen
-- deutsche und englische Version immer parallel anpassen
+## Phase I – ViewModel und Auto-Initial-Sync
 
-Konkrete Copy-Richtung:
+**Begründung**: Das ViewModel orchestriert, wann welche Sync-Funktion läuft.
 
-- weniger Erklärung
-- mehr Status
-- weniger technische Formulierungen im Hero
-- lange Substantivketten vermeiden
+### Zu ändernde Datei: `DashboardViewModel.kt`
 
-Beispiele für spätere Überarbeitung:
+**`init {}`-Block**:
+- Prüft `appSettings.initialSyncCompletedAtEpochMillis == 0L`
+- Falls ja: `performInitialSync()` starten (nicht `refresh(force=false)`)
+- Falls nein: nur Flows beobachten, kein automatischer Netzwerkaufruf
 
-- `Datenzustand & Sync`
-- `Der lokale Tourenbestand ist vollständig ...`
-- `Vorhandene Details auffrischen`
-- `Cloud-Daten neu einlesen`
+**Neue Methode `performInitialSync()`**:
+- Ruft `PerformInitialSyncUseCase` auf
+- Zeigt Fortschritt im UiState
+- Bei Fehler: `isInitialLoading = false`, Fehlermeldung setzen
 
-Ergebnis nach Paket 6:
+**Umgebaute Methode `refresh()`** (wird zu "Auffrischen"):
+- Ruft `RefreshSmartSystemDataUseCase` auf
+- Kein `force`-Parameter mehr
+- Zeigt Fortschritt im UiState
 
-- besserer erster Eindruck
-- weniger Zeilenumbrüche auf Compact Width
-- weniger Textdruck im oberen Bereich
+**Entfernte Methoden**:
+- `syncCloudData()` (war manueller Vollsync-Button)
+- `loadMissingActivityDetails()`
+- `refreshStaleActivityDetails()`
+- `cancelPendingActivityDetailsSync()`
+- `refreshBikeDetail()`
+- `refreshActivityDetail()`
 
-## Paket 7: Preview- und QA-Infrastruktur ergänzen
+**`DashboardFeedHandler.kt`**:
+- `refresh(force: Boolean)`-Methode entfernen oder zu `triggerRefresh()` vereinfachen
+- `updateCloudSyncDetailModeUseCase`, `updateBackgroundSyncModeUseCase` entfernen
 
-Ziel:
-UI-Arbeit nicht blind nur gegen Emulator-Screenshots machen.
+**`DashboardOperationsHandler.kt`**:
+- `syncCloudData()` entfernen
+- `loadMissingActivityDetails()` entfernen
+- `refreshStaleActivityDetails()` entfernen
+- `cancelPendingActivityDetailsSync()` entfernen
 
-Geplante neue Dateien:
+---
 
-- `presentation/dashboard/HomeScreenPreview.kt`
-- optional `presentation/dashboard/DashboardCardPreview.kt`
+## Phase J – HomeScreen UI
 
-Konkrete Preview-Fälle:
+**Begründung**: Ein einziger, klarer "Auffrischen"-Button ersetzt die bisherige Kombination aus Sync-Button, Detail-Laden und Stale-Refresh.
 
-- Home komplett
-- Home teilweise unvollständig
-- Home leer
-- Home während aktivem Sync
-- Light Theme
-- Dark Theme
-- große Schriftgröße
+### Zu ändernde Datei: `HomeScreen.kt`
 
-Wichtig:
+**Callbacks vereinfachen**:
+```kotlin
+fun HomeScreen(
+    uiState: HomeUiState,
+    onRefresh: () -> Unit,           // war: onSyncCloudData + onLoadMissingActivityDetails
+    onCancelRefresh: () -> Unit,     // war: onCancelSyncCloudData
+    onNavigateToActivityDetail: (String) -> Unit,
+    onNavigateToActivityTrack: (String) -> Unit,
+    modifier: Modifier = Modifier,
+)
+```
 
-- da aktuell keine `@Preview` vorhanden sind, ist dieses Paket Pflicht
-- Previews sollen mit stabilen Fake-`HomeUiState`-Objekten arbeiten
+**`HomeStatusHeroCard`**:
+- Primärer Button: "Auffrischen" (Icon: `Icons.Default.Sync` oder `Icons.Default.Refresh`)
+- Label im laufenden Zustand: "Lädt…"
+- Kein separater Sync-Button mehr
 
-Ergebnis nach Paket 7:
+**`HomeSyncMetaCard`**:
+- `HomeSecondaryActionRow` entfernen (kein "Fehlende Details laden", kein "Details auffrischen")
+- Nur noch: letzter Sync-Zeitpunkt, laufender Fortschritt, Cancel-Button
 
-- schnellere UI-Iteration
-- weniger Regressionen
-- bessere Review-Basis
+**`HomeStatusMetricGrid`**:
+- Tile "Veraltet" (`staleDetailCount`) entfernen
+- Verbleibende Tiles: Aktivitäten, Details (mit Coverage), Fehlend, GPS-Punkte
 
-## Paket 8: Testanpassungen
+**Initial-Sync-Zustand**:
+- Wenn `isInitialLoading == true` und noch kein Cache: eigene leere State-Card mit Hinweis "Erste Einrichtung läuft…"
+- Cancel-Button auch beim Initial-Sync anzeigen
 
-Ziel:
-UI-Refactoring ohne fachliche Regression.
+---
 
-Betroffene Dateien:
+## Phase K – Setup-Screen: Bereinigen und Reset-Funktion
 
-- `DashboardUiModelMapperTest.kt`
-- `DashboardViewModelTest.kt`
+**Begründung**: Entfernte Einstellungen müssen aus dem UI verschwinden; der Reset (= Initial-Sync erneut auslösen) wird die neue Haupt-Aktion im Sync-Abschnitt.
 
-Konkrete Arbeit:
+### Zu ändernde Datei: `SetupScreen.kt`
 
-- Mapper-Tests an neue Status-Copy und ggf. neue UI-Hilfsfelder anpassen
-- ViewModel-Tests nur anfassen, wenn UI-Modell-Struktur geändert wird
-- keine Domain-Tests anfassen, solange keine fachlichen Modelle geändert werden
+**Entfernen**:
+- Dropdown `cloudSyncDetailMode` (mit Label, Optionen, Callback)
+- Dropdown `backgroundSyncMode` (mit Label, Optionen, Callback)
 
-Nicht geplant:
+**Neu hinzufügen: Reset-Funktion**
 
-- Screenshot-Tests im ersten Schritt
-- neue Instrumentation-Tests nur für das visuelle Redesign
+```kotlin
+onResetAllData: () -> Unit,
+```
+
+UI: `OutlinedButton` mit Warnung-Ton und Label "Alle Daten zurücksetzen".
+
+**Pflicht: Bestätigungsdialog vor Ausführung** — eine destruktive Aktion darf nicht als sofort ausführbarer Button ohne Rückfrage existieren. Ablauf:
+1. Button-Klick öffnet `AlertDialog` mit Titel "Alle Daten zurücksetzen?" und kurzer Warnung
+2. Bestätigen → `resetAllData()` ausführen
+3. Abbrechen → Dialog schließen, nichts passiert
+
+Erklärungstext im Setup (wenn `showExplanationTexts`):
+> Löscht den lokalen Datencache (Aktivitäten, Details, Bikes, Konto) und lädt sofort alles neu von der Cloud.
+
+### Reset-Logik (UseCase oder direkt im ViewModel)
+
+Neue Methode `resetAllData()` im ViewModel:
+1. **Alle laufenden Coroutinen canceln** (Sync, Exports, Detail-Ladevorgänge) — ohne Cancel können Race Conditions entstehen, bei denen ein laufender Job den Cache nach `clearAllTables()` sofort wieder befüllt
+2. `appSettingsRepository.resetInitialSyncFlag()` und `latestCachedActivityStartTime` zurücksetzen
+3. `oidcCacheRepository.clearOidcCache()`
+4. Room-Datenbank atomar leeren via `roomDatabase.clearAllTables()` — nicht einzelne `deleteAll()`-Aufrufe; das ist performanter, atomar und erfasst automatisch neu hinzukommende Tabellen
+5. UiState zurücksetzen (isInitialLoading = true, alle Listen leeren)
+6. `performInitialSync()` sofort starten — kein Neustart nötig, der Nutzer bekommt direktes Feedback
+
+**Reset ist destruktiv und startet sofort** — kein "beim nächsten Start"-Modus. Der Nutzer sieht den Fortschritt des Initial-Syncs unmittelbar.
+
+**Entscheidung**: Reset startet den Initial-Sync sofort (ohne Neustart), damit der Nutzer sofortiges Feedback bekommt.
+
+---
+
+## Phase L – Logout: OIDC-Cache und lokale Daten löschen
+
+**Begründung**: `ClearAuthenticationUseCase` löscht derzeit nur Tokens (`authRepository.clearTokens()`). Gecachte OIDC-Daten (UserInfo mit E-Mail, DiscoveryInfo) bleiben erhalten und würden nach einem Logout offline dem nächsten Nutzer angezeigt — auch im PDF-Export. Das ist ein Datenschutz-Problem bei geteilten Geräten.
+
+### Zu ändernde Datei: `ClearAuthenticationUseCase.kt`
+
+Erweitern um:
+- `oidcCacheRepository.clearOidcCache()`
+- `appSettingsRepository.resetInitialSyncFlag()` — damit der nächste angemeldete Nutzer einen vollständigen Initial-Sync bekommt, nicht den Delta-Refresh des Vorgängers
+- `appSettingsRepository.resetLatestCachedActivityStartTime()`
+
+**Aktivitäten und Bike-Daten beim Logout löschen?** Das ist eine fachliche Entscheidung: Da die App an einen Bosch-Account gebunden ist und kein Multi-Account-Betrieb existiert, wäre es sauber, auch den Room-Cache zu leeren. Allerdings erhöht das die Logout-Komplexität erheblich. Minimalansatz: nur OIDC-Cache + Flags leeren; Room-Daten bleiben, bis der nächste Initial-Sync sie überschreibt. Dieser Punkt sollte vor Implementierung final entschieden werden.
+
+### Neue Abhängigkeit in `AppModule.kt`
+
+`ClearAuthenticationUseCase` erhält `OidcCacheRepository` und `AppSettingsRepository` als Konstruktor-Parameter.
+
+---
+
+## Phase M – Strings (DE + EN)
+
+Neue/geänderte Strings:
+
+| Key | DE | EN |
+|---|---|---|
+| `home_refresh_button` | Auffrischen | Refresh |
+| `home_refresh_running` | Lädt… | Loading… |
+| `home_initial_sync_title` | Erste Einrichtung | Initial Setup |
+| `home_initial_sync_text` | Daten werden vollständig geladen… | Loading all data… |
+| `setup_reset_button` | Alle Daten zurücksetzen | Reset All Data |
+| `setup_reset_description` | Löscht den Cache und lädt beim nächsten Start alles neu ein. | Clears the cache and reloads everything on next start. |
+
+Zu entfernende Strings:
+- alle `background_sync_*`-Labels
+- alle `cloud_sync_detail_mode_*`-Labels
+- `home_data_status_action_stale`
+- `home_data_status_stale`
+- `home_sync_cancel_button` (ggf. umbenennen statt löschen)
+
+---
+
+## Phase M – Tests
+
+### `DashboardViewModelTest.kt`
+- Tests für `syncCloudData()`, `loadMissingActivityDetails()`, `refreshStaleActivityDetails()` entfernen
+- Neue Tests: Auto-Initial-Sync beim ersten Start, kein Auto-Sync wenn Flag gesetzt
+- Test: `refresh()` ruft `RefreshSmartSystemDataUseCase` auf
+
+### `AppSettingsTest.kt`
+- Tests für `backgroundSyncMode`, `cloudSyncDetailMode` entfernen
+- Neue Tests für `initialSyncCompletedAtEpochMillis` und `latestCachedActivityStartTimeMillis`
+
+### Neue Testdatei: `PerformInitialSyncUseCaseTest.kt`
+- OIDC-Daten werden gecacht
+- Alle Aktivitätsseiten werden geladen
+- Fehlende Details werden nachgeladen
+- Flags werden gesetzt
+
+### Neue Testdatei: `RefreshSmartSystemDataUseCaseTest.kt`
+- Delta-Abbruch bei erster bekannter ID
+- Neue Aktivitäten werden gecacht
+- Fehlende Details werden nachgeladen
+- Flags werden aktualisiert
+
+### `StatisticsViewModelTest.kt`, `StatisticsUiModelMapperTest.kt`
+- Keine Änderungen erwartet
+
+---
 
 ## Umsetzungsreihenfolge
 
-Die spätere Umsetzung sollte in genau dieser Reihenfolge passieren:
+Die Phasen bauen aufeinander auf und sollten in dieser Reihenfolge umgesetzt werden:
 
-1. `Theme.kt`, `Type.kt`, `Color.kt`, neue `DesignTokens.kt`
-2. `DashboardUiModels.kt`, `DashboardScreenStates.kt` und `DashboardUiModelMapper.kt`
-3. `DashboardSharedUi.kt`
-4. `HomeScreen.kt`
-5. `DashboardOverviewComponents.kt`
-6. `values/strings.xml` und `values-de/strings.xml`
-7. Previews
-8. Tests
+1. **Phase A** – Hintergrund-Sync entfernen inkl. `M24BikeStatsApp.kt`-Startup-Hook
+2. **Phase B** – Detail-Modus entfernen (vereinfacht UseCase-Signatur für Phase G)
+3. **Phase C** – Sub-Screen Refresh-Buttons + Top-Bar Refresh-Aktionen entfernen
+4. **Phase D** – Sekundäre Homescreen-Sync-Aktionen entfernen
+5. **Phase E** – OIDC-Cache implementieren (vollständiges Modell inkl. aller DiscoveryInfo-Felder)
+6. **Phase F** – AppSettings erweitern + destructiveMigration-Gegenmaßnahme
+7. **Phase G** – `PerformInitialSyncUseCase` ausbauen
+8. **Phase H** – `RefreshSmartSystemDataUseCase` neu erstellen (mit DiscoveryInfo + Hard-Limit)
+9. **Phase I** – ViewModel umbauen (Auto-Initial-Sync + DB-Leerheits-Check)
+10. **Phase J** – HomeScreen UI anpassen
+11. **Phase K** – SetupScreen bereinigen + Reset-Funktion mit Bestätigungsdialog
+12. **Phase L** – Logout: OIDC-Cache + Flags leeren
+13. **Phase M** – Strings anpassen (DE + EN)
+14. **Phase N** – Tests anpassen und ergänzen
 
-Warum diese Reihenfolge:
+---
 
-- erst System, dann Screen
-- UIModels vor HomeScreen: `HomeScreen.kt` soll die neuen Convenience-Getter aus `DataStatusUiModel` nutzen können — erst mappen, dann rendern
-- erst Bausteine, dann Spezialfall
-- erst Rendering, dann Copy-Feinschliff
+## Vollständige Liste betroffener Dateien
 
-## Geplanter Dateiumfang
+### Zu löschende Dateien
+- `background/BackgroundSyncScheduler.kt`
+- `background/BackgroundSyncSettingsObserver.kt`
+- `background/SmartSystemBackgroundSyncWorker.kt`
+- `domain/usecase/UpdateBackgroundSyncModeUseCase.kt`
+- `domain/usecase/UpdateCloudSyncDetailModeUseCase.kt`
+- `domain/usecase/RefreshPendingSmartSystemActivityDetailsUseCase.kt` (nach Prüfung ob noch referenziert)
 
-Voraussichtlich zu ändern:
+### Neue Dateien
+- `auth/OidcCacheRepository.kt` (Interface + Datenklassen)
+- `data/local/preferences/OidcCacheRepositoryImpl.kt`
+- `domain/usecase/RefreshSmartSystemDataUseCase.kt`
+- `src/test/.../PerformInitialSyncUseCaseTest.kt`
+- `src/test/.../RefreshSmartSystemDataUseCaseTest.kt`
 
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Color.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Theme.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/Type.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardSharedUi.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreen.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModels.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardScreenStates.kt` (ggf. Convenience-Properties auf `HomeUiState`)
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapper.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardOverviewComponents.kt`
-- `app/src/main/res/values/strings.xml`
-- `app/src/main/res/values-de/strings.xml`
-- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardUiModelMapperTest.kt`
-- `app/src/test/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardViewModelTest.kt`
+### Zu ändernde Dateien
 
-Geplante neue Dateien:
+App:
+- `M24BikeStatsApp.kt` (BackgroundSyncSettingsObserver-Startup-Zeile entfernen)
 
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/theme/DesignTokens.kt`
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/HomeScreenPreview.kt`
+Domain/Model:
+- `domain/model/AppSettings.kt`
+- `domain/repository/AppSettingsRepository.kt`
+- `domain/usecase/SyncSmartSystemCloudUseCase.kt`
+- `domain/usecase/ClearAuthenticationUseCase.kt` (OIDC-Cache + Flags beim Logout leeren)
 
-Optional neue Datei, falls Shared UI zu groß wird:
+Data:
+- `data/local/preferences/AppSettingsRepositoryImpl.kt`
 
-- `app/src/main/java/info/meuse24/m24bikestats/presentation/dashboard/DashboardDesignPrimitives.kt`
+Auth:
+- `auth/OidcAccountInfo.kt` (UserInfo- und DiscoveryInfo-Provider, inkl. Cache-Fallback)
+
+DI:
+- `di/AppModule.kt`
+
+Presentation:
+- `presentation/dashboard/DashboardViewModel.kt`
+- `presentation/dashboard/DashboardFeedHandler.kt`
+- `presentation/dashboard/DashboardOperationsHandler.kt`
+- `presentation/dashboard/DashboardDetailActionHandler.kt`
+- `presentation/dashboard/HomeScreen.kt`
+- `presentation/dashboard/DashboardDetailScreens.kt`
+- `presentation/dashboard/DashboardUiModels.kt` (UiState-Felder für Stale bereinigen)
+- `presentation/navigation/SetupScreen.kt` (inkl. AlertDialog für Reset)
+- `presentation/navigation/AppNavigation.kt` (Top-Bar Refresh-Aktionen + Sub-Screen Callbacks)
+
+Strings:
+- `res/values/strings.xml`
+- `res/values-de/strings.xml`
+
+Tests:
+- `test/.../DashboardViewModelTest.kt`
+- `test/.../AppSettingsTest.kt`
+
+---
 
 ## Abnahmekriterien
 
-Die spätere Implementierung ist erfolgreich, wenn:
-
-- der obere Bereich des Home-Screens nur noch eine klare Hauptbotschaft trägt
-- genau eine primäre CTA im Hauptbereich sichtbar ist
-- KPI-Zahlen auf einen Blick lesbar sind
-- Sync-Metadaten nicht mehr den Hero dominieren
-- Activity- und Bike-Karten sichtbar besser zum neuen Home-Stil passen
-- Light, Dark und Dynamic Color stabil wirken
-- 200% Font Scale keine überlappenden oder abgeschnittenen Texte erzeugt
-- lange deutsche Strings den ersten Fold nicht mehr zerstören
-
-## QA-Checkliste für die spätere Umsetzung
-
-Visuell:
-
-- Compact Width auf kleinem Android-Screen
-- Medium/Expanded Width mit begrenzter Content-Breite
-- Light Theme
-- Dark Theme
-- Dynamic Color mit mindestens drei unterschiedlichen Wallpapers
-
-Accessibility:
-
-- alle Buttons >= 48dp Touch Target
-- sinnvolle `contentDescription` auf interaktiven Icons
-- Status nicht nur über Farbe vermittelt
-- TalkBack-Reihenfolge logisch
-
-Typografie:
-
-- keine Text-Clips bei großer Schrift
-- Labels maximal 11sp nur für echte Metadaten
-- Body nie unter 12sp
-
-Interaction:
-
-- Sync-Zustände zeigen sofort sichtbare Rückmeldung
-- Cancel nur im aktiven Prozess sichtbar
-- keine konkurrierenden Primäraktionen
-
-## Empfohlene spätere Commit-Struktur
-
-Wenn die Umsetzung startet, sollte sie in kleine, reviewbare Schritte geschnitten werden:
-
-1. `theme: define full material tokens and typography`
-2. `ui: prepare data status ui model and mapper for new layout`
-3. `ui: refactor shared dashboard surfaces and consolidate badges`
-4. `ui: split home status card into focused sections`
-5. `ui: align activity and bike cards with new dashboard language`
-6. `copy: shorten home strings for compact mobile layout`
-7. `test: add previews and adjust mapper tests`
-
-## Kurzfassung der eigentlichen Bauentscheidung
-
-Der Home-Screen wird nicht "hübscher gemacht", sondern strukturell neu organisiert:
-
-- weniger Dichte im Hero
-- mehr Ruhe in den Flächen
-- stärkere KPI-Hierarchie
-- klarere Actions
-- konsistenteres Theme
-
-Das ist der kleinste sinnvolle Umbau, der den Rookie-Eindruck sichtbar in Richtung professionelles Android-Produkt verschiebt, ohne fachlich unnötig breit zu werden.
+- App startet und lädt beim allerersten Start automatisch alle Daten (Initial-Sync)
+- Bei allen weiteren Starts kein automatischer Netzwerkaufruf
+- "Auffrischen"-Button auf dem Homescreen lädt Bikes, OIDC, neue Aktivitäten und fehlende Details
+- Beim Auffrischen wird die Paginierung abgebrochen, sobald eine bekannte Aktivitäts-ID gefunden wird
+- PDF-Erzeugung funktioniert auch offline (UserInfo und DiscoveryInfo aus Cache)
+- Konto-Screen zeigt gecachte OIDC-Daten ohne Netzwerkaufruf
+- Kein Hintergrund-Sync läuft (WorkManager-Job nicht registriert)
+- Kein Refresh-Button in ActivityDetail-, BikeDetail- und Track-Screen
+- Setup zeigt keinen Detail-Modus und keinen Hintergrund-Sync
+- Reset im Setup leert den Cache und startet den Initial-Sync neu
+- Nach Logout sind OIDC-Cache und Sync-Flags geleert
+- Nach einem Logout und erneutem Login startet der Initial-Sync automatisch
+- Nach `fallbackToDestructiveMigration` (leere DB bei gesetztem Flag) startet der Initial-Sync automatisch
+- Reset im Setup zeigt Bestätigungsdialog und startet sofort den Initial-Sync ohne App-Neustart
+- Kein Refresh-Icon mehr in der TopBar auf Aktivitäten-, Bike- und Statistik-Screen
+- Konto-Screen zeigt offline vollständige DiscoveryInfo (alle Felder) aus dem Cache
+- Alle Unit-Tests grün
+- `./gradlew assembleRelease` erfolgreich

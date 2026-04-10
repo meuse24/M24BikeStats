@@ -1,5 +1,9 @@
 package info.meuse24.m24bikestats.domain.usecase
 
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoProvider
+import info.meuse24.m24bikestats.auth.OidcDiscoveryInfoUiModel
+import info.meuse24.m24bikestats.auth.OidcUserInfoProvider
+import info.meuse24.m24bikestats.auth.OidcUserInfoUiModel
 import info.meuse24.m24bikestats.domain.model.ActivityDetailCacheOverview
 import info.meuse24.m24bikestats.domain.model.BoschActivity
 import info.meuse24.m24bikestats.domain.model.BoschActivityDetail
@@ -22,6 +26,28 @@ internal class FakeAuthRepository(
     override suspend fun getValidAccessToken(): Result<String> = tokenResult
     override fun isAuthenticated(): Boolean = tokenResult.isSuccess
     override fun clearTokens() = Unit
+}
+
+internal class FakeOidcUserInfoProvider(
+    private val userInfo: OidcUserInfoUiModel? = null,
+) : OidcUserInfoProvider {
+    var loadCalls: Int = 0
+
+    override suspend fun loadCurrentUserInfo(): OidcUserInfoUiModel? {
+        loadCalls += 1
+        return userInfo
+    }
+}
+
+internal class FakeOidcDiscoveryInfoProvider(
+    private val discoveryInfo: OidcDiscoveryInfoUiModel? = null,
+) : OidcDiscoveryInfoProvider {
+    var loadCalls: Int = 0
+
+    override suspend fun loadCurrentDiscovery(): OidcDiscoveryInfoUiModel? {
+        loadCalls += 1
+        return discoveryInfo
+    }
 }
 
 internal open class FakeBoschSmartSystemRepository :

@@ -55,17 +55,7 @@ class DashboardUiModelMapper(
                 overview.status == DataStatusState.EMPTY ->
                     s(R.string.home_data_status_summary_empty)
                 overview.missingDetailCount > 0 ->
-                    if (overview.staleDetailCount > 0) {
-                        s(
-                            R.string.home_data_status_summary_partial_stale,
-                            overview.missingDetailCount,
-                            overview.staleDetailCount,
-                        )
-                    } else {
-                        s(R.string.home_data_status_summary_partial, overview.missingDetailCount)
-                    }
-                overview.staleDetailCount > 0 ->
-                    s(R.string.home_data_status_summary_stale, overview.staleDetailCount)
+                    s(R.string.home_data_status_summary_partial, overview.missingDetailCount)
                 else ->
                     s(R.string.home_data_status_summary_complete)
             },
@@ -83,7 +73,6 @@ class DashboardUiModelMapper(
                 detailCoveragePercent,
             ),
             missingDetailCount = overview.missingDetailCount,
-            staleDetailCount = overview.staleDetailCount,
             gpsPointCount = overview.gpsPointCount,
             lastActivitySyncLabel = overview.lastActivitySyncAtEpochMillis?.toReadableDateTime(),
             lastBikeSyncLabel = overview.lastBikeSyncAtEpochMillis?.toReadableDateTime(),

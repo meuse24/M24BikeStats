@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Print
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -233,13 +232,6 @@ fun AppNavigation(
                                 contentDescription = stringResource(R.string.cd_export_pdf_summary),
                             )
                         }
-                    } else if (currentRoute.shouldShowRefreshAction()) {
-                        IconButton(onClick = dashboardViewModel::refresh) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.cd_refresh),
-                            )
-                        }
                     }
                 },
             ) { innerPadding ->
@@ -250,11 +242,8 @@ fun AppNavigation(
                     composable(MainDestination.HOME.route) {
                         HomeScreen(
                             uiState = dashboardUiState.toHomeUiState(),
-                            onSyncCloudData = dashboardViewModel::syncCloudData,
-                            onCancelSyncCloudData = dashboardViewModel::cancelCloudSync,
-                            onLoadMissingActivityDetails = dashboardViewModel::loadMissingActivityDetails,
-                            onRefreshStaleActivityDetails = dashboardViewModel::refreshStaleActivityDetails,
-                            onCancelPendingActivityDetailsSync = dashboardViewModel::cancelPendingActivityDetailsSync,
+                            onRefresh = dashboardViewModel::refresh,
+                            onCancelRefresh = dashboardViewModel::cancelCloudSync,
                             onNavigateToActivityDetail = { activityId ->
                                 shellNavController.navigate("activity/$activityId")
                             },
@@ -351,17 +340,14 @@ fun AppNavigation(
                         SetupScreen(
                             displayMode = appSettings.displayMode,
                             csvExportFormat = appSettings.csvExportFormat,
-                            cloudSyncDetailMode = appSettings.cloudSyncDetailMode,
-                            backgroundSyncMode = appSettings.backgroundSyncMode,
                             showExplanationTexts = appSettings.showExplanationTexts,
                             explanationTextsPromptTiming = appSettings.explanationTextsPromptTiming,
                             onDisplayModeSelected = dashboardViewModel::updateDisplayMode,
                             onCsvExportFormatSelected = dashboardViewModel::updateCsvExportFormat,
-                            onCloudSyncDetailModeSelected = dashboardViewModel::updateCloudSyncDetailMode,
-                            onBackgroundSyncModeSelected = dashboardViewModel::updateBackgroundSyncMode,
                             onShowExplanationTextsChanged = dashboardViewModel::updateShowExplanationTexts,
                             onExplanationTextsPromptTimingSelected = dashboardViewModel::updateExplanationTextsPromptTiming,
                             onResetExplanationTextsPrompt = dashboardViewModel::resetExplanationTextsPrompt,
+                            onResetAllData = dashboardViewModel::resetAllData,
                             modifier = androidx.compose.ui.Modifier.padding(innerPadding),
                         )
                     }
@@ -396,7 +382,6 @@ fun AppNavigation(
                         ActivityDetailScreen(
                             uiState = dashboardUiState.toActivityDetailScreenUiState(),
                             onLoadActivity = dashboardViewModel::loadActivityDetail,
-                            onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                             activityId = activityId,
                             onNavigateToTrack = { shellNavController.navigate("activity/$activityId/track") },
                             onNavigateBack = { shellNavController.popBackStack() },
@@ -411,7 +396,6 @@ fun AppNavigation(
                         TrackScreen(
                             uiState = dashboardUiState.toTrackUiState(),
                             onLoadActivity = dashboardViewModel::loadActivityDetail,
-                            onRefreshActivity = dashboardViewModel::refreshActivityDetail,
                             activityId = activityId,
                             onNavigateBack = { shellNavController.popBackStack() },
                         )
@@ -425,7 +409,6 @@ fun AppNavigation(
                         BikeDetailScreen(
                             uiState = dashboardUiState.toBikeDetailScreenUiState(),
                             onLoadBike = dashboardViewModel::loadBikeDetail,
-                            onRefreshBike = dashboardViewModel::refreshBikeDetail,
                             bikeId = bikeId,
                             onNavigateBack = { shellNavController.popBackStack() },
                         )
@@ -526,15 +509,6 @@ internal fun String?.shouldShowShellTopBar(): Boolean = when {
     this?.startsWith("activity/") == true -> false
     this?.startsWith("bike/") == true -> false
     else -> true
-}
-
-internal fun String?.shouldShowRefreshAction(): Boolean = when (this) {
-    MainDestination.ACTIVITIES.route,
-    MainDestination.BIKE.route,
-    MainDestination.STATISTICS.route,
-    -> true
-
-    else -> false
 }
 
 internal fun String?.shouldShowPdfExportAction(): Boolean =
